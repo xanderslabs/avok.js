@@ -11,7 +11,7 @@ import {
   type Paymaster7677,
   type PendingAuthorization,
   type RpcClient,
-} from "@avokjs/txengine";
+} from "@avokjs/evm-txengine";
 
 /** The bring-your-own 4337 infra a fronted send routes through. */
 export interface FrontedInfra {

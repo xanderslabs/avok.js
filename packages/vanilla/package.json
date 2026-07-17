@@ -64,7 +64,7 @@
     "@wallet-standard/base": "^1.1.0",
     "@wallet-standard/wallet": "^1.1.0",
     "@avokjs/solana-txengine": "workspace:*",
-    "@avokjs/txengine": "workspace:*",
+    "@avokjs/evm-txengine": "workspace:*",
     "@avokjs/wallet-core": "workspace:*",
     "@types/node": "^26.1.0",
     "jsdom": "^29.1.1",

@@ -1,9 +1,9 @@
 import type { Address, Hex } from "viem";
-import type { Call } from "@avokjs/txengine";
+import type { Call } from "@avokjs/evm-txengine";
 import type { SigningChannel, ChannelRequest } from "@avokjs/shared-origin";
 import type { DiscoveredPasskey, PasskeyAdapter, PasskeyRegistration } from "@avokjs/wallet-core";
 import { bytesToBase64Url } from "@avokjs/wallet-core";
-import type { RpcClient, SimulateArgs, SimCallResult, ReadArgs } from "@avokjs/txengine";
+import type { RpcClient, SimulateArgs, SimCallResult, ReadArgs } from "@avokjs/evm-txengine";
 
 /** One fake credential: the opaque user handle it was created with (primary or secondary), plus a
  *  FIXED PRF output. Fixed + deterministic is the whole point — "same passkey ⇒ same wallet", because

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Address } from "viem";
-import { getChainProfile } from "@avokjs/txengine";
+import { getChainProfile } from "@avokjs/evm-txengine";
 import type { Connection } from "../src/types.js";
 import { createEvmNamespace } from "../src/client/evm.js";
 import { UnsupportedFeeTokenError } from "../src/client/fee-token-error.js";

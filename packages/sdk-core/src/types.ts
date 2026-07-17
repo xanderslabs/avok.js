@@ -1,7 +1,7 @@
 import type { Address, Hex, TransactionSerializable, TypedDataDefinition } from "viem";
 import type { Signer, AuthorizationTriple, SignedAuthorizationLike } from "@avokjs/shared-origin";
 import type { ExportedWallet, VaultReader, AccessSlotEntry } from "@avokjs/wallet-core";
-import type { Call, RpcClient, FetchLike, EvmChainProfile, AvokUserOperation } from "@avokjs/txengine";
+import type { Call, RpcClient, FetchLike, EvmChainProfile, AvokUserOperation } from "@avokjs/evm-txengine";
 import type { RpcOverrides } from "@avokjs/contracts";
 import type { StorageAdapter } from "./storage.js";
 import type { NonceAllocator } from "./nonce.js";
@@ -364,9 +364,9 @@ export interface ClientConfig<C extends Connection = Connection> {
     vaultReader?: VaultReader;
     fetch?: FetchLike;
     /** Override the 4337 bundler client (fronted). */
-    bundler?: import("@avokjs/txengine").Bundler;
+    bundler?: import("@avokjs/evm-txengine").Bundler;
     /** Override the ERC-7677 paymaster client (fronted). */
-    paymaster?: import("@avokjs/txengine").Paymaster7677;
+    paymaster?: import("@avokjs/evm-txengine").Paymaster7677;
     /** Override the chain profile (e.g., to set a non-zero canonicalImplementation in tests). */
     chain?: EvmChainProfile;
     /** Override the Solana RPC client (e.g., to inject a fake in tests). */

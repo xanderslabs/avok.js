@@ -9,7 +9,7 @@ import {
 import { makeFakePasskey, type FakePasskey, ACCESS_SLOT_WRITER } from "./fakes.js";
 import { ACCESS_VAULT_ABI, VaultUnreadableError } from "@avokjs/wallet-core";
 import { decodeFunctionData, hexToBytes } from "viem";
-import type { Call } from "@avokjs/txengine";
+import type { Call } from "@avokjs/evm-txengine";
 
 /** A chain that actually stores what it is given — needed to prove a repair really lands. */
 function capturingVault() {

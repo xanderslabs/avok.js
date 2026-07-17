@@ -1,6 +1,6 @@
 import { type Address, type Hex } from "viem";
 import { type AccessSlotEntry } from "@avokjs/wallet-core";
-import { isDelegatedTo, createViemVaultReader } from "@avokjs/txengine";
+import { isDelegatedTo, createViemVaultReader } from "@avokjs/evm-txengine";
 import { evmRpcUrl } from "@avokjs/contracts";
 import {
   createEvmNamespace,
@@ -11,7 +11,7 @@ import {
   type PreparedAccessSlotWrite,
   type SignedAccessSlotWrite,
 } from "./evm.js";
-import type { Call } from "@avokjs/txengine";
+import type { Call } from "@avokjs/evm-txengine";
 import { EnrolmentUnaffordableError } from "../own-origin/connection.js";
 import { buildAddAccessSlotCall } from "@avokjs/wallet-core";
 import type { AccessCtx, ScopedSigner } from "../types.js";

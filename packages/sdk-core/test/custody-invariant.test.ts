@@ -10,7 +10,7 @@
  *    with no key/blob/PRF/secret field.
  */
 import { describe, it, expect } from "vitest";
-import type { Call } from "@avokjs/txengine";
+import type { Call } from "@avokjs/evm-txengine";
 import type { Hex } from "viem";
 import { createOwnOriginConnection } from "../src/own-origin/connection.js";
 import { createSharedOriginConnection } from "../src/shared-origin/connection.js";

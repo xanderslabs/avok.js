@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { Call } from "@avokjs/txengine";
+import type { Call } from "@avokjs/evm-txengine";
 import { createOwnOriginConnection } from "../src/own-origin/connection.js";
 import { makeFakePasskey, ACCESS_SLOT_WRITER } from "./fakes.js";
 

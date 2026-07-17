@@ -1,6 +1,6 @@
 import type { ClientConfig } from "@avokjs/sdk-core";
 import { createSendEngine, type SendEngine } from "@avokjs/sdk-core/internal";
-import type { Receipt } from "@avokjs/txengine";
+import type { Receipt } from "@avokjs/evm-txengine";
 import { dispatch, chainIdHex, accountsOf, type ProviderRuntime } from "./eip1193-methods.js";
 
 /** The EIP-1193 provider object viem/wagmi/ethers consume. */

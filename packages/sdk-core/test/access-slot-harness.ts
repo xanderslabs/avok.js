@@ -3,7 +3,7 @@ import { decodeFunctionData, hexToBytes, type Address, type Hex } from "viem";
 import { createOwnOriginConnection } from "../src/own-origin/connection.js";
 import { makeFakePasskey, type FakePasskey, ACCESS_SLOT_WRITER } from "./fakes.js";
 import { ACCESS_VAULT_ABI, decryptKeyBlob, deserializeBlob } from "@avokjs/wallet-core";
-import type { Call } from "@avokjs/txengine";
+import type { Call } from "@avokjs/evm-txengine";
 
 /** The chain: absorbs addAccessSlot and serves the blob + metadata back. Doubles as the AccessCtx and
  *  as the injected roster reader (it implements getAccessSlotIds, so rosterForChain picks it up). */

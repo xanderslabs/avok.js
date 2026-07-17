@@ -5,7 +5,7 @@ import { createAvokClient } from "../src/client/client.js";
 import { makeFakePasskey, makeFakeRpc, ACCESS_SLOT_WRITER } from "./fakes.js";
 import { ACCESS_VAULT_ABI } from "@avokjs/wallet-core";
 import { AvokWalletImplementationABI } from "@avokjs/contracts";
-import { getChainProfile, type Call } from "@avokjs/txengine";
+import { getChainProfile, type Call } from "@avokjs/evm-txengine";
 
 // ERC-7821 execute(mode, executionData) wraps abi.encode(Call[]) — the shape the self-pay calldata carries.
 const CALLS_PARAM = [

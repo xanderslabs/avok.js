@@ -45,7 +45,7 @@
     "@avokjs/contracts": "workspace:*",
     "@avokjs/shared-origin": "workspace:*",
     "@avokjs/solana-txengine": "workspace:*",
-    "@avokjs/txengine": "workspace:*",
+    "@avokjs/evm-txengine": "workspace:*",
     "@avokjs/wallet-core": "workspace:*",
     "@scure/base": "^2.2.0",
     "@solana/kit": "^6.10.0",

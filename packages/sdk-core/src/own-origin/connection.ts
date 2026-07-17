@@ -53,7 +53,7 @@ import {
 import { createSiweMessage } from "viem/siwe";
 import { base58 } from "@scure/base";
 import { encodeOffchainMessage } from "@avokjs/solana-txengine";
-import { getAvokUserOpHash, type AvokUserOperation } from "@avokjs/txengine";
+import { getAvokUserOpHash, type AvokUserOperation } from "@avokjs/evm-txengine";
 import { resolveAnchorChain, getChainProfile, DEFAULT_ANCHOR_CHAIN_ID, type ChainId } from "@avokjs/contracts";
 import { bytesToHex, type Address, type Hex, type TypedDataDefinition, type TransactionSerializable, type PrivateKeyAccount } from "viem";
 import type { SiweParams, SignedAuthorizationLike, AuthorizationTriple } from "@avokjs/shared-origin";

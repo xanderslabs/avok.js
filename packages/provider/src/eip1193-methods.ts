@@ -1,7 +1,7 @@
 import { hexToNumber, hexToString, isHex, type Address, type Hex, type TypedDataDefinition } from "viem";
 import type { Account } from "@avokjs/sdk-core";
 import type { SendEngine } from "@avokjs/sdk-core/internal";
-import type { Call, Receipt } from "@avokjs/txengine";
+import type { Call, Receipt } from "@avokjs/evm-txengine";
 
 /** An EIP-1193 JSON-RPC error (the shape viem/wagmi expect on rejection). */
 export class ProviderRpcError extends Error {

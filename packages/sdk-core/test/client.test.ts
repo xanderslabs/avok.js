@@ -3,7 +3,7 @@ import type { Address, Hex, TransactionSerializable } from "viem";
 import { createAvokClient } from "../src/client/client.js";
 import { createEvmNamespace } from "../src/client/evm.js";
 import { createOwnOriginConnection } from "../src/own-origin/connection.js";
-import { getChainProfile, type FetchLike } from "@avokjs/txengine";
+import { getChainProfile, type FetchLike } from "@avokjs/evm-txengine";
 import { deriveSlotId } from "@avokjs/wallet-core";
 import type { Connection, SelfCustodyConnection } from "../src/types.js";
 import { makeFakePasskey, makeFakeRpc } from "./fakes.js";

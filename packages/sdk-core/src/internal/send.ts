@@ -1,5 +1,5 @@
 import type { Address } from "viem";
-import type { Call, Receipt } from "@avokjs/txengine";
+import type { Call, Receipt } from "@avokjs/evm-txengine";
 import { createEvmNamespace, type EvmFeeToken } from "../client/evm.js";
 import type { ClientConfig } from "../types.js";
 

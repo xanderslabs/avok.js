@@ -11,7 +11,7 @@
   "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json", "test": "vitest run" },
   "dependencies": {
     "@avokjs/sdk-core": "workspace:*",
-    "@avokjs/txengine": "workspace:*",
+    "@avokjs/evm-txengine": "workspace:*",
     "@wallet-standard/base": "^1.1.0",
     "@wallet-standard/wallet": "^1.1.0",
     "viem": "^2.54.6"

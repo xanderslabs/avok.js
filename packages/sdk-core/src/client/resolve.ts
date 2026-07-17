@@ -10,7 +10,7 @@ import {
   isDelegatedTo,
   railFromContext,
   type NativeFeeEstimate,
-} from "@avokjs/txengine";
+} from "@avokjs/evm-txengine";
 
 export interface LeanResolveArgs {
   rpc: RpcClient;

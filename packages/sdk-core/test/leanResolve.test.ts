@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { Address } from "viem";
 import { leanResolve } from "../src/client/resolve.js";
 import { makeFakeRpc } from "./fakes.js";
-import { getChainProfile } from "@avokjs/txengine";
+import { getChainProfile } from "@avokjs/evm-txengine";
 
 // chainId 10 (Optimism) exists in the registry. canonicalImplementation is the PENDING
 // zero address (0x000...0), which triggers the fail-loud guard for undelegated wallets.

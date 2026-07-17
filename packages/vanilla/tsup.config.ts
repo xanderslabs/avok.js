@@ -2,7 +2,7 @@ import { defineConfig } from "tsup";
 
 // Web facade: own-origin + lazy shared-origin.
 //
-// The private @avokjs engines (sdk-core + wallet-core + the txengine/
+// The private @avokjs engines (sdk-core + wallet-core + the evm-txengine/
 // solana-txengine graph) are BUNDLED (noExternal) so the published package
 // is self-contained — a stranger installs @avokjs/vanilla without needing any
 // unpublished workspace package, and dts.resolve inlines their types into one
@@ -17,7 +17,7 @@ export default defineConfig({
   dts: { resolve: true },
   sideEffects: false,
   treeshake: true,
-  noExternal: [/^@avokjs\/(sdk-core|wallet-core|txengine|solana-txengine|provider)$/, /^@wallet-standard\//],
+  noExternal: [/^@avokjs\/(sdk-core|wallet-core|evm-txengine|solana-txengine|provider)$/, /^@wallet-standard\//],
   external: [
     "viem",
     /^viem\//,

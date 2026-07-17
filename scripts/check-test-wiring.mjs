@@ -31,7 +31,7 @@ if (build < 0 || build > typecheck) {
   fail(
     "`test` must run `pnpm build` BEFORE `pnpm typecheck`.\n" +
     "  Cross-package types resolve through built dist/: tsc --traceResolution shows sdk-core reading\n" +
-    "  @avokjs/txengine from txengine/dist/index.d.ts. There are no `paths` mappings, so the\n" +
+    "  @avokjs/evm-txengine from evm-txengine/dist/index.d.ts. There are no `paths` mappings, so the\n" +
     "  build is load-bearing. Without it typecheck passes on a warm machine and fails on a fresh clone.",
   );
 }

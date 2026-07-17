@@ -8,7 +8,7 @@ import { base } from "viem/chains";
 import { getWallets } from "@wallet-standard/app";
 import type { ClientConfig } from "@avokjs/sdk-core";
 import { createSendEngine, type SendEngine, type SolanaEngine } from "@avokjs/sdk-core/internal";
-import { getChainProfile } from "@avokjs/txengine";
+import { getChainProfile } from "@avokjs/evm-txengine";
 import { createEip1193Provider, registerAvokSolanaWallet } from "../src/index.js";
 
 const ADDR = "0x1111111111111111111111111111111111111111";

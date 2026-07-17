@@ -3,7 +3,7 @@ import { decodeFunctionData, hexToBytes, verifyMessage, type Address, type Hex }
 import { createOwnOriginConnection } from "../src/own-origin/connection.js";
 import { makeFakePasskey, ACCESS_SLOT_WRITER } from "./fakes.js";
 import { ACCESS_VAULT_ABI, type VaultReader } from "@avokjs/wallet-core";
-import type { Call } from "@avokjs/txengine";
+import type { Call } from "@avokjs/evm-txengine";
 
 /**
  * Cross-app passkey interuse (the whole point of Related Origin Requests): two apps share an rpId

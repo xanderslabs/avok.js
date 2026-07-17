@@ -3,7 +3,7 @@ import { verifyMessage, verifyTypedData, recoverAddress, type Address } from "vi
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { base58 } from "@scure/base";
 import { encodeOffchainMessage } from "@avokjs/solana-txengine";
-import { getAvokUserOpHash, type AvokUserOperation, type Call } from "@avokjs/txengine";
+import { getAvokUserOpHash, type AvokUserOperation, type Call } from "@avokjs/evm-txengine";
 import { createOwnOriginConnection } from "../src/own-origin/connection.js";
 import { makeFakePasskey, ACCESS_SLOT_WRITER } from "./fakes.js";
 

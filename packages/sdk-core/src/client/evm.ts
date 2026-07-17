@@ -22,7 +22,7 @@ import {
   type Receipt,
   type RpcClient,
   type ViemLike,
-} from "@avokjs/txengine";
+} from "@avokjs/evm-txengine";
 import { leanResolve } from "./resolve.js";
 import { prepareFrontedUserOp, boundedFrontedFee, type FrontedInfra, type PreparedFrontedUserOp } from "./fronted-userop.js";
 import { randomNonceAllocator } from "../nonce.js";
