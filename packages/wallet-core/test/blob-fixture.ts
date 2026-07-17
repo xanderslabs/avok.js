@@ -6,8 +6,8 @@ import { hexToBytes } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { base58 } from "@scure/base";
-import { encryptKeyBlob, serializeBlob } from "../crypto/blob.js";
-import { produceSolanaKey, type SecretContainer } from "../crypto/container.js";
+import { encryptKeyBlob, serializeBlob } from "../src/crypto/blob.js";
+import { produceSolanaKey, type SecretContainer } from "../src/crypto/container.js";
 
 const FIXED_KEY =
   "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;

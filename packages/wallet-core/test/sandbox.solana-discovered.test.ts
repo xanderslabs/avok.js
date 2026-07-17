@@ -3,10 +3,10 @@ import { describe, it, expect, vi } from "vitest";
 import type { Address, Hex } from "viem";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { base58 } from "@scure/base";
-import { withDiscoveredSolanaKey } from "./sandbox.js";
-import { makeContainerBlob } from "./test-helpers/blob-fixture.js";
-import { deriveSlotId, encodeAccessHandle } from "./passkey/label.js";
-import type { VaultReader } from "./vault.js";
+import { withDiscoveredSolanaKey } from "../src/sandbox.js";
+import { makeContainerBlob } from "./blob-fixture.js";
+import { deriveSlotId, encodeAccessHandle } from "../src/passkey/label.js";
+import type { VaultReader } from "../src/vault.js";
 
 /** Minimal anchor vault holding one blob at (address, slotId). */
 function anchorVaultWith(address: string, slotId: Hex, bytes: Uint8Array): VaultReader {
