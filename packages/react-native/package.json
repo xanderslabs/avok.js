@@ -1,0 +1,95 @@
+{
+  "name": "@avokjs/react-native",
+  "version": "0.0.1",
+  "description": "React Native facade for Avok: AvokProvider + hooks + native trio (passkey + auth-session + SecureStore).",
+  "keywords": [
+    "react-native",
+    "expo",
+    "wallet",
+    "avok",
+    "eip-7702",
+    "passkey",
+    "webauthn"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "author": "kamsich02",
+  "homepage": "https://github.com/xanderslabs/avok.js#readme",
+  "bugs": {
+    "url": "https://github.com/xanderslabs/avok.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xanderslabs/avok.js.git",
+    "directory": "packages/react-native"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "VERIFICATION.md",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "@avokjs/contracts": "workspace:*",
+    "@avokjs/network": "workspace:*",
+    "@bonfida/sub-register": "0.1.0",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "@scure/base": "^2.2.0",
+    "@scure/bip39": "^2.2.0",
+    "@solana-name-service/sns-sdk-kit": "0.10.0",
+    "@solana-program/compute-budget": "^0.16.0",
+    "@solana-program/system": "^0.12.2",
+    "@solana-program/token": "^0.13.0",
+    "@solana/kit": "^6.10.0",
+    "@solana/web3.js": "^1.98.4",
+    "micro-key-producer": "^0.9.0",
+    "viem": "^2.54.6"
+  },
+  "peerDependencies": {
+    "expo-secure-store": ">=57.0.0",
+    "react": ">=19.2.7",
+    "react-native": ">=0.86.0"
+  },
+  "peerDependenciesMeta": {
+    "expo-secure-store": {
+      "optional": true
+    },
+    "react-native": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@avokjs/oracle": "workspace:*",
+    "@avokjs/sdk-core": "workspace:*",
+    "@avokjs/solana-txengine": "workspace:*",
+    "@avokjs/txengine": "workspace:*",
+    "@avokjs/wallet-core": "workspace:*",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.17",
+    "jsdom": "^29.1.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tsup": "^8.5.1",
+    "vitest": "^4.1.10"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "name": "@avokjs/wallet-core",
+  "version": "0.0.1",
+  "description": "Local passkey wallet primitives for Avok: WebAuthn creation, PRF encryption, signing, and EIP-7702 delegation checks.",
+  "keywords": [
+    "eip-7702",
+    "wallet",
+    "passkey",
+    "webauthn",
+    "ethereum",
+    "avok"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "author": "kamsich02",
+  "homepage": "https://github.com/xanderslabs/avok.js#readme",
+  "bugs": {
+    "url": "https://github.com/xanderslabs/avok.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xanderslabs/avok.js.git",
+    "directory": "packages/wallet-core"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json"
+  },
+  "dependencies": {
+    "@avokjs/contracts": "workspace:*",
+    "viem": "^2.54.6",
+    "@scure/bip39": "^2.2.0",
+    "@scure/base": "^2.2.0",
+    "@noble/curves": "^2.2.0",
+    "micro-key-producer": "^0.9.0"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.10"
+  },
+  "private": true
+}

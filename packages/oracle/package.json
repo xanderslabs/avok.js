@@ -1,0 +1,15 @@
+{
+  "name": "@avokjs/oracle",
+  "version": "0.0.1",
+  "description": "Pluggable USD price-feed readers (Chainlink on-chain, Pyth Hermes) for Avok fee pricing.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json", "test": "vitest run" },
+  "dependencies": { "@avokjs/contracts": "workspace:*", "viem": "^2.54.6" },
+  "devDependencies": { "vitest": "^4.1.10" },
+  "private": true
+}

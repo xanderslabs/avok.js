@@ -1,0 +1,42 @@
+{
+  "name": "avok.js",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Avok monorepo: EIP-7702 passkey wallet infrastructure for app developers.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/xanderslabs/avok.js#readme",
+  "bugs": {
+    "url": "https://github.com/xanderslabs/avok.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xanderslabs/avok.js.git"
+  },
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/*' --filter './contracts' --filter './design' build",
+    "test": "pnpm check:wiring && pnpm build && pnpm typecheck && pnpm demos:typecheck && pnpm -r --filter './packages/*' --filter './contracts' --filter './design' test && pnpm demos:test",
+    "typecheck": "pnpm -r --filter './packages/*' --filter './contracts' --filter './design' typecheck",
+    "check": "pnpm test",
+    "demos:typecheck": "pnpm -r --filter \"@avok-demo/*\" typecheck",
+    "demos:test": "pnpm -r --filter \"@avok-demo/*\" test",
+    "dev": "pnpm -r --parallel --filter \"./packages/*\" --filter './design' exec tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "dev:packages": "pnpm -r --parallel --filter \"./packages/*\" --filter './design' exec tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish",
+    "check:wiring": "node scripts/check-test-wiring.mjs"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.0",
+    "@types/node": "^26.1.0",
+    "@types/react": "^19.2.17",
+    "@vitejs/plugin-react": "^6.0.3",
+    "ioredis": "^5.11.1",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.3",
+    "vitest": "^4.1.10"
+  }
+}

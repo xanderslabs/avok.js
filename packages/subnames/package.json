@@ -1,0 +1,31 @@
+{
+  "name": "@avokjs/subnames",
+  "version": "0.0.1",
+  "description": "Optional, operator-agnostic subname REGISTRATION add-on: EIP-712 vouchers, registrar call builders, mint fees. Build-only — it returns calls; you send them via the standard wallet surface. The Avok core never depends on this package.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./sns": { "types": "./dist/sns/index.d.ts", "import": "./dist/sns/index.js" },
+    "./server": { "types": "./dist/server/index.d.ts", "import": "./dist/server/index.js" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@avokjs/contracts": "workspace:*",
+    "@avokjs/helpers": "workspace:*",
+    "@bonfida/sub-register": "0.1.0",
+    "@scure/base": "^2.2.0",
+    "@solana/kit": "^6.10.0",
+    "@solana/web3.js": "^1.98.4",
+    "viem": "^2.54.6"
+  },
+  "devDependencies": { "vitest": "^4.1.10" },
+  "private": true
+}

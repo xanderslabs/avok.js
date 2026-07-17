@@ -1,0 +1,14 @@
+{
+  "$comment": "THE OPERATOR'S CONFIG. Clone-and-own: edit this, run `pnpm build:app`, host app-inlined/ on any static host, and apply app-inlined/csp-headers.txt. There is no server to configure \u2014 no issuer, no signing key, no client registration, no store. See README.md.",
+  "rpId": "auth.avok.test",
+  "authOrigin": "https://auth.avok.test",
+  "branding": {
+    "operatorName": "Avok"
+  },
+  "$comment_rpId": "PIN IT. K = HKDF(PRF(credential, rpId)) \u2014 the passkey PRF scoped to this rpId IS the wallet key. Never infer it from a hostname: an origin on auth.example.com with rpId example.com would derive a DIFFERENT WALLET. The build refuses to proceed without it.",
+  "$comment_optional": "Everything below is optional passthrough for the popup.",
+  "anchorChainId": "eip155:10",
+  "managementUrl": null,
+  "paymasterUrl": null,
+  "feeToken": null
+}

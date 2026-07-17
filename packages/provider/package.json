@@ -1,0 +1,21 @@
+{
+  "name": "@avokjs/provider",
+  "version": "0.0.1",
+  "description": "EIP-1193 (+EIP-6963) and Solana Wallet Standard surfaces over an Avok connection.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json", "test": "vitest run" },
+  "dependencies": {
+    "@avokjs/sdk-core": "workspace:*",
+    "@avokjs/txengine": "workspace:*",
+    "@wallet-standard/base": "^1.1.0",
+    "@wallet-standard/wallet": "^1.1.0",
+    "viem": "^2.54.6"
+  },
+  "devDependencies": { "@wallet-standard/app": "^1.1.0", "jsdom": "^29.1.1", "vitest": "^4.1.10" },
+  "private": true
+}

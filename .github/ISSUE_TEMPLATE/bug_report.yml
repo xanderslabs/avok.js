@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a defect in an Avok package
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report security vulnerabilities here. See SECURITY.md.
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which published package is affected?
+      options:
+        - "@avokjs/react"
+        - "@avokjs/react-native"
+        - "@avokjs/vanilla"
+        - "@avokjs/network"
+        - "@avokjs/network-origin"
+        - "@avokjs/helpers"
+        - "@avokjs/evm-relayer"
+        - "@avokjs/solana-relayer"
+        - "@avokjs/rpc-proxy"
+        - "@avokjs/contracts"
+        - "Not sure / multiple"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps or a code snippet.
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, runtime (Node/browser/React Native), and connection (own-origin/shared-origin).
+    validations:
+      required: false

@@ -1,0 +1,61 @@
+{
+  "name": "@avokjs/contracts",
+  "version": "0.0.1",
+  "description": "Avok EIP-7702 wallet implementation contracts and ABI metadata.",
+  "keywords": [
+    "eip-7702",
+    "solidity",
+    "smart-contracts",
+    "wallet",
+    "passkey",
+    "ethereum",
+    "avok"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "author": "kamsich02",
+  "homepage": "https://github.com/xanderslabs/avok.js#readme",
+  "bugs": {
+    "url": "https://github.com/xanderslabs/avok.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xanderslabs/avok.js.git",
+    "directory": "contracts"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "src-ts",
+    "README.md",
+    "SECURITY.md",
+    "foundry.toml",
+    "remappings.txt"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json",
+    "test": "forge test --offline --disable-labels && vitest run",
+    "test:ts": "vitest run",
+    "slither": "slither . --config-file slither.config.json"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.6.1",
+    "viem": "^2.54.6"
+  }
+}

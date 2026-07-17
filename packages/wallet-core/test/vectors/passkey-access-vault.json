@@ -1,0 +1,64 @@
+{
+  "$comment": "Cross-implementation test vectors for the Passkey Access Vault ERC. An implementation that reproduces these bytes interoperates. These are NOT examples — they are the conformance bar. CC0.",
+  "constants": {
+    "hkdfSalt": "passkey-access-vault/hkdf-salt/v0",
+    "prfSalt": "passkey-access-vault/prf-salt/v0",
+    "walletInfo": "passkey-access-vault/wallet-key/v0",
+    "slotInfoPrefix": "passkey-access-vault/slot-key/v0",
+    "slotMetaInfo": "passkey-access-vault/slot-meta-key/v0",
+    "pairingInfoPrefix": "passkey-access-vault/pairing-session/v0"
+  },
+  "erc7201": {
+    "namespace": "passkey-access-vault.main",
+    "storageRoot": "0xa4fa4294098059eabd10052f01eef3d8d7de7be8acc14248ecb1c1794a130600"
+  },
+  "walletKey": {
+    "$comment": "K = HKDF-SHA256(IKM=prf, salt=hkdfSalt, info=walletInfo, L=32). K IS the secp256k1 private key.",
+    "prf": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "k": "0x359c38b13c21193f11a4e3421803e0612cf45703867c2ccd0d776fa68c4801e0"
+  },
+  "slotId": {
+    "$comment": "keccak256(address_bytes20 || decoded_credentialId). The address binding is a privacy requirement.",
+    "address": "0x1111111111111111111111111111111111111111",
+    "credentialId": "Y3JlZC0x",
+    "credentialIdBytes": "0x637265642d31",
+    "slotId": "0xe495ac60cc43ed7373e9b1dbda10419c60cd3d10f1f60b00365846708e496f54"
+  },
+  "slotWrappingKey": {
+    "$comment": "W = HKDF-SHA256(IKM=prf_of_THIS_door, salt=hkdfSalt, info=`${slotInfoPrefix}|${lowercase_address}|${slotId}`, L=32). Both info inputs are PUBLIC — that is what lets an enroller derive W alone and never receive K.",
+    "prf": "0xabababababababababababababababababababababababababababababababab",
+    "address": "0x1111111111111111111111111111111111111111",
+    "credentialId": "Y3JlZC0x",
+    "info": "passkey-access-vault/slot-key/v0|0x1111111111111111111111111111111111111111|0xe495ac60cc43ed7373e9b1dbda10419c60cd3d10f1f60b00365846708e496f54",
+    "w": "0xcf6d6676c830dc6f0121d5d10cc68367437116d4a96ec7faebd05585c5db8451"
+  },
+  "metaKey": {
+    "$comment": "MetaKey = HKDF-SHA256(IKM=K, salt=hkdfSalt, info=slotMetaInfo, L=32). Derived from K, not a PRF.",
+    "k": "0x359c38b13c21193f11a4e3421803e0612cf45703867c2ccd0d776fa68c4801e0",
+    "metaKey": "0x690c071e27cf5074a1c42a7fe1d8add7f5c3ab6eb5e2c8c46c47775e346632a9"
+  },
+  "blob": {
+    "$comment": "version(1) || iv(12) || AES-GCM(W, K)(48) = 61 bytes. The iv here is FIXED so the vector is deterministic; a real write MUST use a random iv.",
+    "k": "0x359c38b13c21193f11a4e3421803e0612cf45703867c2ccd0d776fa68c4801e0",
+    "w": "0xcf6d6676c830dc6f0121d5d10cc68367437116d4a96ec7faebd05585c5db8451",
+    "iv": "0x000102030405060708090a0b",
+    "serialized": "0x00000102030405060708090a0b175e66984e56dc0799a03b2f9978d0836a1d37b69f0ff219088ddf32b4c2d5106bbc795d8e38a73468a4db7aacf031ed",
+    "lengthBytes": 61
+  },
+  "userHandle": {
+    "$comment": "founding = [0x01][32 random] (33B). access = [0x02][20B address][8B BE chainId] (29B).",
+    "foundingExample": "0x015a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+    "access": {
+      "address": "0x1111111111111111111111111111111111111111",
+      "anchorChainId": 8453,
+      "encoded": "0x0211111111111111111111111111111111111111110000000000002105"
+    }
+  },
+  "sas": {
+    "$comment": "6 digits from SHA-256(bPub || aPub || nonce). bPub is the INITIATOR (the enroller).",
+    "bPub": "0x0101010101010101010101010101010101010101010101010101010101010101",
+    "aPub": "0x0202020202020202020202020202020202020202020202020202020202020202",
+    "nonce": "BwcHBwcHBwcHBwcHBwcHBw",
+    "sas": "270524"
+  }
+}

@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm -r --filter "./packages/*" --filter "./contracts" --filter "./design" build
+
+      - run: pnpm -r --filter "./packages/*" --filter "./design" test
+
+      - run: pnpm --filter @avokjs/contracts test:ts
+
+      # The demos' OWN unit tests (store/el/pairing-controller/routes + the domain-harness
+      # prepare suite). These existed but nothing ran them in CI, so they could not catch a
+      # regression: the harness shipped an OIDC client registered with only ["openid"], which
+      # silently stripped the avok-gated claims and broke shared-origin login for every demo user.
+      - run: pnpm run demos:test
+
+  # Solidity custody contracts (EIP-7702 wallet account + subname registrar).
+  # The `build` job only runs contracts `test:ts`; the Foundry suite must run
+  # too so on-chain custody logic cannot regress undetected.
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # @openzeppelin/contracts is a pnpm dep and is remapped into the Foundry
+      # build (foundry.toml libs = ["node_modules", "lib"]).
+      - run: pnpm install --frozen-lockfile
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - run: forge test --offline --disable-labels
+        working-directory: contracts

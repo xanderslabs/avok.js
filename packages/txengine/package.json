@@ -1,0 +1,22 @@
+{
+  "name": "@avokjs/txengine",
+  "version": "0.0.1",
+  "description": "Avok Transaction Engine: simulate/send/track over two rails (self-pay, fronted) on EIP-7702 wallets.",
+  "keywords": ["eip-7702", "wallet", "transaction", "paymaster", "ethereum", "avok"],
+  "type": "module",
+  "license": "MIT",
+  "author": "kamsich02",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json", "test": "vitest run" },
+  "dependencies": {
+    "@avokjs/contracts": "workspace:*",
+    "@avokjs/oracle": "workspace:*",
+    "@avokjs/wallet-core": "workspace:*",
+    "viem": "^2.54.6"
+  },
+  "devDependencies": { "vitest": "^4.1.10" },
+  "private": true
+}

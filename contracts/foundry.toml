@@ -1,0 +1,30 @@
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+cache_path = "cache"
+solc_version = "0.8.29"
+evm_version = "prague"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+libs = ["node_modules", "lib"]
+
+# Strip solc's CBOR metadata trailer from the bytecode.
+#
+# WHY, measured rather than assumed: solc appends `a264697066735822<32-byte IPFS hash OF THE SOURCE>`
+# to every contract, and that hash covers COMMENTS. Editing a docstring changed this contract's
+# bytecode from 407cb032… to e0542316… while the executable code stayed byte-identical for 13,504 of
+# 13,590 chars. Only the trailer moved.
+#
+# The account is deployed at a CREATE2 address derived from that bytecode, so under the default every
+# documentation fix costs a re-deploy. It already has, twice — DeployCanonical.t.sol's own comment
+# records it: "the contract LOGIC is unchanged — only the embedded source-path metadata moved".
+#
+# With this set, the original and edited comment versions compile to an identical hash. Comments stop
+# moving the address, permanently.
+#
+# Trade-off: Etherscan/Sourcify use the embedded hash to match source. Verification still works but
+# needs an exact compiler-settings match rather than the hash doing it for you. Standard practice for
+# deterministic/CREATE2 deployments for exactly this reason.
+bytecode_hash = "none"

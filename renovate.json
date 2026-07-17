@@ -1,0 +1,59 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "schedule": ["before 6am on monday"],
+  "minimumReleaseAge": "3 days",
+  "postUpdateOptions": ["pnpmDedupe"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "vulnerabilityAlerts": {
+    "description": "Security fixes jump the queue and auto-merge as soon as CI is green.",
+    "labels": ["security"],
+    "schedule": ["at any time"],
+    "minimumReleaseAge": "0 days",
+    "automerge": true
+  },
+  "packageRules": [
+    {
+      "description": "Patch + minor auto-merge once the full CI gate is green (build + test + forge + demos:verify). The gate is the safety net.",
+      "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "description": "Majors are NEVER auto-merged — manual review. This is where a kit@7-style ecosystem break lands in isolation (CI red) instead of shipping.",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "addLabels": ["major-review"]
+    },
+    {
+      "description": "The Solana stack is peer-coupled — bump the whole cluster in one PR so CI catches any ecosystem mismatch at once.",
+      "matchPackageNames": ["@solana/kit", "@solana/web3.js"],
+      "matchPackagePrefixes": ["@solana-program/", "@solana-name-service/"],
+      "groupName": "solana stack"
+    },
+    {
+      "description": "HOLD @solana/kit < 7 until the @solana-program/* crates ship kit-7-compatible releases (kit 7 removed getMinimumBalanceForRentExemption, which they import). Revisit when their peers move to ^7.",
+      "matchPackageNames": ["@solana/kit"],
+      "allowedVersions": "<7"
+    },
+    {
+      "description": "HOLD @solana-program/token < 0.14 — sns-sdk-kit@0.10 peers ^0.13.0.",
+      "matchPackageNames": ["@solana-program/token"],
+      "allowedVersions": "<0.14"
+    },
+    {
+      "description": "HOLD @babel/core < 8 — metro / babel-preset-expo require babel 7.",
+      "matchPackageNames": ["@babel/core"],
+      "allowedVersions": "<8"
+    }
+  ]
+}
