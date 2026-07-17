@@ -60,6 +60,36 @@ the signing path.
   **`authOrigin: "auth.example.com"`**. The signing path opens the ceremony popup to
   `auth.example.com`, which already carries the own-origin code and signs there.
 
+### The two API surfaces (do not conflate them)
+
+Avok exposes two distinct developer surfaces for two different jobs:
+
+- **Surface 1 — send / sign: `@avokjs/provider`.** EIP-1193 (+ EIP-6963 announce) for EVM and
+  the Solana Wallet Standard. The dev plugs it into **stock wagmi / viem / ethers /
+  @solana/wallet-adapter** and transacts — nothing Avok-specific in how they send. This is all a
+  **shared-origin dapp** needs. **Sending and signing are NEVER framework hooks**; they go through
+  this provider.
+- **Surface 2 — wallet lifecycle: the framework facades (`@avokjs/react` / `react-native` /
+  `vanilla`).** `create` a passkey wallet, `login`, `logout`, account state, access-key enrollment,
+  key export. These are Avok-specific operations **no standard covers** — there is no wagmi hook for
+  "create a passkey smart wallet" or "add an access key." Only **own-origin** apps that own the
+  wallet UX need this.
+
+A shared-origin dapp uses **Surface 1 only**. An own-origin app uses **Surface 2** (lifecycle) plus
+**Surface 1** (transacting). This is the two signing paths of §2 seen from the API side.
+
+### How the shared-origin popup works
+
+The SDK **opens and drives** the popup; it does not host the page. `@avokjs/shared-origin`'s
+`createWebChannel({ authOrigin })` calls `window.open("${authOrigin}/sign")`, `postMessage`s the
+request in, and accepts a reply only when `event.origin === authOrigin` **and** `event.source` is
+the exact popup it opened (5-minute timeout; rejects if blocked). The **page** is provisioned by the
+**operator**, once, ahead of time: `@avokjs/auth-origin` is two fully-inlined, CSP-safe static HTML
+files (`authorize.html`, `sign.html`) the operator hosts at their `authOrigin` — no server. Inside
+the popup the passkey ceremony runs, the wallet **signs in the popup** under the PRF, and only the
+result (account on connect, signature on sign) `postMessage`s back — the key never leaves. This is
+what keeps "no Avok backend" true: the only thing hosted is the operator's own static files.
+
 ## 5. Contracts
 
 The contracts are **non-standard**, and Avok is **not chasing an ERC standard yet** —
@@ -121,6 +151,16 @@ Package names must match the vocabulary a dev already holds from the config.
 
 Each package must have one clear purpose; anything that duplicates another, or serves an
 out-of-scope item, is churn.
+
+**Publishing & bundling model (load-bearing — read before "fixing" a facade dependency).**
+`sdk-core` and the engines (`wallet-core`, `txengine`, `solana-txengine`, `oracle`, `provider`) are
+**private — never published standalone.** The published web artifact is **`@avokjs/vanilla`**, which
+**bundles** that engine graph (tsup `noExternal`) into one self-contained package whose `.d.ts`
+inlines their types. Consequently published packages (`react`, `helpers`) source their **types from
+`@avokjs/vanilla`**, not from private `sdk-core` — pointing them at `sdk-core` would ship a published
+package that imports an unpublished one. `react` is a thin lifecycle-hooks layer **over the published
+`vanilla` bundle** (not a sibling that re-bundles `sdk-core`, which would duplicate the engines in
+every facade). So `react → vanilla` and `helpers → vanilla` are **correct**, not layering inversions.
 
 | Package | Single purpose |
 |---|---|
