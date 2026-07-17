@@ -1,6 +1,7 @@
 {
   "name": "@avokjs/helpers",
   "version": "0.0.1",
+  "description": "Shared read-only utilities for Avok apps: name resolution (ENS/SNS), token balances, amount formatting, tx status, explorers, error classification, and QR pairing. No registration, no signing.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
