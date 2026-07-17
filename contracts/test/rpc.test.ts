@@ -53,7 +53,7 @@ describe("RPC resolution: override first, registry default second", () => {
  */
 describe("no client surface reads rpcDefault behind the resolver's back", () => {
   const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-  const GUARDED = ["sdk-core", "helpers", "wallet-core", "network", "react", "vanilla"];
+  const GUARDED = ["sdk-core", "helpers", "wallet-core", "shared-origin", "react", "vanilla"];
 
   function sourceFiles(dir: string): string[] {
     let out: string[] = [];

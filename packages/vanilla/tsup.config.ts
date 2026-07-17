@@ -8,7 +8,7 @@ import { defineConfig } from "tsup";
 // unpublished workspace package, and dts.resolve inlines their types into one
 // self-contained index.d.ts. Only PUBLISHED @avokjs packages (network,
 // contracts) and third-party runtime deps stay external — the consumer installs
-// those from npm. The lazy shared-origin chunk (dynamic import of @avokjs/network)
+// those from npm. The lazy shared-origin chunk (dynamic import of @avokjs/shared-origin)
 // and the SNS mint chunk (dynamic import of @bonfida/@solana web3) stay external and
 // code-split, so an own-origin-only / EVM-only app never loads them.
 export default defineConfig({
@@ -30,7 +30,7 @@ export default defineConfig({
     /^@noble\//,
     /^@scure\//,
     "micro-key-producer",
-    "@avokjs/network",
+    "@avokjs/shared-origin",
     "@avokjs/contracts",
   ],
 });

@@ -54,7 +54,7 @@ await continueAccount(); // opens the operator popup; returns a session, keys st
 ```
 
 The shared-origin client itself is built asynchronously (it dynamically imports
-`@avokjs/network`), so `useSharedOriginClient()` exposes loading/error while the auth-origin
+`@avokjs/shared-origin`), so `useSharedOriginClient()` exposes loading/error while the auth-origin
 channel wires up — see `src/useSharedOriginClient.ts`:
 
 ```ts

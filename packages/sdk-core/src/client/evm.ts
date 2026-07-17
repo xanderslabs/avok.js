@@ -1,6 +1,6 @@
 import type { Address, Hex, TransactionSerializable, TypedDataDefinition } from "viem";
 import { createPublicClient, http } from "viem";
-import type { SiweParams, SignedAuthorizationLike } from "@avokjs/network";
+import type { SiweParams, SignedAuthorizationLike } from "@avokjs/shared-origin";
 import { evmRpcUrl } from "@avokjs/contracts";
 import {
   buildSelfPayCalldata,

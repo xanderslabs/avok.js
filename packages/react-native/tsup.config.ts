@@ -35,7 +35,7 @@ export default defineConfig({
     /^@noble\//,
     /^@scure\//,
     "micro-key-producer",
-    "@avokjs/network",
+    "@avokjs/shared-origin",
     "@avokjs/contracts",
   ],
 });

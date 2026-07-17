@@ -1,5 +1,5 @@
 import type { Address, Hex, TransactionSerializable, TypedDataDefinition } from "viem";
-import type { Signer, AuthorizationTriple, SignedAuthorizationLike } from "@avokjs/network";
+import type { Signer, AuthorizationTriple, SignedAuthorizationLike } from "@avokjs/shared-origin";
 import type { ExportedWallet, VaultReader, AccessSlotEntry } from "@avokjs/wallet-core";
 import type { Call, RpcClient, FetchLike, EvmChainProfile, AvokUserOperation } from "@avokjs/txengine";
 import type { PriceOracle } from "@avokjs/oracle";

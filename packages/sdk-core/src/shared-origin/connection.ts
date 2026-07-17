@@ -1,10 +1,10 @@
-import { createSharedOriginConnection as createNetworkSharedOrigin } from "@avokjs/network";
-import type { SigningChannel, StorageAdapter as NetStorage } from "@avokjs/network";
+import { createSharedOriginConnection as createNetworkSharedOrigin } from "@avokjs/shared-origin";
+import type { SigningChannel, StorageAdapter as NetStorage } from "@avokjs/shared-origin";
 import type { Address, Hex } from "viem";
 import type { Connection, Account } from "../types.js";
 
 /**
- * createSharedOriginConnection wraps `@avokjs/network`'s `createSharedOriginConnection`
+ * createSharedOriginConnection wraps `@avokjs/shared-origin`'s `createSharedOriginConnection`
  * and adapts it to sdk-core's USE-ONLY `Connection` surface.
  *
  * Shared-origin connections are relying-party / use-only custody: they can authorize and

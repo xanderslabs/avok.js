@@ -5,11 +5,11 @@
  * plus a storage backend.
  */
 
-export type { SigningChannel } from "@avokjs/network";
+export type { SigningChannel } from "@avokjs/shared-origin";
 export type { PasskeyAdapter } from "@avokjs/wallet-core";
 export type { StorageAdapter } from "./storage.js";
 
-import type { SigningChannel } from "@avokjs/network";
+import type { SigningChannel } from "@avokjs/shared-origin";
 import type { PasskeyAdapter } from "@avokjs/wallet-core";
 import type { StorageAdapter } from "./storage.js";
 

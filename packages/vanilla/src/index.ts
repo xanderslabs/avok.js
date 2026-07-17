@@ -54,7 +54,7 @@ export function createOwnOriginConnection(opts: {
 /**
  * Lazily creates a shared-origin connection backed by a web popup channel.
  *
- * Bundle-purity: @avokjs/network (createWebChannel) is imported DYNAMICALLY
+ * Bundle-purity: @avokjs/shared-origin (createWebChannel) is imported DYNAMICALLY
  * inside this function body. An own-origin-only app that never calls
  * createSharedOriginConnection will never pull the network shared-origin chunk — the
  * function must remain async and the network import may not be hoisted to a
@@ -67,13 +67,13 @@ export async function createSharedOriginConnection(opts: {
   authOrigin: string;
   storage?: StorageAdapter;
 }): Promise<Connection> {
-  const { createWebChannel } = await import("@avokjs/network");
+  const { createWebChannel } = await import("@avokjs/shared-origin");
   const channel = createWebChannel({ authOrigin: opts.authOrigin });
   // sdk-core's createSharedOriginConnection internally passes storage to
-  // @avokjs/network, which expects a synchronous get() → string|null.
+  // @avokjs/shared-origin, which expects a synchronous get() → string|null.
   // sdk-core's own StorageAdapter allows async, but all real webStorage() /
   // memoryStorage() implementations are synchronous — narrow the type precisely.
-  const storage = (opts.storage ?? webStorage()) as import("@avokjs/network").StorageAdapter;
+  const storage = (opts.storage ?? webStorage()) as import("@avokjs/shared-origin").StorageAdapter;
   // #8: no redirectUri / clientId / scopes. There is no redirect (the popup postMessages back to
   // its opener), no client registration (open/MetaMask-style — anybody can implement the
   // connection), and no scopes. The config is just the origin to open.

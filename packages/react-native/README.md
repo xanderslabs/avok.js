@@ -52,7 +52,7 @@ const connection = await createSharedOriginConnection({
 });
 ```
 
-`@avokjs/network` is imported **dynamically** inside `createSharedOriginConnection`, so a
+`@avokjs/shared-origin` is imported **dynamically** inside `createSharedOriginConnection`, so a
 own-origin-only app never pulls the shared-origin chunk.
 
 ## Status

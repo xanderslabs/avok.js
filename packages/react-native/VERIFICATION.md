@@ -48,6 +48,6 @@ Expected: value survives the round-trip from the Keychain (iOS) or Keystore (And
 ### 3. Bundle purity check
 
 In a React Native (Metro) or Expo (hermes) build, verify that:
-- Calling only `createOwnOriginConnection` does NOT pull `@avokjs/network` into
+- Calling only `createOwnOriginConnection` does NOT pull `@avokjs/shared-origin` into
   the bundle (check Metro bundle output / source-map explorer).
 - Calling `createSharedOriginConnection` DOES add the network chunk.

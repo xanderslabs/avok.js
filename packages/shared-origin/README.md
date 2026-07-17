@@ -1,4 +1,4 @@
-# @avokjs/network
+# @avokjs/shared-origin
 
 The **shared-origin transport** for Avok: a signing channel (browser popup) that carries requests to an
 operator's auth origin, and the account it returns.
@@ -12,7 +12,7 @@ Most apps do not import this directly — [`@avokjs/vanilla`](https://www.npmjs.
 Reach for it when you are building your own facade.
 
 ```ts
-import { createSharedOriginConnection, createWebChannel } from "@avokjs/network";
+import { createSharedOriginConnection, createWebChannel } from "@avokjs/shared-origin";
 
 const connection = createSharedOriginConnection({
   authOrigin: "https://wallet.example.com",
@@ -49,7 +49,7 @@ straight back. Nothing travels through a URL, so there is no code to intercept a
 ## Errors
 
 ```ts
-import { UserRejectedError, throwIfSignError } from "@avokjs/network";
+import { UserRejectedError, throwIfSignError } from "@avokjs/shared-origin";
 ```
 
 A refusal is **thrown**, never returned as a signature-shaped object.

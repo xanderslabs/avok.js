@@ -24,7 +24,7 @@ export type SignKeys = { evm: PrivateKeyAccount; solana: SolanaSigner };
  * It dispatches over the SAME `SignConsentRequest` union the consent screen decodes, so what the user
  * is shown and what actually gets signed cannot drift apart.
  *
- * Return shapes are the exact contract `createRemoteSigner` (packages/network) expects — note that
+ * Return shapes are the exact contract `createRemoteSigner` (packages/shared-origin) expects — note that
  * `signAuthorization` and `signTransaction` return their value RAW, not wrapped in an object.
  */
 export async function performSign(

@@ -1,6 +1,6 @@
 import { defineConfig } from "tsup";
 
-// Network client: lightweight browser/RN-compatible chunk.
+// Shared-origin client: lightweight browser/RN-compatible chunk.
 // Externalise viem (consumer-installed); no server deps.
 export default defineConfig({
   entry: ["src/index.ts"],

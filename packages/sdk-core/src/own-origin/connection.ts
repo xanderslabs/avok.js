@@ -56,7 +56,7 @@ import { encodeOffchainMessage } from "@avokjs/solana-txengine";
 import { getAvokUserOpHash, type AvokUserOperation } from "@avokjs/txengine";
 import { resolveAnchorChain, getChainProfile, DEFAULT_ANCHOR_CHAIN_ID, type ChainId } from "@avokjs/contracts";
 import { bytesToHex, type Address, type Hex, type TypedDataDefinition, type TransactionSerializable, type PrivateKeyAccount } from "viem";
-import type { SiweParams, SignedAuthorizationLike, AuthorizationTriple } from "@avokjs/network";
+import type { SiweParams, SignedAuthorizationLike, AuthorizationTriple } from "@avokjs/shared-origin";
 import type { SelfCustodyConnection, Account, AccessCtx, ScopedSigner } from "../types.js";
 import type { StorageAdapter } from "../storage.js";
 

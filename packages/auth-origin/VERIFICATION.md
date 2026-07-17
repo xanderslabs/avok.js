@@ -138,7 +138,7 @@ rendering it **truthfully**. Consent correctness is a security property, not a U
 | Unwrapping never makes an *unknown* call look understood — a non-wallet call still renders as raw. | `consent-batch.test.ts` |
 | BigInts survive the popup → origin JSON hop (`tx.value`, `gas`, fees). | `sign-consent-wire.test.ts` |
 | **Approve is unreachable unless the request was decoded AND displayed.** A failed decode is terminal. | `app-render.test.ts` |
-| A refusal is thrown, not cast through as a signature (a rejected tx used to resolve with `signature === undefined`). | `packages/network/test/session-expiry.test.ts` |
+| A refusal is thrown, not cast through as a signature (a rejected tx used to resolve with `signature === undefined`). | `packages/shared-origin/test/session-expiry.test.ts` |
 
 ### The stateless origin
 

@@ -53,7 +53,7 @@ The following cannot be exercised in unit tests:
 ### Real shared-origin popup (`createSharedOriginConnection`)
 
 `createSharedOriginConnection({ authOrigin, redirectUri })` opens a cross-origin popup
-via `createWebChannel` (from `@avokjs/network`). This requires:
+via `createWebChannel` (from `@avokjs/shared-origin`). This requires:
 
 - An auth origin hosting the static `@avokjs/auth-origin` pages (nothing to run — build + serve the files)
 - A real browser that allows popups for the origin
@@ -69,5 +69,5 @@ via `createWebChannel` (from `@avokjs/network`). This requires:
 
 To confirm an own-origin-only app never pulls the shared-origin chunk:
 1. Build a minimal app that only calls `createOwnOriginConnection`
-2. Inspect the output chunks — `@avokjs/network` must NOT appear in the initial
+2. Inspect the output chunks — `@avokjs/shared-origin` must NOT appear in the initial
    chunk; it should only appear in a lazy chunk (or not at all if never called)

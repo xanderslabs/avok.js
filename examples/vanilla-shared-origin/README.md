@@ -33,7 +33,7 @@ pnpm --filter @avok-demo/vanilla-shared-origin dev
 - `src/core/app.ts` — the use-only shell: `Ctx.client` is a `UseOnlyAvokClient`, nav is
   Home · Send · Account, and the Connect screen gates the app until there's a session.
 - `src/main.ts` — an **async** bootstrap: `createSharedOriginConnection` (which dynamically imports
-  `@avokjs/network` for bundle purity) → `createAvokClient`, with a Connecting / error state.
+  `@avokjs/shared-origin` for bundle purity) → `createAvokClient`, with a Connecting / error state.
 - `src/screens/{Home,Send}.ts` are copied verbatim from `vanilla-own-origin` — they only use the
   use-only verbs (`evm.send` / `solana.send` / `account`). `Connect` and `Account` are shared-origin.
 

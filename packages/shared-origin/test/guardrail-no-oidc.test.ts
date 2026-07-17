@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import * as network from "../src/index.js";
+import * as sharedOrigin from "../src/index.js";
 
 /**
  * The #8 anti-drift guard (mirrors #5/#6/#9). It greps the repo for the surfaces the collapse
@@ -75,18 +75,18 @@ describe("#8 guardrail: the auth-origin collapse holds", () => {
     expect(codeOnly(grepRepo("sessionToken|revalidate|accessToken|OidcSession|SessionExpiredError"))).toEqual([]);
   });
 
-  it("the OIDC modules are gone from network/src", () => {
+  it("the OIDC modules are gone from shared-origin/src", () => {
     for (const f of ["oidc-client.ts", "jwt-verify.ts"]) {
-      expect(existsSync(resolve(ROOT, "packages/network/src", f))).toBe(false);
+      expect(existsSync(resolve(ROOT, "packages/shared-origin/src", f))).toBe(false);
     }
   });
 
-  it("network exports no OIDC surface AT RUNTIME, not merely in its source text", () => {
+  it("shared-origin exports no OIDC surface AT RUNTIME, not merely in its source text", () => {
     // WHY a runtime check when grepRepo already scans the source: a symbol re-exported through
     // `export * from "<dep>"` never appears as text here, so the grep cannot see it. This reads the
     // built module object instead, which is what a consumer actually gets.
     for (const sym of ["generatePkce", "buildAuthorizeUrl", "exchangeCode"]) {
-      expect(network).not.toHaveProperty(sym);
+      expect(sharedOrigin).not.toHaveProperty(sym);
     }
   });
 
@@ -95,7 +95,7 @@ describe("#8 guardrail: the auth-origin collapse holds", () => {
     // decode (now in-bundle) — but credentialId took its place, because the token was ALSO what
     // carried it, and without it the browser asks the user to pick a passkey on every signature.
     // The authorize round-trip returns the ACCOUNT, not a code to exchange.
-    const port = readFileSync(resolve(ROOT, "packages/network/src/channels/port.ts"), "utf8")
+    const port = readFileSync(resolve(ROOT, "packages/shared-origin/src/channels/port.ts"), "utf8")
       .split("\n")
       .filter((l) => {
         const t = l.trim();

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import * as network from "../src/index.js";
+import * as sharedOrigin from "../src/index.js";
 
 /**
  * THE README MUST NOT DESCRIBE AN API THAT DOES NOT EXIST.
@@ -29,15 +29,15 @@ const README = readFileSync(resolve(process.cwd(), "README.md"), "utf8");
 
 describe("README truth", () => {
   it("every symbol it tells you to import from this package actually exists", () => {
-    // `import { a, b } from "@avokjs/network";` → ["a", "b"]
-    const imports = [...README.matchAll(/import\s*\{([^}]+)\}\s*from\s*"@avokjs\/network"/g)]
+    // `import { a, b } from "@avokjs/shared-origin";` → ["a", "b"]
+    const imports = [...README.matchAll(/import\s*\{([^}]+)\}\s*from\s*"@avokjs\/shared-origin"/g)]
       .flatMap((m) => m[1]!.split(","))
       .map((s) => s.trim().split(/\s+as\s+/)[0]!.trim())
       .filter(Boolean);
 
     expect(imports.length, "README shows no imports — did the code fence change shape?").toBeGreaterThan(0);
 
-    const missing = imports.filter((sym) => !(sym in network));
+    const missing = imports.filter((sym) => !(sym in sharedOrigin));
     expect(missing, `README imports symbols this package does not export: ${missing.join(", ")}`).toEqual([]);
   });
 

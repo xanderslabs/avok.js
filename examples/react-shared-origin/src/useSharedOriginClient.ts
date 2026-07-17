@@ -9,7 +9,7 @@ type State = { client: UseOnlyAvokClient | null; loading: boolean; error: string
 
 /**
  * SHARED-ORIGIN client. The connection is built asynchronously — it dynamically
- * imports @avokjs/network for bundle purity — so this hook exposes
+ * imports @avokjs/shared-origin for bundle purity — so this hook exposes
  * loading/error while the auth-origin channel is wired. The wallet's keys live
  * at the operator's auth origin (config.authOrigin); signing ceremonies happen
  * in its popup and only signatures cross back. Reads src/config.ts only (no

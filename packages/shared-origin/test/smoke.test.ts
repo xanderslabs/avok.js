@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { VERSION } from "../src/index.js";
 import pkg from "../package.json" with { type: "json" };
 
-describe("@avokjs/network", () => {
+describe("@avokjs/shared-origin", () => {
   /**
    * WHY this compares against package.json rather than a literal.
    *

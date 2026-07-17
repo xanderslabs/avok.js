@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@avokjs/contracts": "workspace:*",
-    "@avokjs/network": "workspace:*",
+    "@avokjs/shared-origin": "workspace:*",
     "@avokjs/oracle": "workspace:*",
     "@avokjs/solana-txengine": "workspace:*",
     "@avokjs/txengine": "workspace:*",

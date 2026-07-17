@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { StorageAdapter as NetStorage } from "@avokjs/network";
+import type { StorageAdapter as NetStorage } from "@avokjs/shared-origin";
 import { createSharedOriginConnection } from "../src/shared-origin/connection.js";
 import { makeFakeChannel } from "./fakes.js";
 
