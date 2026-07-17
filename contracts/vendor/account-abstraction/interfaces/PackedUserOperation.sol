@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+// VENDORED — DO NOT EDIT.
+// Source: eth-infinitism/account-abstraction (ERC-4337), EntryPoint v0.8.
+//   tag v0.8.0, rev 4cbc06072cdc19fd60f285c5997f4f7f57a588de.
+// Only IAccount + PackedUserOperation are needed — the wallet's `validateUserOp` path.
+// This is a frozen interface against the deployed EntryPoint v0.8 singleton; edit only to
+// track a deliberate upstream change.
+
 /**
  * User Operation struct
  * @param sender                - The sender account of this request.

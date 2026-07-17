@@ -267,8 +267,8 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     chainId: 11155111,
     name: "Ethereum Sepolia",
     isTestnet: true,
-    // Subname test chain (ENS on sepolia). canonicalImplementation is deploy-gated (self-pay/fronted
-    // needs the 7702 delegate deployed here first) — PENDING fails loud until then.
+    // ENS-enabled testnet (name resolution on Sepolia). canonicalImplementation is deploy-gated
+    // (self-pay/fronted needs the 7702 delegate deployed here first) — PENDING fails loud until then.
     canonicalImplementation: "0x11c840C10e641f00f6874Fc909eD2Dc5dc31f68C",
     nativeUsdFeed: { provider: "chainlink", address: "0x694AA1769357215DE4FAC081bf1f309aDC325306" }, // ETH/USD on Sepolia
     explorer: "https://sepolia.etherscan.io",
