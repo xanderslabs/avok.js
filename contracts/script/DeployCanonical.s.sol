@@ -10,10 +10,6 @@ import {AvokWalletImplementation} from "../src/AvokWalletImplementation.sol";
 /// here. `AvokWalletImplementation` has no constructor and no immutables, so its
 /// creation bytecode is fixed; a CREATE2 with a fixed salt through the same
 /// deployer therefore yields the SAME address on every EVM chain.
-///
-/// This does NOT replace `Deploy.s.sol` (plain nonce-based CREATE, per-chain
-/// address) — it is the additive deterministic path used for the canonical
-/// cross-chain implementation.
 contract DeployCanonicalAvokWallet is Script {
     /// @dev Standard cross-chain CREATE2 deployer (Arachnid deterministic-deployment-proxy).
     /// Deployed at this same address on essentially every EVM chain, incl. Arc. A forge
