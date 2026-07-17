@@ -1,7 +1,7 @@
 /**
  * Account — framework-free port of react-shared-origin's Account.tsx. Use-only
  * surface: identity, a link out to the operator's management app, a sign-message
- * tool (EVM + Solana), resolve-only subname lookup, and disconnect. There is NO
+ * tool (EVM + Solana), resolve-only name lookup, and disconnect. There is NO
  * export/access-slot/passkey/register/pairing here — the wallet's keys live at the
  * operator origin; those actions happen at the operator's own own-origin app.
  */
@@ -119,7 +119,7 @@ export function Account(ctx: Ctx): HTMLElement {
           ? el(
               "div",
               null,
-              el("p", { style: { fontSize: "12px", marginBottom: "10px", color: "var(--text2)" } }, `Add devices, export, or claim an subname at ${operator}.`),
+              el("p", { style: { fontSize: "12px", marginBottom: "10px", color: "var(--text2)" } }, `Add devices or export at ${operator}.`),
               Button({ variant: "ghost", label: `Manage at ${operator}`, onClick: () => window.open(ctx.config.managementUrl, "_blank", "noopener") }),
             )
           : el(

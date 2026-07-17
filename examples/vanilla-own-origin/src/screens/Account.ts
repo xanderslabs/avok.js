@@ -4,7 +4,7 @@
  * private keys `export()` returns), the CHAIN-VERIFIED access-slot count ("ways into this
  * wallet" — never passkeyCount(), which counts local credentials and cannot tell a
  * access slot from an orphan), a sign-message tool (EVM + Solana), and secondary nav to
- * subname / devices / access. Log out lives in the shell, not here.
+ * devices / access. Log out lives in the shell, not here.
  */
 import { el } from "../core/el.js";
 import type { Ctx } from "../core/app.js";
@@ -82,7 +82,6 @@ export function Account(ctx: Ctx): HTMLElement {
       Card(
         { style: { marginBottom: "16px" } },
         el("div", { style: secLabel }, "Identity"),
-        account.evm.subname && el("div", { style: { marginBottom: "8px", fontSize: "13px", fontWeight: "600" } }, account.evm.subname),
         el(
           "div",
           { style: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" } },
@@ -95,7 +94,6 @@ export function Account(ctx: Ctx): HTMLElement {
           el("span", { style: { fontSize: "11px", width: "46px", color: "var(--text3)" } }, "Solana"),
           AddressText({ address: account.solana.address, copy: true }),
         ),
-        Button({ variant: "ghost", label: account.evm.subname ? "Manage subname" : "Claim an subname", onClick: () => ctx.go("subname") }),
       ),
 
       // Security: the trust surface. The number here is the CHAIN-VERIFIED access-slot count — never

@@ -97,6 +97,5 @@ export {
   DEFAULT_ANCHOR_CHAIN_ID, resolveAnchorChain, getEnsDeployment,
   DEFAULT_MAX_FEE_MULTIPLE_BPS, assertFeeMarkupWithinGuardrail,
 } from "./registry.js";
-export { AvokSubnameRegistrarABI } from "./subname.js";
 export type { RpcOverrides } from "./rpc.js";
 export { evmRpcUrl, solanaRpcUrl, isPublicDefaultRpc } from "./rpc.js";

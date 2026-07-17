@@ -398,7 +398,7 @@ describe("ENS deployments", () => {
   it("returns mainnet ENS contracts for chainId 1", () => {
     const d = getEnsDeployment(1);
     expect(d.registry).toBe("0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e");
-    expect(d.nameWrapper).toBe("0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401");
+    expect(d.publicResolver).toBe("0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63");
   });
   it("throws fail-loud on a chain with no ENS deployment", () => {
     expect(() => getEnsDeployment(56)).toThrow(/no ENS deployment/i);

@@ -30,8 +30,6 @@ export function useSharedOriginClient(): State {
           paymasterUrl: config.paymasterUrl,
           bundlerUrl: config.bundlerUrl,
           koraUrl: config.koraUrl,
-          subnameRegistrar: config.subname.registrar,
-          subnameParent: config.subname.parent,
           managementUrl: config.managementUrl,
         });
         if (live) setState({ client, loading: false, error: null });

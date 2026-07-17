@@ -67,7 +67,7 @@ export function Home(ctx: Ctx): HTMLElement {
       el(
         "div",
         { style: { marginBottom: "18px" } },
-        el("div", { style: { fontSize: "15px", fontWeight: "600", color: "var(--text)", marginBottom: "8px" } }, account.evm.subname ?? "Your wallet"),
+        el("div", { style: { fontSize: "15px", fontWeight: "600", color: "var(--text)", marginBottom: "8px" } }, "Your wallet"),
         el(
           "div",
           { style: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" } },

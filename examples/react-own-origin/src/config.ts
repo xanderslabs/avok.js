@@ -1,4 +1,3 @@
-import type { Address } from "viem";
 import { resolveChainByName, chainIdNumberByName } from "@avokjs/contracts";
 import type { RpcOverrides } from "@avokjs/contracts";
 
@@ -95,14 +94,6 @@ export const config = {
   paymasterUrl: env.VITE_PAYMASTER_URL as string | undefined,
   bundlerUrl: env.VITE_BUNDLER_URL as string | undefined,
   koraUrl: env.VITE_KORA_URL as string | undefined,
-  subname: {
-    registrar: env.VITE_SUBNAME_REGISTRAR as Address | undefined,
-    parent: env.VITE_SUBNAME_PARENT as string | undefined,
-  },
-  sns: {
-    registrar: env.VITE_SNS_REGISTRAR as string | undefined,
-    parent: env.VITE_SNS_PARENT as string | undefined,
-  },
 } as const;
 
 // Fronted readiness is the paymaster/bundler/Kora URL only — the fee TOKEN is chain-specific and is read
@@ -113,7 +104,3 @@ export const hasEvmFronted = Boolean(config.paymasterUrl && config.bundlerUrl);
 /** True when a Kora URL is configured. Kora is BOTH the fee payer and the submitter, so unlike EVM
  *  (which needs a paymaster AND a bundler) Solana fronting needs this one endpoint. */
 export const hasSolanaFronted = Boolean(config.koraUrl);
-/** True when the ENS subname registrar/parent are configured. */
-export const hasEnsSubname = Boolean(config.subname.registrar && config.subname.parent);
-/** True when the SNS (.sol) sub-registrar/parent are configured. */
-export const hasSnsSubname = Boolean(config.sns.registrar && config.sns.parent);

@@ -6,7 +6,6 @@ import { Onboard } from "./screens/Onboard.js";
 import { Home } from "./screens/Home.js";
 import { Send } from "./screens/Send.js";
 import { Account } from "./screens/Account.js";
-import { Subname } from "./screens/Subname.js";
 import { Device } from "./screens/Device.js";
 import { Access } from "./screens/Access.js";
 import { Button } from "./ui/index.js";
@@ -42,7 +41,6 @@ function Shell() {
       {screen === "account" && (
         <>
           <Account
-            onOpenSubname={() => setScreen("subname")}
             onOpenDevice={() => setScreen("device")}
             onOpenAccess={() => setScreen("access")}
           />
@@ -53,7 +51,6 @@ function Shell() {
           </div>
         </>
       )}
-      {screen === "subname" && <Subname onBack={() => setScreen("account")} />}
       {screen === "device" && <Device onBack={() => setScreen("account")} />}
       {screen === "access" && <Access onBack={() => setScreen("account")} />}
     </div>

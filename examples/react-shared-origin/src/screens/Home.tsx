@@ -53,7 +53,7 @@ export function Home({ onSend }: { onSend: () => void }) {
       {/* Identity */}
       <div style={{ marginBottom: 18 }}>
         <Text variant="title" as="div" style={{ marginBottom: 8 }}>
-          {account.evm.subname ?? "Your wallet"}
+          Your wallet
         </Text>
         <div className="addr-row" style={{ marginBottom: 4 }}>
           <span className="addr-rail">EVM</span>

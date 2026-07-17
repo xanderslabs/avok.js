@@ -72,7 +72,6 @@ import { Onboard } from "../src/screens/Onboard.js";
 import { Home } from "../src/screens/Home.js";
 import { Send } from "../src/screens/Send.js";
 import { Account } from "../src/screens/Account.js";
-import { Subname } from "../src/screens/Subname.js";
 import { Device } from "../src/screens/Device.js";
 import { Access } from "../src/screens/Access.js";
 
@@ -197,14 +196,8 @@ describe("every screen mounts and shows its key affordance", () => {
   });
 
   it("Account mounts and shows the Export entry point", () => {
-    mount(<Account onOpenSubname={noop} onOpenDevice={noop} />);
+    mount(<Account onOpenDevice={noop} onOpenAccess={noop} />);
     expect(button(/export wallet/i)).toBeTruthy();
-  });
-
-  it("Subname renders its ENS/SNS toggle", () => {
-    mount(<Subname onBack={noop} />);
-    expect(button(/ens/i)).toBeTruthy();
-    expect(button(/sns/i)).toBeTruthy();
   });
 
   it("Device renders without throwing", () => {
@@ -226,7 +219,7 @@ describe("Export reveals what exportEvmKey()/exportSolanaKey() return", () => {
     client.exportEvmKey.mockResolvedValue(keys.evm);
     client.exportSolanaKey.mockResolvedValue(keys.solana);
 
-    mount(<Account onOpenSubname={noop} onOpenDevice={noop} />);
+    mount(<Account onOpenDevice={noop} onOpenAccess={noop} />);
 
     // idle → confirm (arms the danger gate), confirm → done (invokes handleExport).
     fireEvent.click(button(/export wallet/i));

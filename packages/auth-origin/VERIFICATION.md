@@ -28,14 +28,14 @@ NOTHING. It is two static HTML files.
 ```
 
 #8 deleted the server: no OIDC discovery, no /jwks, no /token, no /userinfo, no
-/authorize/{challenge,complete}, no /sign/consent, and no store. #6 deleted the subname voucher
-routes (that key is the operator's registration backend's business — see @avokjs/subnames/server).
+/authorize/{challenge,complete}, no /sign/consent, and no store. There are no subname voucher
+routes either — name registration is out of scope for Avok, so no such backend exists here.
 `/.well-known/webauthn` is own-origin's mechanism and belongs at your rpId ROOT, not here.
 
 **There is no server-side signing endpoint, and there never may be.** Signing happens in the browser,
 inside the popup, under the passkey PRF: `K = HKDF(PRF(credential, rpId))`. The origin holds no wallet
-key in any mode — and since #6 it holds no voucher key either: the subname voucher routes left with it,
-because that key is the operator's registration backend's business.
+key in any mode — and it holds no voucher key either: there are no subname voucher routes, because
+name registration is out of scope for Avok.
 
 **The origin persists nothing about anyone, because there is nothing to persist it with.** There is no
 store of any kind — not `ClientStore`, not a session, not a token. The popup runs the passkey ceremony

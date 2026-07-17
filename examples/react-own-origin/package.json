@@ -19,8 +19,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "viem": "^2.54.6",
-    "@avokjs/helpers": "workspace:*",
-    "@avokjs/subnames": "workspace:*"
+    "@avokjs/helpers": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",

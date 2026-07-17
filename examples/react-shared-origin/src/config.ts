@@ -1,5 +1,4 @@
 import type { RpcOverrides } from "@avokjs/contracts";
-import type { Address } from "viem";
 
 const env = import.meta.env;
 
@@ -59,10 +58,6 @@ export const config = {
   paymasterUrl: env.VITE_PAYMASTER_URL as string | undefined,
   bundlerUrl: env.VITE_BUNDLER_URL as string | undefined,
   koraUrl: env.VITE_KORA_URL as string | undefined,
-  subname: {
-    registrar: env.VITE_SUBNAME_REGISTRAR as Address | undefined,
-    parent: env.VITE_SUBNAME_PARENT as string | undefined,
-  },
 } as const;
 
 // Fronted readiness is the paymaster/bundler/Kora URL only — the fee TOKEN is chain-specific and is read

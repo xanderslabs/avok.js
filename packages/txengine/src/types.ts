@@ -20,7 +20,6 @@ export function railFromContext(ctx: ExecutionContext): Rail {
 
 export type Disclosure =
   | { kind: "fee"; feeToken: Address; amount: bigint }
-  | { kind: "subname"; name: string }
   | { kind: "delegation"; implementation: Address };
 
 export interface PendingAuthorization {
@@ -36,7 +35,7 @@ export interface ResolvedBatch {
   chainId: number;
   /** The wallet's own address — required for simulation. */
   walletAddress: Address;
-  /** Committed "must-land-if-paid" calls (fee/access-slot/subname). */
+  /** Committed "must-land-if-paid" calls (fee/access-slot). */
   feeCalls: Call[];
   /** The app's revert-isolated calls. */
   userCalls: Call[];

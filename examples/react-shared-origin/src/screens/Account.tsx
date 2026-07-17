@@ -168,7 +168,7 @@ export function Account({ onBack, onLoggedOut }: { onBack?: () => void; onLogged
         {config.managementUrl ? (
           <>
             <p style={{ fontSize: 12, marginBottom: 10 }}>
-              Add devices, export, or claim an subname at {operator}.
+              Add devices or export at {operator}.
             </p>
             <Button variant="ghost" onClick={() => window.open(config.managementUrl, "_blank", "noopener")}>
               Manage at {operator}

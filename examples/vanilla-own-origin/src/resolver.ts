@@ -1,12 +1,12 @@
 /**
  * The app's name resolver.
  *
- * #6 spun the subname surface out of the core client: resolution is no longer `client.subname.*`,
- * it is a plain helper the APP constructs. That is the point — an app that never mints a subname
- * still resolves `vitalik.eth` / `toly.sol`, with the @avokjs/subnames add-on uninstalled.
+ * Resolution is not part of the core client: it is a plain helper the APP constructs. That is the
+ * point — name RESOLUTION stands alone from any registration (which Avok does not do). The app
+ * resolves `vitalik.eth` / `toly.sol` with no registrar, contract, or backend involved.
  *
  * ENS always resolves on Ethereum L1 mainnet and SNS on Solana mainnet, regardless of the chain the
- * wallet is transacting on. Built once at module scope and shared by Send + Subname.
+ * wallet is transacting on. Built once at module scope and used by Send.
  */
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";

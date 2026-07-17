@@ -11,11 +11,9 @@ import { Screen, Card, Field, Button, AddressText, ListRow, ErrorNote, Stack, Te
 type ExportStep = "idle" | "confirm" | "done";
 
 export function Account({
-  onOpenSubname,
   onOpenDevice,
   onOpenAccess,
 }: {
-  onOpenSubname: () => void;
   onOpenDevice: () => void;
   onOpenAccess: () => void;
 }) {
@@ -110,11 +108,6 @@ export function Account({
       {/* Addresses */}
       <Card>
         <div className="section-label">Identity</div>
-        {account.evm.subname && (
-          <Text variant="value" as="div" style={{ marginBottom: 8, fontWeight: 600 }}>
-            {account.evm.subname}
-          </Text>
-        )}
         <div className="addr-row" style={{ marginBottom: 6 }}>
           <span className="addr-rail">EVM</span>
           <AddressText address={account.evm.address} copy />
@@ -123,9 +116,6 @@ export function Account({
           <span className="addr-rail">Solana</span>
           <AddressText address={account.solana.address} copy />
         </div>
-        <Button variant="ghost" onClick={onOpenSubname}>
-          {account.evm.subname ? "Manage subname" : "Claim an subname"}
-        </Button>
       </Card>
 
       {/* Security: the trust surface. The number here is the CHAIN-VERIFIED access-slot count — never

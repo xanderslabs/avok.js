@@ -13,10 +13,6 @@ export function useAvokClient(): FullAvokClient {
       paymasterUrl: config.paymasterUrl,
       bundlerUrl: config.bundlerUrl,
       koraUrl: config.koraUrl,
-      subnameRegistrar: config.subname.registrar,
-      subnameParent: config.subname.parent,
-      snsParent: config.sns.parent,
-      snsRegistrar: config.sns.registrar,
     }) as FullAvokClient;
   }, []);
 }

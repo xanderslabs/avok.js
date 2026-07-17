@@ -13,12 +13,12 @@ void full.enrollAccessSlot;
 void full.enrollAccessSlot.viaPairing;
 void full.create;
 
-// #6: the subname surface left the core entirely — NEITHER client has it any more.
-// Registration lives in @avokjs/subnames (build-only) and resolution in
-// @avokjs/helpers, so these must be absent even on the FULL own-origin client.
-// @ts-expect-error the subname add-on owns registration, not the core client
+// Name registration is out of scope for Avok — NEITHER client has it. Only resolution
+// remains (in @avokjs/helpers), so these registration verbs must be absent even on the
+// FULL own-origin client.
+// @ts-expect-error registration is out of scope; the core client never exposes it
 void full.registerSubname;
-// @ts-expect-error the subname add-on owns registration, not the core client
+// @ts-expect-error registration is out of scope; the core client never exposes it
 void full.registerSolanaName;
 // @ts-expect-error resolution lives in @avokjs/helpers, not the core client
 void full.subname;

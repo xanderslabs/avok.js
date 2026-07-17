@@ -15,8 +15,7 @@
     "@solana-program/system": "^0.12.2",
     "@solana/kit": "^6.10.0",
     "viem": "^2.54.6",
-    "@avokjs/helpers": "workspace:*",
-    "@avokjs/subnames": "workspace:*"
+    "@avokjs/helpers": "workspace:*"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

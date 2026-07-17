@@ -14,7 +14,6 @@ import { Onboard } from "./screens/Onboard.js";
 import { Home } from "./screens/Home.js";
 import { Send } from "./screens/Send.js";
 import { Account } from "./screens/Account.js";
-import { Subname } from "./screens/Subname.js";
 import { Device } from "./screens/Device.js";
 import { Access } from "./screens/Access.js";
 
@@ -24,10 +23,6 @@ const client = createAvokClient({
   paymasterUrl: config.paymasterUrl,
   bundlerUrl: config.bundlerUrl,
   koraUrl: config.koraUrl,
-  subnameRegistrar: config.subname.registrar,
-  subnameParent: config.subname.parent,
-  snsParent: config.sns.parent,
-  snsRegistrar: config.sns.registrar,
 }) as FullAvokClient;
 
 const ctx = createCtx(client);
@@ -36,7 +31,6 @@ mountApp(document.getElementById("app")!, ctx, {
   home: Home,
   send: Send,
   account: Account,
-  subname: Subname,
   device: Device,
   access: Access,
 });

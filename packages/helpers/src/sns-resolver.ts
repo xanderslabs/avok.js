@@ -6,7 +6,7 @@ export type { SnsRpc };
 /**
  * SNS behind the read-only name port. Reads use the kit-native sns-sdk-kit, whose resolveDomain
  * THROWS for unregistered names — hence the catch-to-null. Reverse forward-verification is applied
- * by the cross-service resolver, not here. Minting lives in @avokjs/subnames.
+ * by the cross-service resolver, not here. Minting is out of scope for Avok (no registration).
  */
 export function createSnsResolver(opts: { rpc: SnsRpc }): NameResolverService {
   return {

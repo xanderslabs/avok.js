@@ -35,7 +35,7 @@ jobs:
       # silently stripped the avok-gated claims and broke shared-origin login for every demo user.
       - run: pnpm run demos:test
 
-  # Solidity custody contracts (EIP-7702 wallet account + subname registrar).
+  # Solidity custody contracts (EIP-7702 wallet account).
   # The `build` job only runs contracts `test:ts`; the Foundry suite must run
   # too so on-chain custody logic cannot regress undetected.
   contracts:

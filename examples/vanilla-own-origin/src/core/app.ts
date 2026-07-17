@@ -2,15 +2,15 @@
  * App shell + router — framework-free. Holds app-level state (nav, account) in
  * the reactive store; each screen owns its own local state. When there is no
  * account, the Onboard screen is shown; otherwise the primary nav bar
- * (Home · Send · Account) plus the active screen. Secondary screens (subname,
- * device) render full-bleed with their own back affordance (no nav bar).
+ * (Home · Send · Account) plus the active screen. Secondary screens (device,
+ * access) render full-bleed with their own back affordance (no nav bar).
  */
 import type { Account, FullAvokClient } from "@avokjs/vanilla";
 import { el } from "./el.js";
 import { createStore, type Store } from "./store.js";
 import { config } from "../config.js";
 
-export type Nav = "home" | "send" | "account" | "subname" | "device" | "access";
+export type Nav = "home" | "send" | "account" | "device" | "access";
 
 export interface AppState {
   nav: Nav;

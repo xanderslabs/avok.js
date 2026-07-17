@@ -74,7 +74,10 @@ from `contracts/src-ts/`; it does not need the Solidity itself.
   exposes one `validateUserOp` so a *fronted/sponsored* send can ride an ERC-4337
   UserOperation through a **bring-your-own ERC-7677 paymaster**. It imports only two
   interfaces from account-abstraction (`IAccount`, `PackedUserOperation`).
-- **`AvokSubnameRegistrar`** — optional ENS subname registration.
+
+So there is **one deployed Avok contract** (`AvokWalletImplementation`, a CREATE2 singleton) with
+`PasskeyAccessVault` folded in as an abstract base. Name **registration/minting was removed** —
+see §6.
 
 ## 6. Scope boundaries (the churn flags)
 
@@ -93,6 +96,13 @@ from `contracts/src-ts/`; it does not need the Solidity itself.
 - ❌ **Chasing an ERC standard** (yet).
 - ❌ **Chains beyond EVM + Solana.**
 - ❌ An **Avok bundler / EntryPoint** — 4337 is consumer-side only (§5).
+- ❌ **Name REGISTRATION / minting (ENS or SNS subnames).** Removed 2026-07-17: the on-chain
+  registrar was built on the ENS **v1 NameWrapper**, which ENS v2 retires, and its replacement
+  interface is still work-in-progress — a bad thing to invest in now. This deleted
+  `AvokSubnameRegistrar`, the `@avokjs/subnames` package (which had also drifted into an
+  out-of-scope voucher **server**), and the SNS registrar code.
+- ✅ **Name RESOLUTION stays IN** — resolving `alice.eth` / `alice.sol` → address when *sending*
+  is read-only, needs no Avok contract or backend, and lives in `@avokjs/helpers`.
 
 ## 7. Vocabulary & package naming (decisions)
 
@@ -121,10 +131,9 @@ out-of-scope item, is churn.
 | `txengine` | EVM 7702 tx: simulate / send / track over self-pay and fronted rails. |
 | `solana-txengine` | Solana tx: build / simulate / sign / submit / track. |
 | `oracle` | Pluggable USD price-feed readers (Chainlink, Pyth) for fee pricing. |
-| `subnames` | Optional ENS subname *registration* add-on. Core never depends on it. |
+| `helpers` | Read-only name **resolution** (`.eth` / `.sol` → address) + shared utilities. No registration. |
 | `sdk-core` | Platform-agnostic facades + utilities the framework facades build on. |
 | `react` / `react-native` / `vanilla` | Framework front doors over the core. |
-| `helpers` | **Needs definition** — currently no description; audit during review. |
 | `@avokjs/design` *(top-level `design/`)* | Workspace-only design tokens + CSP-safe CSS/icons for popups + facades. Not published. |
 
 ## History

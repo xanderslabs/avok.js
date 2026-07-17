@@ -1,9 +1,9 @@
 /**
  * The app's name resolver.
  *
- * #6 spun the subname surface out of the core client: resolution is no longer `client.subname.*`,
- * it is a plain helper the APP constructs. This app only RESOLVES names — it never mints one — so
- * it needs the resolver and NOT the @avokjs/subnames add-on. That separation is the point.
+ * Resolution is not part of the core client: it is a plain helper the APP constructs. This app only
+ * RESOLVES names — nothing in Avok mints them — so it needs the resolver and no registration code
+ * at all. That separation is the point.
  *
  * ENS always resolves on Ethereum L1 mainnet and SNS on Solana mainnet, regardless of the chain the
  * wallet is transacting on.

@@ -59,9 +59,6 @@ const client = createAvokClient({
   paymasterUrl: config.paymasterUrl,
   defaultSolanaCluster: config.solanaCluster,
   koraUrl: config.koraUrl,
-  subnameRegistrar: config.subname.registrar,
-  subnameParent: config.subname.parent,
-  subnameChain: config.subname.chain,
 });
 ```
 
@@ -132,42 +129,6 @@ A primary passkey IS the wallet: it derives its key from PRF on every login and 
 so it has nothing to back up. `backupStatus()` reports whether a *secondary* device has been
 enrolled (via `client.addPasskey()`, on the Device screen) — not whether this wallet is safe.
 `export()` never returns a recovery phrase; it returns the two raw private keys directly.
-
-### Subname — an OPTIONAL add-on — `src/screens/Subname.ts`
-
-Subnames are not part of the wallet. The core client has **no subname verbs**: registration lives
-in `@avokjs/subnames`, which the core never depends on. It is **build-only** — it returns
-calls and never sends them, so it needs no send seam from the wallet:
-
-```ts
-import { fullName } from "@avokjs/helpers";
-import { buildSubnameMintCalls, createEnsRegistrar, readMintFee } from "@avokjs/subnames";
-
-// Availability + mint fee are registration-support reads — from the add-on, not the client.
-const ens = createEnsRegistrar({ chainId: 1, parent, client: ensPublicClient });
-const available = await ens.isAvailable(fullName(label, parent));
-const fee = available ? await readMintFee({ client: ensPublicClient, registrar }) : undefined;
-
-// BUILD (add-on) → SEND (wallet). Returns [approve?, mint, setPrimary]; the order is
-// load-bearing — the registrar PULLS the fee during mint.
-const { name, calls } = await buildSubnameMintCalls({ label, owner, parent, registrar, client: ensPublicClient });
-const receipt = await ctx.client.evm.send(await ctx.client.evm.simulate(calls, opts), opts);
-```
-
-This app sends via the SDK because **own-origin IS the wallet** and renders its own fee-bearing
-consent. A dapp would send the very same calls through the provider's `wallet_sendCalls` — the
-add-on neither knows nor cares. It only builds.
-
-The screen has an **ENS / SNS** toggle (`buildSubnameMintCalls` / `buildSnsMintIx`), each gated on
-its own config (`VITE_SUBNAME_*` / `VITE_SNS_*`) with its own "not configured" copy.
-
-Forward resolution (name → address) is **not** an add-on concern — it is a core-safe helper, so it
-keeps working with `@avokjs/subnames` uninstalled and needs no mint config:
-
-```ts
-// Built once in src/resolver.ts; dispatches by suffix (.sol → SNS, else → ENS).
-const hit = await resolver.resolveForward("alice.eth"); // → { evm?, solana? } | null
-```
 
 ### Send to a name anywhere — `@avokjs/helpers`
 

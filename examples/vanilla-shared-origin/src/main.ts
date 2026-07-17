@@ -81,8 +81,6 @@ async function boot(): Promise<void> {
       paymasterUrl: config.paymasterUrl,
       bundlerUrl: config.bundlerUrl,
       koraUrl: config.koraUrl,
-      subnameRegistrar: config.subname.registrar,
-      subnameParent: config.subname.parent,
       managementUrl: config.managementUrl,
     }) as UseOnlyAvokClient;
 

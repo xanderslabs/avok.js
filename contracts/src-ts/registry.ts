@@ -94,9 +94,8 @@ const PENDING: Address = "0x0000000000000000000000000000000000000000";
 
 export interface EnsDeployment {
   registry: Address;
-  nameWrapper: Address;
   reverseRegistrar: Address;
-  /** ENS public resolver — the registrar sets the forward `addr` record here on mint. */
+  /** ENS public resolver — read for forward `addr` resolution. */
   publicResolver: Address;
 }
 
@@ -104,22 +103,20 @@ export interface EnsDeployment {
 const ENS_DEPLOYMENTS: Record<number, EnsDeployment> = {
   1: {
     registry: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    nameWrapper: "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401",
     reverseRegistrar: "0xa58E81fe9b61B5c3fE2AFD33CF304c454AbFc7Cb",
     publicResolver: "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
   },
   11155111: {
     registry: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    nameWrapper: "0x0635513f179D50A207757E05759CbD106d7dFcE8",
     reverseRegistrar: "0xA0a1AbcDAe1a2a4A2EF8e9113Ff0e02DD81DC0C6",
     publicResolver: "0x8FADE66B79cC9f707aB26799354482EB93a5B7dD",
   },
 };
 
-/** ENS contract deployment for an subname chain. Throws on a chain with no known ENS deployment. */
+/** ENS contract deployment for a name-resolution chain. Throws on a chain with no known ENS deployment. */
 export function getEnsDeployment(chainId: number): EnsDeployment {
   const d = ENS_DEPLOYMENTS[chainId];
-  if (!d) throw new Error(`no ENS deployment for chainId ${chainId} — subname requires an ENS-enabled chain (1 or 11155111)`);
+  if (!d) throw new Error(`no ENS deployment for chainId ${chainId} — ENS resolution requires an ENS-enabled chain (1 or 11155111)`);
   return d;
 }
 // Global Pyth Hermes feed ids — chain/cluster-agnostic (the same id prices the asset everywhere,
