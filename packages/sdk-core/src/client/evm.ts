@@ -16,7 +16,6 @@ import {
   type Call,
   type EvmChainProfile,
   type ExecutionContext,
-  type FetchLike,
   type Paymaster7677,
   type ResolvedBatch,
   type SimulationResult,
@@ -24,9 +23,8 @@ import {
   type RpcClient,
   type ViemLike,
 } from "@avokjs/txengine";
-import { createOracle, type PriceOracle } from "@avokjs/oracle";
 import { leanResolve } from "./resolve.js";
-import { prepareFrontedUserOp, computeBoundedUserOpFee, type FrontedInfra, type PreparedFrontedUserOp } from "./fronted-userop.js";
+import { prepareFrontedUserOp, boundedFrontedFee, type FrontedInfra, type PreparedFrontedUserOp } from "./fronted-userop.js";
 import { randomNonceAllocator } from "../nonce.js";
 import { UnsupportedFeeTokenError } from "./fee-token-error.js";
 import type { ClientConfig, ScopedSigner } from "../types.js";
@@ -181,14 +179,6 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
     return token;
   }
 
-  function resolveFetch(): FetchLike {
-    // BIND IT. A bare `globalThis.fetch` reference called as `f(url, init)` has `this === undefined`,
-    // and the browser's fetch is a method that REQUIRES `this` to be the global — Safari throws
-    // "Failed to execute 'fetch' on 'Window': Illegal invocation". Chrome is lenient, which is why
-    // this survived a Chrome appmode test and only surfaced on real Safari hardware.
-    return deps?.fetch ?? (globalThis.fetch.bind(globalThis) as unknown as FetchLike);
-  }
-
   /** Resolve a fresh ResolvedBatch from raw calls (delegation + userCalls; the 4337 paymaster prices
    *  the fronted fee, so nothing is priced here). */
   async function buildBatch(
@@ -196,14 +186,12 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
     chain: EvmChainProfile,
     rpc: RpcClient,
     feeToken: Address | null,
-  ): Promise<{ batch: ResolvedBatch; oracle: PriceOracle }> {
+  ): Promise<ResolvedBatch> {
     const address = requireAddress();
     const ctx: ExecutionContext = { chainId: chain.chainId, feeToken };
     const nonce = await (config.nonceAllocator ?? DEFAULT_NONCE_ALLOCATOR).next(address);
     const deadline = BigInt(Math.floor(Date.now() / 1000)) + deadlineWindowSeconds;
-    const oracle = deps?.oracle ?? createOracle({ evm: rpc, fetch: resolveFetch() });
-    const batch = await leanResolve({ rpc, oracle, chain, address, userCalls: calls, ctx, nonce, deadline });
-    return { batch, oracle };
+    return leanResolve({ rpc, chain, address, userCalls: calls, ctx, nonce, deadline });
   }
 
   /**
@@ -234,7 +222,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
       const id = resolveChainId(chainId);
       const chain = requireChain(config, id);
       const rpc = resolveRpc(config, id);
-      const { batch } = await buildBatch(probe, chain, rpc, resolveFeeToken(id));
+      const batch = await buildBatch(probe, chain, rpc, resolveFeeToken(id));
       const txNonce = await rpc.getTransactionCount(batch.walletAddress);
       const [suggestedTip, baseFee] = await Promise.all([
         rpc.getMaxPriorityFeePerGas(),
@@ -335,17 +323,18 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
       const chain = requireChain(config, chainId);
       const rpc = resolveRpc(config, chainId);
       const feeToken = resolveFeeToken(chainId, opts);
-      const { batch, oracle } = await buildBatch(calls, chain, rpc, feeToken);
-      const sim = await simulateResolved(batch, { rpc, chain, oracle });
+      const batch = await buildBatch(calls, chain, rpc, feeToken);
+      const sim = await simulateResolved(batch, { rpc, chain });
 
       // FRONTED: run the 7677 handshake now so the consent screen shows the BOUNDED fee the send will
       // sign (sign-what-you-saw), and carry the prepared UserOp so `send` signs that exact op rather
-      // than re-preparing (a fresh estimate could disagree with what the user saw). The fee is priced
-      // only when the token is known; a single-token paymaster (null feeToken) discloses no amount here.
+      // than re-preparing (a fresh estimate could disagree with what the user saw). The fee is derived
+      // from the prepared op's gas ceiling only when the token is known; a single-token paymaster (null
+      // feeToken) discloses no amount here.
       if (batch.rail === "fronted" && canFront()) {
         const preparedUserOp = await prepareFronted(rpc, batch);
         const fee = batch.feeToken
-          ? await computeBoundedUserOpFee(preparedUserOp.op, batch.feeToken, chain, oracle)
+          ? boundedFrontedFee(preparedUserOp.op, batch.feeToken)
           : undefined;
         return { ...sim, ...(fee ? { fee } : {}), preparedUserOp };
       }
@@ -366,7 +355,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
         chain = requireChain(config, chainId);
         rpc = resolveRpc(config, chainId);
         const feeToken = resolveFeeToken(chainId, opts);
-        ({ batch } = await buildBatch(input, chain, rpc, feeToken));
+        batch = await buildBatch(input, chain, rpc, feeToken);
       } else {
         batch = input.batch;
         chain = requireChain(config, batch.chainId);

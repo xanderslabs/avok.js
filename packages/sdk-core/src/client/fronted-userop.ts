@@ -7,13 +7,11 @@ import {
   type AvokUserOperation,
   type Bundler,
   type Call,
-  type EvmChainProfile,
   type FeeBreakdown,
   type Paymaster7677,
   type PendingAuthorization,
   type RpcClient,
 } from "@avokjs/txengine";
-import type { PriceOracle } from "@avokjs/oracle";
 
 /** The bring-your-own 4337 infra a fronted send routes through. */
 export interface FrontedInfra {
@@ -138,25 +136,16 @@ function totalGasUnits(op: AvokUserOperation): bigint {
 }
 
 /**
- * The BOUNDED fee a fronted UserOp commits, in the fee token — sign-what-you-saw: it is derived from
- * the SIGNED op's gas limits × `maxFeePerGas` (the ceiling the signature authorises), converted to the
- * fee token via the oracle. This is the GAS bound; a paymaster's own premium (e.g. Circle's 10%) rides
- * on top and is not expressible from the ERC-7677 response, so it is not folded in here.
+ * The BOUNDED gas cost a fronted UserOp commits — sign-what-you-saw: derived from the SIGNED op's
+ * gas limits × `maxFeePerGas` (the ceiling the signature authorises). Post-oracle this is the raw gas
+ * ceiling in the chain's NATIVE units; no USD conversion is applied (the oracle is retired, and the
+ * ERC-7677 response carries no token amount). `feeToken` labels the token the paymaster sponsors in.
+ * A paymaster's own premium (e.g. Circle's 10%) rides on top and is not expressible from the ERC-7677
+ * response, so it is not folded in here. When the fee token is unknown (a single-token paymaster), the
+ * caller shows no amount rather than calling this — disclose none, exactly as before.
  */
-export async function computeBoundedUserOpFee(
-  op: AvokUserOperation,
-  feeToken: Address,
-  chain: EvmChainProfile,
-  oracle: PriceOracle,
-): Promise<FeeBreakdown> {
-  const token = Object.values(chain.tokens).find((t) => t.address.toLowerCase() === feeToken.toLowerCase());
-  if (!token) throw new Error(`Unsupported fee token ${feeToken} on chain ${chain.chainId}`);
+export function boundedFrontedFee(op: AvokUserOperation, feeToken: Address): FeeBreakdown {
   const gasUnits = totalGasUnits(op);
   const gasPrice = op.maxFeePerGas; // the committed ceiling
-  const gasCostWei = gasUnits * gasPrice; // 18-dec native
-  const nativeUsd = (await oracle.read(chain.nativeUsdFeed)).priceE8;
-  const feeTokenUsd = (await oracle.read(token.usdFeed)).priceE8;
-  // value in feeToken smallest units = gasCostWei * nativeUsd * 10^feeDecimals / (feeTokenUsd * 10^18)
-  const amount = (gasCostWei * nativeUsd * 10n ** BigInt(token.decimals)) / (feeTokenUsd * 10n ** 18n);
-  return { feeToken, amount, gasUnits, gasPrice, nativeUsd, feeTokenUsd, bufferBps: 0, marginBps: 0 };
+  return { feeToken, amount: gasUnits * gasPrice, gasUnits, gasPrice };
 }

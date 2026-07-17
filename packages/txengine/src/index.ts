@@ -50,10 +50,10 @@ export { getReceiptStatus } from "./track.js";
 export type {
   ChainProfile, ChainCapabilities, TokenProfile,
   EvmChainProfile, EvmTokenProfile, SolanaChainProfile, SolanaTokenProfile,
-  PriceFeed, OracleProvider, ChainId,
+  ChainId,
 } from "@avokjs/contracts";
 export {
   CHAIN_PROFILES, getChainProfile, getTokenProfile,
   getSolanaChainProfile, getSolanaTokenProfile, getChainProfileById,
-  listChains, listFeeTokens, assertFeedConfigured,
+  listChains, listFeeTokens,
 } from "@avokjs/contracts";

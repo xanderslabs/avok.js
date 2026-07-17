@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getChainProfile, getTokenProfile, getSolanaChainProfile, getSolanaTokenProfile,
-  getChainProfileById, listChains, listFeeTokens, assertFeedConfigured,
+  getChainProfileById, listChains, listFeeTokens,
   resolveAnchorChain, DEFAULT_ANCHOR_CHAIN_ID,
   TOKEN_PROGRAM, TOKEN_2022_PROGRAM,
   getEnsDeployment,
@@ -9,23 +9,20 @@ import {
 } from "./registry.js";
 
 describe("chain registry (§8)", () => {
-  it("exposes Optimism with capability flags and a native feed", () => {
+  it("exposes Optimism with capability flags", () => {
     const op = getChainProfile(10);
     expect(op).toBeDefined();
     expect(op!.capabilities.simulateV1).toBe(true);
     expect(typeof op!.capabilities.multicall).toBe("boolean");
     expect(typeof op!.capabilities.sameAssetGas).toBe("boolean");
     expect(typeof op!.capabilities.stateOverride).toBe("boolean");
-    const f = op!.nativeUsdFeed;
-    expect(f.provider).toBe("chainlink");
-    if (f.provider === "chainlink") expect(f.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
   });
 
   it("looks up a token profile case-insensitively", () => {
     const op = getChainProfile(10)!;
     const [addr] = Object.keys(op.tokens) as `0x${string}`[];
     const found = getTokenProfile(10, addr.toUpperCase() as `0x${string}`);
-    expect(found?.usdFeed).toEqual(op.tokens[addr].usdFeed);
+    expect(found).toEqual(op.tokens[addr]);
   });
 
   it("returns undefined for an unknown chain", () => {
@@ -39,19 +36,15 @@ describe("unified registry — Solana + cohesion", () => {
     expect(op.kind).toBe("evm");
     expect(op.id).toBe("eip155:10");
     expect(op.chainId).toBe(10);
-    const nf = op.nativeUsdFeed;
-    expect(nf.provider).toBe("chainlink");
-    if (nf.provider === "chainlink") expect(nf.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
   });
 
-  it("exposes Solana mainnet with USDC and a Pyth native feed reference", () => {
+  it("exposes Solana mainnet with USDC", () => {
     const sol = getSolanaChainProfile("mainnet")!;
     expect(sol.kind).toBe("solana");
     expect(sol.id).toBe("solana:mainnet");
     const usdc = getSolanaTokenProfile("mainnet", "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")!;
     expect(usdc.symbol).toBe("USDC");
     expect(usdc.decimals).toBe(6);
-    expect(sol.nativeUsdFeed.provider).toBe("pyth");
   });
 
   it("every Solana token names a known program AND a measured ATA size", () => {
@@ -91,52 +84,23 @@ describe("unified registry — Solana + cohesion", () => {
     expect(tokens.some((t) => t.chainId === "eip155:10")).toBe(true);
     expect(tokens.some((t) => t.chainId === "solana:mainnet")).toBe(true);
   });
-
-  it("assertFeedConfigured guards an unconfigured (PENDING) feed", () => {
-    expect(() => assertFeedConfigured({ provider: "pyth", feedId: "PENDING" })).toThrow(/PENDING|configured/i);
-    expect(() => assertFeedConfigured({ provider: "chainlink", address: "0x0000000000000000000000000000000000000000" })).toThrow(/configured|unset/i);
-    expect(assertFeedConfigured({ provider: "pyth", feedId: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d" })).toEqual({
-      provider: "pyth", feedId: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
-    });
-  });
 });
 
-describe("Task 4: Solana USDT + real Pyth feeds", () => {
-  const SOL_USD_FEED = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
-  const USDC_USD_FEED = "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a";
-  const USDT_USD_FEED = "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b";
-
-  it("solana:mainnet has real SOL/USD + USDC/USD Pyth feeds and a USDT fee token", () => {
-    const sol = getSolanaChainProfile("mainnet")!;
-    expect(sol.nativeUsdFeed).toEqual({ provider: "pyth", feedId: SOL_USD_FEED });
-    expect(() => assertFeedConfigured(sol.nativeUsdFeed)).not.toThrow();
-
-    const usdc = getSolanaTokenProfile("mainnet", "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")!;
-    expect(usdc.usdFeed).toEqual({ provider: "pyth", feedId: USDC_USD_FEED });
-    expect(() => assertFeedConfigured(usdc.usdFeed)).not.toThrow();
-
+describe("Task 4: Solana USDT token", () => {
+  it("solana:mainnet has a USDT fee token alongside USDC", () => {
     const usdt = getSolanaTokenProfile("mainnet", "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB")!;
     expect(usdt).toBeDefined();
     expect(usdt.symbol).toBe("USDT");
     expect(usdt.decimals).toBe(6);
     expect(usdt.tokenProgram).toBe(TOKEN_PROGRAM);
-    expect(usdt.usdFeed).toEqual({ provider: "pyth", feedId: USDT_USD_FEED });
-    expect(() => assertFeedConfigured(usdt.usdFeed)).not.toThrow();
   });
 
-  it("solana:devnet has real SOL/USD + USDC/USD Pyth feeds and no USDT token", () => {
+  it("solana:devnet has no USDT token, plus a Token-2022 PYUSD", () => {
     const sol = getSolanaChainProfile("devnet")!;
-    expect(sol.nativeUsdFeed).toEqual({ provider: "pyth", feedId: SOL_USD_FEED });
-    expect(() => assertFeedConfigured(sol.nativeUsdFeed)).not.toThrow();
 
-    const usdc = getSolanaTokenProfile("devnet", "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU")!;
-    expect(usdc.usdFeed).toEqual({ provider: "pyth", feedId: USDC_USD_FEED });
-    expect(() => assertFeedConfigured(usdc.usdFeed)).not.toThrow();
-
-    // PYUSD (Token-2022) — devnet only, priced off the USDC feed because Pyth publishes no devnet
-    // PYUSD feed. Its ATA is 187 bytes, MEASURED by simulating a create-ATA for a fresh owner; the
-    // obvious derivation from the TLV layout gives 182 and is wrong, which is the whole reason this
-    // is pinned rather than computed.
+    // PYUSD (Token-2022) — devnet only. Its ATA is 187 bytes, MEASURED by simulating a create-ATA for
+    // a fresh owner; the obvious derivation from the TLV layout gives 182 and is wrong, which is the
+    // whole reason this is pinned rather than computed.
     const pyusd = getSolanaTokenProfile("devnet", "CXk2AMBfi3TwaEL2468s6zP8xq9NxTXjp9gjMgzeUynM")!;
     expect(pyusd.symbol).toBe("PYUSD");
     expect(pyusd.decimals).toBe(6);
@@ -150,58 +114,49 @@ describe("Task 4: Solana USDT + real Pyth feeds", () => {
 });
 
 describe("multi-chain expansion (Task 2): Ethereum, Arbitrum, BSC + USDT", () => {
-  it("adds Ethereum (chainId 1) with native ETH/USD feed, the canonical implementation set, and USDC+USDT", () => {
+  it("adds Ethereum (chainId 1) with the canonical implementation set, and USDC+USDT", () => {
     const eth = getChainProfile(1);
     expect(eth).toBeDefined();
     expect(eth!.kind).toBe("evm");
     expect(eth!.chainId).toBe(1);
     expect(eth!.canonicalImplementation).toBe("0x11c840C10e641f00f6874Fc909eD2Dc5dc31f68C");
-    expect(eth!.nativeUsdFeed).toEqual({ provider: "chainlink", address: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419" });
     const tokens = Object.values(eth!.tokens);
     const usdc = tokens.find((t) => t.symbol === "USDC")!;
     expect(usdc.address).toBe("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
     expect(usdc.decimals).toBe(6);
-    expect(usdc.usdFeed).toEqual({ provider: "chainlink", address: "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6" });
     const usdt = tokens.find((t) => t.symbol === "USDT")!;
     expect(usdt.address).toBe("0xdAC17F958D2ee523a2206206994597C13D831ec7");
     expect(usdt.decimals).toBe(6);
-    expect(usdt.usdFeed).toEqual({ provider: "chainlink", address: "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D" });
   });
 
-  it("adds Arbitrum One (chainId 42161) with native ETH/USD feed, the canonical implementation set, and USDC+USDT", () => {
+  it("adds Arbitrum One (chainId 42161) with the canonical implementation set, and USDC+USDT", () => {
     const arb = getChainProfile(42161);
     expect(arb).toBeDefined();
     expect(arb!.kind).toBe("evm");
     expect(arb!.chainId).toBe(42161);
     expect(arb!.canonicalImplementation).toBe("0x11c840C10e641f00f6874Fc909eD2Dc5dc31f68C");
-    expect(arb!.nativeUsdFeed).toEqual({ provider: "chainlink", address: "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612" });
     const tokens = Object.values(arb!.tokens);
     const usdc = tokens.find((t) => t.symbol === "USDC")!;
     expect(usdc.address).toBe("0xaf88d065e77c8cC2239327C5EDb3A432268e5831");
     expect(usdc.decimals).toBe(6);
-    expect(usdc.usdFeed).toEqual({ provider: "chainlink", address: "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3" });
     const usdt = tokens.find((t) => t.symbol === "USDT")!;
     expect(usdt.address).toBe("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9");
     expect(usdt.decimals).toBe(6);
-    expect(usdt.usdFeed).toEqual({ provider: "chainlink", address: "0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7" });
   });
 
-  it("adds BSC (chainId 56) with native BNB/USD feed, the canonical implementation set, and 18-decimal USDC+USDT", () => {
+  it("adds BSC (chainId 56) with the canonical implementation set, and 18-decimal USDC+USDT", () => {
     const bsc = getChainProfile(56);
     expect(bsc).toBeDefined();
     expect(bsc!.kind).toBe("evm");
     expect(bsc!.chainId).toBe(56);
     expect(bsc!.canonicalImplementation).toBe("0x11c840C10e641f00f6874Fc909eD2Dc5dc31f68C");
-    expect(bsc!.nativeUsdFeed).toEqual({ provider: "chainlink", address: "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE" });
     const tokens = Object.values(bsc!.tokens);
     const usdc = tokens.find((t) => t.symbol === "USDC")!;
     expect(usdc.address).toBe("0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d");
     expect(usdc.decimals).toBe(18);
-    expect(usdc.usdFeed).toEqual({ provider: "chainlink", address: "0x51597f405303C4377E36123cBc172b13269EA163" });
     const usdt = tokens.find((t) => t.symbol === "USDT")!;
     expect(usdt.address).toBe("0x55d398326f99059fF775485246999027B3197955");
     expect(usdt.decimals).toBe(18);
-    expect(usdt.usdFeed).toEqual({ provider: "chainlink", address: "0xB97Ad0E74fa7d920791E90258A6E2085088b4320" });
   });
 
   it("listFeeTokens filters to a single chain when a chainId is passed, and stays byte-identical no-arg", () => {
@@ -224,7 +179,6 @@ describe("multi-chain expansion (Task 2): Ethereum, Arbitrum, BSC + USDT", () =>
     const usdt = tokens.find((t) => t.symbol === "USDT")!;
     expect(usdt.address).toBe("0x94b008aA00579c1307B0EF2c499aD98a8ce58e58");
     expect(usdt.decimals).toBe(6);
-    expect(usdt.usdFeed).toEqual({ provider: "chainlink", address: "0xECef79E109e997bCA29c1c0897ec9d7b03647F5E" });
   });
 
   it("Base now includes a USDT fee token alongside the existing USDC", () => {
@@ -235,15 +189,11 @@ describe("multi-chain expansion (Task 2): Ethereum, Arbitrum, BSC + USDT", () =>
     const usdt = tokens.find((t) => t.symbol === "USDT")!;
     expect(usdt.address).toBe("0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2");
     expect(usdt.decimals).toBe(6);
-    expect(usdt.usdFeed).toEqual({ provider: "chainlink", address: "0xf19d560eB8d2ADf07BD6D13ed03e1D11215721F9" });
   });
 });
 
-describe("multi-chain expansion (Task 3): Arc testnet (USDC-only; native gas = USDC, priced via Pyth)", () => {
-  // Global USDC/USD Pyth Hermes feed id — Arc's native gas token is USDC, so native/USD == USDC/USD.
-  const USDC_USD_FEED = "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a";
-
-  it("adds Arc testnet (chainId 5042002) as a testnet profile with the canonical implementation set and a USDC/USD Pyth native feed", () => {
+describe("multi-chain expansion (Task 3): Arc testnet (USDC-only; native gas = USDC)", () => {
+  it("adds Arc testnet (chainId 5042002) as a testnet profile with the canonical implementation set", () => {
     const arc = getChainProfileById("eip155:5042002");
     expect(arc).toBeDefined();
     expect(arc!.kind).toBe("evm");
@@ -252,9 +202,6 @@ describe("multi-chain expansion (Task 3): Arc testnet (USDC-only; native gas = U
     expect(arc.isTestnet).toBe(true);
     expect(arc.canonicalImplementation).toBe("0x11c840C10e641f00f6874Fc909eD2Dc5dc31f68C");
     expect(arc.explorer).toBe("https://testnet.arcscan.app");
-    // Native gas token is USDC → native/USD priced via the global USDC/USD Pyth feed (off-chain Hermes).
-    expect(arc.nativeUsdFeed).toEqual({ provider: "pyth", feedId: USDC_USD_FEED });
-    expect(() => assertFeedConfigured(arc.nativeUsdFeed)).not.toThrow();
   });
 
   it("Arc has exactly one fee token (USDC, 6 decimals) and no USDT/wrapped-native", () => {
@@ -267,8 +214,6 @@ describe("multi-chain expansion (Task 3): Arc testnet (USDC-only; native gas = U
     expect(usdc).toBeDefined();
     expect(usdc.address).toBe("0x3600000000000000000000000000000000000000");
     expect(usdc.decimals).toBe(6);
-    expect(usdc.usdFeed).toEqual({ provider: "pyth", feedId: USDC_USD_FEED });
-    expect(() => assertFeedConfigured(usdc.usdFeed)).not.toThrow();
     expect(tokens.some((t) => t.symbol === "USDT")).toBe(false);
   });
 
@@ -278,8 +223,8 @@ describe("multi-chain expansion (Task 3): Arc testnet (USDC-only; native gas = U
   });
 });
 
-describe("Robinhood Chain (chainId 4663): USDG-only; USDC/USDT feeds exist but tokens do not", () => {
-  it("adds Robinhood Chain with ETH/USD native feed and the canonical implementation address", () => {
+describe("Robinhood Chain (chainId 4663): USDG-only; USDC/USDT tokens do not exist", () => {
+  it("adds Robinhood Chain with the canonical implementation address", () => {
     const rhc = getChainProfile(4663);
     expect(rhc).toBeDefined();
     expect(rhc!.kind).toBe("evm");
@@ -298,11 +243,10 @@ describe("Robinhood Chain (chainId 4663): USDG-only; USDC/USDT feeds exist but t
     expect(rhc!.canonicalImplementation).toBe("0x11c840C10e641f00f6874Fc909eD2Dc5dc31f68C");
     expect(rhc!.explorer).toBe("https://robinhoodchain.blockscout.com");
     expect(rhc!.rpcDefault).toBe("https://rpc.mainnet.chain.robinhood.com");
-    expect(rhc!.nativeUsdFeed).toEqual({ provider: "chainlink", address: "0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9" });
     expect(rhc!.capabilities).toEqual({ simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true });
   });
 
-  it("has exactly one fee token: USDG (6 decimals) with its USDG/USD feed", () => {
+  it("has exactly one fee token: USDG (6 decimals)", () => {
     const rhc = getChainProfile(4663)!;
     const tokens = Object.values(rhc.tokens);
     expect(tokens.length).toBe(1);
@@ -310,7 +254,6 @@ describe("Robinhood Chain (chainId 4663): USDG-only; USDC/USDT feeds exist but t
     expect(usdg).toBeDefined();
     expect(usdg.address).toBe("0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168");
     expect(usdg.decimals).toBe(6);
-    expect(usdg.usdFeed).toEqual({ provider: "chainlink", address: "0x61B7e5650328764B076A108EFF5fa7282a1B9aD2" });
   });
 
   it("does NOT contain USDC or USDT — regression guard against adding tokens just because feeds exist", () => {
@@ -318,12 +261,6 @@ describe("Robinhood Chain (chainId 4663): USDG-only; USDC/USDT feeds exist but t
     const symbols = Object.values(rhc.tokens).map((t) => t.symbol);
     expect(symbols).not.toContain("USDC");
     expect(symbols).not.toContain("USDT");
-    // The USDC/USD (0x9e6f…) and USDT/USD (0xbf35…) feeds must not appear as any token's usdFeed.
-    const feedAddrs = Object.values(rhc.tokens).map((t) =>
-      t.usdFeed.provider === "chainlink" ? t.usdFeed.address.toLowerCase() : "",
-    );
-    expect(feedAddrs).not.toContain("0x9e6f4605992a899ee2999999f3ec80c41f452546");
-    expect(feedAddrs).not.toContain("0xbf3550b6fae1671da7c238af12e03ac586bef3b1");
   });
 });
 

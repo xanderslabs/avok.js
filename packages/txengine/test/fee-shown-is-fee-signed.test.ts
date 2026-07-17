@@ -40,10 +40,7 @@ const batch: ResolvedBatch = {
   deadline: 99999999999n,
   disclosures: [{ kind: "fee", feeToken: FEE_TOKEN, amount: SIGNED_FEE }],
   // Priced ONCE at resolve. This is the fee, and the only one anyone may show.
-  fee: {
-    feeToken: FEE_TOKEN, amount: SIGNED_FEE, gasUnits: 111_535n, gasPrice: 41_230_779_904n,
-    nativeUsd: 100_000_000n, feeTokenUsd: 100_000_000n, bufferBps: 2000, marginBps: 0,
-  },
+  fee: { feeToken: FEE_TOKEN, amount: SIGNED_FEE, gasUnits: 111_535n, gasPrice: 41_230_779_904n },
 };
 
 describe("the fee a user sees is the fee a user signs", () => {
@@ -55,8 +52,6 @@ describe("the fee a user sees is the fee a user signs", () => {
         // code would have re-priced from this and shown a different number.
         rpc: { simulateCalls: async () => ({ success: true, gasUsed: 52_000n }) } as never,
         chain: { chainId: 5042002, canonicalImplementation: WALLET, capabilities: {} } as never,
-        oracle: { read: async () => ({ priceE8: 100_000_000n }) } as never,
-        pricing: { bufferBps: 2000, marginBps: 0 },
       } as never,
       { gas: false },
     );

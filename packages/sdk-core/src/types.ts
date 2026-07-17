@@ -2,7 +2,6 @@ import type { Address, Hex, TransactionSerializable, TypedDataDefinition } from 
 import type { Signer, AuthorizationTriple, SignedAuthorizationLike } from "@avokjs/shared-origin";
 import type { ExportedWallet, VaultReader, AccessSlotEntry } from "@avokjs/wallet-core";
 import type { Call, RpcClient, FetchLike, EvmChainProfile, AvokUserOperation } from "@avokjs/txengine";
-import type { PriceOracle } from "@avokjs/oracle";
 import type { RpcOverrides } from "@avokjs/contracts";
 import type { StorageAdapter } from "./storage.js";
 import type { NonceAllocator } from "./nonce.js";
@@ -370,8 +369,6 @@ export interface ClientConfig<C extends Connection = Connection> {
     paymaster?: import("@avokjs/txengine").Paymaster7677;
     /** Override the chain profile (e.g., to set a non-zero canonicalImplementation in tests). */
     chain?: EvmChainProfile;
-    /** Override the price oracle (e.g., to inject a fake in tests). */
-    oracle?: PriceOracle;
     /** Override the Solana RPC client (e.g., to inject a fake in tests). */
     solanaRpc?: import("@avokjs/solana-txengine").SolanaRpcClient;
     /** Override the Kora client (Solana fronted). */

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, type Mock } from "vitest";
 import type { Address, Hex, TransactionSerializable } from "viem";
-import type { PriceOracle } from "@avokjs/oracle";
 import { createAvokClient } from "../src/client/client.js";
 import { createEvmNamespace } from "../src/client/evm.js";
 import { createOwnOriginConnection } from "../src/own-origin/connection.js";
@@ -9,8 +8,6 @@ import { deriveSlotId } from "@avokjs/wallet-core";
 import type { Connection, SelfCustodyConnection } from "../src/types.js";
 import { makeFakePasskey, makeFakeRpc } from "./fakes.js";
 
-// Fake oracle: ETH/USD at $2000 (8-dec). Injected via deps to bypass real chainlink staleness checks.
-const fakeOracle: PriceOracle = { read: async () => ({ priceE8: 200_000_000_000n }) };
 
 // chainId 10 (Optimism) is in the registry; first token is a real, priceable fee token.
 const CHAIN = getChainProfile(10)!;
@@ -191,7 +188,7 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
       connection,
       paymasterUrl: "https://pm.test",
       bundlerUrl: "https://bundler.test",
-      deps: { rpc, chain: TEST_CHAIN, oracle: fakeOracle, bundler, paymaster },
+      deps: { rpc, chain: TEST_CHAIN, bundler, paymaster },
     });
 
     const receipt = await evm.send([{ to: TO, value: 0n, data: "0x" }], { chainId: 10, feeToken: FEE_TOKEN });
@@ -221,7 +218,7 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
       connection,
       paymasterUrl: "https://pm.test",
       bundlerUrl: "https://bundler.test",
-      deps: { rpc, chain: TEST_CHAIN, oracle: fakeOracle, bundler, paymaster },
+      deps: { rpc, chain: TEST_CHAIN, bundler, paymaster },
     });
 
     await evm.send([{ to: TO, value: 0n, data: "0x" }], { chainId: 10, feeToken: FEE_TOKEN });
@@ -239,7 +236,7 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
     const rpc = makeFakeRpc({ delegated: NON_ZERO_IMPL, nonce: 2 });
     rpc.sendRawTransaction = vi.fn(async () => "0xselfpaytx" as Hex);
     // feeToken requested, but no bundlerUrl/paymasterUrl → the send must self-pay, not throw.
-    const evm = createEvmNamespace({ connection, deps: { rpc, chain: TEST_CHAIN, oracle: fakeOracle } });
+    const evm = createEvmNamespace({ connection, deps: { rpc, chain: TEST_CHAIN } });
 
     const receipt = await evm.send([{ to: TO, value: 0n, data: "0x" }], { chainId: 10, feeToken: FEE_TOKEN });
 
@@ -248,7 +245,7 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
     expect(connection.signSend).toHaveBeenCalledOnce();
   });
 
-  it("fronted simulate returns a bounded FeeBreakdown (total gas limits × maxFeePerGas, in the fee token)", async () => {
+  it("fronted simulate returns a bounded FeeBreakdown (total gas limits × maxFeePerGas)", async () => {
     const connection = makeFakeConnection();
     const bundler = makeFakeBundler();
     const paymaster = makeFakePaymaster();
@@ -257,7 +254,7 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
       connection,
       paymasterUrl: "https://pm.test",
       bundlerUrl: "https://bundler.test",
-      deps: { rpc, chain: TEST_CHAIN, oracle: fakeOracle, bundler, paymaster },
+      deps: { rpc, chain: TEST_CHAIN, bundler, paymaster },
     });
 
     const sim = await evm.simulate([{ to: TO, value: 0n, data: "0x" }], { chainId: 10, feeToken: FEE_TOKEN });
@@ -268,9 +265,9 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
     expect(sim.fee!.gasUnits).toBe(100_000n + 120_000n + 50_000n + 20_000n + 10_000n);
     // The committed ceiling — maxFeePerGas, not an effective price.
     expect(sim.fee!.gasPrice).toBeGreaterThan(0n);
-    // Oracle prices native==feeToken here, so amount = gasCostWei scaled 18→6 decimals.
-    const gasCostWei = sim.fee!.gasUnits * sim.fee!.gasPrice;
-    expect(sim.fee!.amount).toBe((gasCostWei * 10n ** 6n) / 10n ** 18n);
+    // Post-oracle: no USD conversion — amount is the raw gas ceiling (gasUnits × maxFeePerGas), in
+    // native units, and `feeToken` merely labels the token the paymaster sponsors in.
+    expect(sim.fee!.amount).toBe(sim.fee!.gasUnits * sim.fee!.gasPrice);
   });
 
   it("send reuses the UserOp priced by a prior simulate — sign-what-you-saw (no second 7677 handshake)", async () => {
@@ -282,7 +279,7 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
       connection,
       paymasterUrl: "https://pm.test",
       bundlerUrl: "https://bundler.test",
-      deps: { rpc, chain: TEST_CHAIN, oracle: fakeOracle, bundler, paymaster },
+      deps: { rpc, chain: TEST_CHAIN, bundler, paymaster },
     });
 
     const sim = await evm.simulate([{ to: TO, value: 0n, data: "0x" }], { chainId: 10, feeToken: FEE_TOKEN });
@@ -510,7 +507,7 @@ describe("createAvokClient — enrollAccessSlot (enrol secondary + on-chain writ
     const connection = createOwnOriginConnection({ rpId: "localhost", passkey, anchorChainId: "eip155:10" });
     const client = createAvokClient({
       connection,
-      deps: { rpc: makeFakeRpc({ delegated: false, nonce: 0 }), chain: TEST_CHAIN, oracle: fakeOracle, vaultReader },
+      deps: { rpc: makeFakeRpc({ delegated: false, nonce: 0 }), chain: TEST_CHAIN, vaultReader },
     });
     return { passkey, client };
   }
@@ -547,7 +544,6 @@ describe("enrolment affordability gate", () => {
       deps: {
         rpc: makeFakeRpc({ delegated: false, nonce: 0, balance: 0n }), // an empty wallet
         chain: TEST_CHAIN,
-        oracle: fakeOracle,
         vaultReader: { getAccessSlot: async () => null }, // the chain answers; it just holds no access slot
       },
     });
@@ -571,7 +567,6 @@ describe("enrolment affordability gate", () => {
       deps: {
         rpc: makeFakeRpc({ delegated: false, nonce: 0 }),
         chain: TEST_CHAIN,
-        oracle: fakeOracle,
         vaultReader: { getAccessSlot: async () => null },
         fetch: makeFakeRelayFetch(),
       },

@@ -5,7 +5,6 @@ import type { Connection } from "../src/types.js";
 import { createEvmNamespace } from "../src/client/evm.js";
 import { UnsupportedFeeTokenError } from "../src/client/fee-token-error.js";
 import { makeFakeRpc } from "./fakes.js";
-import type { PriceOracle } from "@avokjs/oracle";
 
 const BASE = 8453;
 const ARBITRUM = 42161;
@@ -23,7 +22,6 @@ function makeFakeConnection(): Connection {
   } as unknown as Connection;
 }
 
-const fakeOracle: PriceOracle = { read: async () => ({ priceE8: 200_000_000_000n }) };
 const USER_CALL = { to: "0x2222222222222222222222222222222222222222" as Address, value: 0n, data: "0x" as const };
 
 describe("evm.feeTokens", () => {
@@ -73,7 +71,7 @@ describe("resolveFeeToken chain validation", () => {
       connection: makeFakeConnection(),
       paymasterUrl: "http://p",
       bundlerUrl: "http://b",
-      deps: { rpc: makeFakeRpc({ delegated: false, nonce: 0n }), oracle: fakeOracle },
+      deps: { rpc: makeFakeRpc({ delegated: false, nonce: 0n }) },
     });
     await expect(evm.simulate([USER_CALL], { chainId: ARBITRUM, feeToken: BASE_USDC })).rejects.toBeInstanceOf(
       UnsupportedFeeTokenError,
@@ -87,7 +85,6 @@ describe("resolveFeeToken chain validation", () => {
       connection: makeFakeConnection(),
       deps: {
         rpc: makeFakeRpc({ delegated: false, nonce: 0n }),
-        oracle: fakeOracle,
         chain: { ...getChainProfile(ARBITRUM)!, canonicalImplementation: "0x1234567890123456789012345678901234567890" },
       },
     });
@@ -103,7 +100,6 @@ describe("resolveFeeToken chain validation", () => {
       bundlerUrl: "http://b",
       deps: {
         rpc: makeFakeRpc({ delegated: false, nonce: 0n }),
-        oracle: fakeOracle,
         chain: { ...getChainProfile(ARBITRUM)!, canonicalImplementation: "0x1234567890123456789012345678901234567890" },
       },
     });

@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { simulateResolved, decodeCalls } from "../src/simulate.js";
 import { getChainProfile } from "@avokjs/contracts";
-import { FakeRpcClient, oracleFor, neverOracle } from "./fakes.js";
+import { FakeRpcClient } from "./fakes.js";
 import type { ResolvedBatch } from "../src/types.js";
 
 const OP = getChainProfile(10)!;
@@ -28,7 +28,7 @@ test("delegated + simulateV1 cap → eth_simulateV1, exact confidence, surfaces 
   const rpc = new FakeRpcClient({ simResults: [{ status: "success", gasUsed: 70_000n, returnData: "0x" }] });
   const res = await simulateResolved(
     batch({ disclosures: [{ kind: "delegation", implementation: IMPL }] }),
-    { rpc, chain, oracle: neverOracle },
+    { rpc, chain },
   );
   expect(res.method).toBe("eth_simulateV1");
   expect(res.confidence).toBe("exact");
@@ -40,7 +40,7 @@ test("undelegated (authorization present) → state-override method, exact", asy
   const rpc = new FakeRpcClient({ simResults: [{ status: "success", gasUsed: 120_000n, returnData: "0x" }] });
   const res = await simulateResolved(
     batch({ authorization: { chainId: 10, address: IMPL, nonce: 0 } }),
-    { rpc, chain, oracle: neverOracle },
+    { rpc, chain },
   );
   expect(res.method).toBe("state-override");
   expect(res.confidence).toBe("exact");
@@ -48,7 +48,7 @@ test("undelegated (authorization present) → state-override method, exact", asy
 
 test("gas:false → fallback, unsupported confidence", async () => {
   const rpc = new FakeRpcClient();
-  const res = await simulateResolved(batch(), { rpc, chain, oracle: neverOracle }, { gas: false });
+  const res = await simulateResolved(batch(), { rpc, chain }, { gas: false });
   expect(res.method).toBe("fallback");
   expect(res.confidence).toBe("unsupported");
 });
@@ -56,7 +56,7 @@ test("gas:false → fallback, unsupported confidence", async () => {
 test("delegated chain without simulateV1 → fail loud (no low-confidence fallback)", async () => {
   const rpc = new FakeRpcClient({ callReturn: "0x", estimateGas: 60_000n });
   await expect(
-    simulateResolved(batch(), { rpc, chain: { ...chain, capabilities: { ...chain.capabilities, simulateV1: false } }, oracle: neverOracle }),
+    simulateResolved(batch(), { rpc, chain: { ...chain, capabilities: { ...chain.capabilities, simulateV1: false } } }),
   ).rejects.toThrow(/lacks eth_simulateV1/i);
 });
 
@@ -73,17 +73,13 @@ test("fronted: result.fee is the fee the batch COMMITTED TO — simulate never r
     gasPrice: 1_000_000_000n,
     simResults: [{ status: "success", gasUsed: 70_000n, returnData: "0x" }], // deliberately different gas
   });
-  const oracle = oracleFor(chain.nativeUsdFeed, 2000n * 10n ** 8n, 1n * 10n ** 8n);
   const SIGNED = 161_000n;
   const apBatch = batch({
     rail: "fronted",
     disclosures: [{ kind: "fee", feeToken: FEE_TOKEN, amount: SIGNED }],
-    fee: {
-      feeToken: FEE_TOKEN, amount: SIGNED, gasUnits: 111_535n, gasPrice: 1_000_000_000n,
-      nativeUsd: 2000n * 10n ** 8n, feeTokenUsd: 1n * 10n ** 8n, bufferBps: 1500, marginBps: 0,
-    },
+    fee: { feeToken: FEE_TOKEN, amount: SIGNED, gasUnits: 111_535n, gasPrice: 1_000_000_000n },
   });
-  const res = await simulateResolved(apBatch, { rpc, chain, oracle });
+  const res = await simulateResolved(apBatch, { rpc, chain });
   expect(res.fee).toBeDefined();
   expect(res.fee!.feeToken).toBe(FEE_TOKEN);
   expect(res.fee!.amount).toBe(SIGNED); // ← what is SIGNED, not what the sim's gas implies
@@ -92,7 +88,7 @@ test("fronted: result.fee is the fee the batch COMMITTED TO — simulate never r
 test("fronted with no priced fee on the batch: simulate invents nothing", async () => {
   const rpc = new FakeRpcClient({ simResults: [{ status: "success", gasUsed: 70_000n, returnData: "0x" }] });
   const res = await simulateResolved(batch({ rail: "fronted" }), {
-    rpc, chain, oracle: neverOracle,
+    rpc, chain,
   });
   // No committed fee → nothing to show. Better to show nothing than a number nobody will sign.
   expect(res.fee).toBeUndefined();
@@ -100,7 +96,7 @@ test("fronted with no priced fee on the batch: simulate invents nothing", async 
 
 test("self-pay: result.fee is undefined — a self-pay batch commits to no fee to surface", async () => {
   const rpc = new FakeRpcClient({ simResults: [{ status: "success", gasUsed: 70_000n, returnData: "0x" }] });
-  const res = await simulateResolved(batch(), { rpc, chain, oracle: neverOracle });
+  const res = await simulateResolved(batch(), { rpc, chain });
   expect(res.fee).toBeUndefined();
 });
 
@@ -109,7 +105,7 @@ test("chain with neither simulateV1 nor stateOverride → fail loud", async () =
   await expect(
     simulateResolved(
       batch(),
-      { rpc, chain: { ...chain, capabilities: { ...chain.capabilities, simulateV1: false, stateOverride: false } }, oracle: neverOracle },
+      { rpc, chain: { ...chain, capabilities: { ...chain.capabilities, simulateV1: false, stateOverride: false } } },
     ),
   ).rejects.toThrow(/lacks eth_simulateV1/i);
 });

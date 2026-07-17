@@ -346,19 +346,6 @@ importers:
         specifier: ^1.5.5
         version: 1.5.6
 
-  packages/oracle:
-    dependencies:
-      '@avokjs/contracts':
-        specifier: workspace:*
-        version: link:../../contracts
-      viem:
-        specifier: ^2.54.6
-        version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
-    devDependencies:
-      vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
-
   packages/provider:
     dependencies:
       '@avokjs/sdk-core':
@@ -460,9 +447,6 @@ importers:
         specifier: ^2.54.6
         version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
     devDependencies:
-      '@avokjs/oracle':
-        specifier: workspace:*
-        version: link:../oracle
       '@avokjs/sdk-core':
         specifier: workspace:*
         version: link:../sdk-core
@@ -502,9 +486,6 @@ importers:
       '@avokjs/contracts':
         specifier: workspace:*
         version: link:../../contracts
-      '@avokjs/oracle':
-        specifier: workspace:*
-        version: link:../oracle
       '@avokjs/shared-origin':
         specifier: workspace:*
         version: link:../shared-origin
@@ -598,9 +579,6 @@ importers:
       '@avokjs/contracts':
         specifier: workspace:*
         version: link:../../contracts
-      '@avokjs/oracle':
-        specifier: workspace:*
-        version: link:../oracle
       '@avokjs/wallet-core':
         specifier: workspace:*
         version: link:../wallet-core
@@ -648,9 +626,6 @@ importers:
         specifier: ^2.54.6
         version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
     devDependencies:
-      '@avokjs/oracle':
-        specifier: workspace:*
-        version: link:../oracle
       '@avokjs/provider':
         specifier: workspace:*
         version: link:../provider

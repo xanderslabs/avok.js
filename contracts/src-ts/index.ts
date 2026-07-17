@@ -83,7 +83,7 @@ export const EXECUTE_BATCH_TYPES = {
 } as const;
 
 export type {
-  ChainKind, ChainId, OracleProvider, PriceFeed, ChainCapabilities,
+  ChainKind, ChainId, ChainCapabilities,
   EvmTokenProfile, SolanaTokenProfile, TokenProfile,
   EvmChainProfile, SolanaChainProfile, ChainProfile,
   EnsDeployment,
@@ -92,7 +92,7 @@ export {
   TOKEN_PROGRAM, TOKEN_2022_PROGRAM,
   CHAIN_PROFILES, getChainProfile, getTokenProfile,
   getSolanaChainProfile, getSolanaTokenProfile, getChainProfileById,
-  listChains, listFeeTokens, assertFeedConfigured,
+  listChains, listFeeTokens,
   CHAIN_NAME_TO_ID, resolveChainByName, chainIdNumberByName,
   DEFAULT_ANCHOR_CHAIN_ID, resolveAnchorChain, getEnsDeployment,
   DEFAULT_MAX_FEE_MULTIPLE_BPS, assertFeeMarkupWithinGuardrail,

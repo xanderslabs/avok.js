@@ -1,6 +1,5 @@
 import { type Hex, slice } from "viem";
 import type { EvmChainProfile } from "@avokjs/contracts";
-import type { PriceOracle } from "@avokjs/oracle";
 import type { RpcClient } from "./rpc.js";
 import {
   simulateV1Method,
@@ -18,7 +17,6 @@ import type {
 
 export interface SimulateDeps {
   rpc: RpcClient;
-  oracle: PriceOracle;
   chain: EvmChainProfile;
 }
 

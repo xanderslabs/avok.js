@@ -89,10 +89,6 @@ export interface FeeBreakdown {
   amount: bigint;
   gasUnits: bigint;
   gasPrice: bigint;
-  nativeUsd: bigint;
-  feeTokenUsd: bigint;
-  bufferBps: number;
-  marginBps: number;
 }
 
 /**

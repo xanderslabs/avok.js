@@ -4,7 +4,7 @@ import { defineConfig } from "tsup";
 // react, react-native, and expo-secure-store are peer deps and must stay external.
 // Platform: neutral (not browser) — this graph must not pull DOM/web-React.
 //
-// The private @avokjs engines (sdk-core + wallet-core + the txengine/oracle/
+// The private @avokjs engines (sdk-core + wallet-core + the txengine/
 // solana-txengine graph) are BUNDLED (noExternal) so the published package
 // is self-contained (a stranger installs @avokjs/react-native without any
 // unpublished workspace package; dts.resolve inlines their types). Only PUBLISHED
@@ -17,7 +17,7 @@ export default defineConfig({
   dts: { resolve: true },
   sideEffects: false,
   treeshake: true,
-  noExternal: [/^@avokjs\/(sdk-core|wallet-core|oracle|txengine|solana-txengine)$/],
+  noExternal: [/^@avokjs\/(sdk-core|wallet-core|txengine|solana-txengine)$/],
   external: [
     "react",
     "react/jsx-runtime",

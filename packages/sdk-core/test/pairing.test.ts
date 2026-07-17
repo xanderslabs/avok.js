@@ -6,7 +6,6 @@ import { makeFakePasskey, makeFakeRpc, ACCESS_SLOT_WRITER } from "./fakes.js";
 import { ACCESS_VAULT_ABI } from "@avokjs/wallet-core";
 import { AvokWalletImplementationABI } from "@avokjs/contracts";
 import { getChainProfile, type Call } from "@avokjs/txengine";
-import type { PriceOracle } from "@avokjs/oracle";
 
 // ERC-7821 execute(mode, executionData) wraps abi.encode(Call[]) — the shape the self-pay calldata carries.
 const CALLS_PARAM = [
@@ -118,7 +117,6 @@ describe("Enrolling the user's OWN second device (the same one ceremony)", () =>
 // the RPC/relay transport; the ctx itself is the real one.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const fakeOracle: PriceOracle = { read: async () => ({ priceE8: 200_000_000_000n }) };
 const CHAIN = getChainProfile(10)!; // Optimism is in the registry with priceable fee tokens
 // Non-zero canonical impl so the undelegated authorization path doesn't trip leanResolve's
 // zero-address guard (chain 10's registry value is the pending zero placeholder).
@@ -189,7 +187,7 @@ function facadeClientHolder(passkey: ReturnType<typeof makeFakePasskey>, h: Retu
   const conn = createOwnOriginConnection({ rpId: "localhost", passkey, anchorChainId: "eip155:10" });
   const client = createAvokClient({
     connection: conn,
-    deps: { rpc: h.rpc, chain: TEST_CHAIN, oracle: fakeOracle, vaultReader: h.vaultReader },
+    deps: { rpc: h.rpc, chain: TEST_CHAIN, vaultReader: h.vaultReader },
   });
   return client;
 }

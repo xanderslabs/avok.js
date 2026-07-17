@@ -75,7 +75,6 @@
     }
   },
   "devDependencies": {
-    "@avokjs/oracle": "workspace:*",
     "@avokjs/sdk-core": "workspace:*",
     "@avokjs/solana-txengine": "workspace:*",
     "@avokjs/txengine": "workspace:*",

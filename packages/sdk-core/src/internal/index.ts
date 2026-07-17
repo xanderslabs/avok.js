@@ -15,7 +15,6 @@ export type { SolanaEngine, SolanaCluster } from "./solana-send.js";
 // boundary, and this adds nothing to the PUBLIC client surface.
 export {
   prepareFrontedUserOp,
-  computeBoundedUserOpFee,
 } from "../client/fronted-userop.js";
 export type {
   FrontedInfra,

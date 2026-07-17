@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import type { Address } from "viem";
-import type { PriceOracle } from "@avokjs/oracle";
 import { leanResolve } from "../src/client/resolve.js";
 import { makeFakeRpc } from "./fakes.js";
 import { getChainProfile } from "@avokjs/txengine";
@@ -19,15 +18,12 @@ const testChain = { ...baseChain, canonicalImplementation: NON_ZERO_IMPL };
 const WALLET = "0x1111111111111111111111111111111111111111" as const;
 const USER_CALL = { to: "0x2222222222222222222222222222222222222222" as const, value: 0n, data: "0x" as const };
 
-// Fake oracle: ETH/USD at $2000 (8-dec). Bypasses real chainlink reads and staleness checks.
-const fakeOracle: PriceOracle = { read: async () => ({ priceE8: 200_000_000_000n }) };
 
 describe("leanResolve", () => {
   it("fronted (4337): undelegated wallet gets an authorization and NO fee call — the paymaster charges the fee", async () => {
     const rpc = makeFakeRpc({ delegated: false, nonce: 3n });
     const batch = await leanResolve({
       rpc,
-      oracle: fakeOracle,
       chain: testChain,
       address: WALLET,
       userCalls: [USER_CALL],
@@ -48,7 +44,6 @@ describe("leanResolve", () => {
     const rpc = makeFakeRpc({ delegated: false, nonce: 0n });
     const batch = await leanResolve({
       rpc,
-      oracle: fakeOracle,
       chain: testChain,
       address: WALLET,
       userCalls: [USER_CALL],
@@ -68,7 +63,6 @@ describe("leanResolve", () => {
     const rpc = makeFakeRpc({ delegated: NON_ZERO_IMPL, nonce: 0n });
     const batch = await leanResolve({
       rpc,
-      oracle: fakeOracle,
       chain: testChain,
       address: WALLET,
       userCalls: [USER_CALL],
@@ -86,7 +80,6 @@ describe("leanResolve", () => {
     await expect(
       leanResolve({
         rpc,
-        oracle: fakeOracle,
         chain: testChain,
         address: WALLET,
         userCalls: [USER_CALL],
@@ -101,7 +94,6 @@ describe("leanResolve", () => {
     const rpc = makeFakeRpc({ delegated: false, nonce: 0n });
     const batch = await leanResolve({
       rpc,
-      oracle: fakeOracle,
       chain: testChain,
       address: WALLET,
       userCalls: [USER_CALL],
@@ -121,7 +113,6 @@ describe("leanResolve", () => {
     await expect(
       leanResolve({
         rpc,
-        oracle: fakeOracle,
         chain: zeroChain,
         address: WALLET,
         userCalls: [USER_CALL],
@@ -140,7 +131,6 @@ describe("leanResolve", () => {
     await expect(
       leanResolve({
         rpc,
-        oracle: fakeOracle,
         chain: testChain,
         address: WALLET,
         userCalls: [USER_CALL],

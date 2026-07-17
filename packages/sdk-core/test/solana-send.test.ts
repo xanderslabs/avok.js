@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import type { Address } from "viem";
 import type { Connection } from "../src/types.js";
 import type { SolanaRpcClient, LatestBlockhash, KoraClient } from "@avokjs/solana-txengine";
-import type { PriceOracle } from "@avokjs/oracle";
 import { createSolanaNamespace } from "../src/client/solana.js";
 
 const USER_ADDR = "11111111111111111111111111111111";
@@ -60,10 +59,6 @@ function fakeSolanaRpc(opts?: { onGetLatestBlockhash?: () => void }): SolanaRpcC
   };
 }
 
-function fakeOracle(): PriceOracle {
-  return { async read() { return { priceE8: 100_000_000n }; } };
-}
-
 function fakeKora(): KoraClient {
   return {
     getPayerSigner: async () => ({ payment_address: USER_ADDR, signer_address: USER_ADDR }),
@@ -85,7 +80,7 @@ describe("client.send", () => {
     const connection = fakeSolanaConnection();
     const client = createSolanaNamespace({
       connection,
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle() },
+      deps: { solanaRpc: fakeSolanaRpc() },
     });
     const receipt = await client.send([fakeIx], { cluster: "devnet" });
     expect(receipt.rail).toBe("self-pay");
@@ -98,7 +93,7 @@ describe("client.send", () => {
     const client = createSolanaNamespace({
       connection,
       koraUrl: "http://kora",
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle(), kora: fakeKora() },
+      deps: { solanaRpc: fakeSolanaRpc(), kora: fakeKora() },
     });
     const receipt = await client.send([fakeIx], { cluster: "devnet", feeToken: USDC_DEVNET });
     expect(receipt.rail).toBe("fronted");
@@ -117,7 +112,7 @@ describe("client.send", () => {
     const connection = fakeSolanaConnection();
     const client = createSolanaNamespace({
       connection,
-      deps: { solanaRpc: fakeSolanaRpc({ onGetLatestBlockhash: () => { blockhashCalls += 1; } }), oracle: fakeOracle() },
+      deps: { solanaRpc: fakeSolanaRpc({ onGetLatestBlockhash: () => { blockhashCalls += 1; } }) },
     });
     const sim = await client.simulate([fakeIx], { cluster: "devnet" });
     const callsAfterSimulate = blockhashCalls;
@@ -134,14 +129,14 @@ describe("client.send", () => {
     const simConnection = fakeSolanaConnection();
     const simClient = createSolanaNamespace({
       connection: simConnection,
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle() },
+      deps: { solanaRpc: fakeSolanaRpc() },
     });
     const sim = await simClient.simulate([fakeIx], { cluster: "devnet" });
 
     const sendConnection = fakeSolanaConnection();
     const sendClient = createSolanaNamespace({
       connection: sendConnection,
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle() },
+      deps: { solanaRpc: fakeSolanaRpc() },
     });
     const receipt = await sendClient.send([fakeIx], { cluster: "devnet" });
 
@@ -160,7 +155,7 @@ describe("client.send", () => {
     const client = createSolanaNamespace({
       connection,
       koraUrl: "http://kora",
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle(), kora: fakeKora() },
+      deps: { solanaRpc: fakeSolanaRpc(), kora: fakeKora() },
     });
     const sim = await client.simulate([fakeIx], { cluster: "devnet", feeToken: USDC_DEVNET });
 
@@ -175,7 +170,7 @@ describe("client.send", () => {
     const connection = fakeSolanaConnection();
     const client = createSolanaNamespace({
       connection,
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle() },
+      deps: { solanaRpc: fakeSolanaRpc() },
     });
     const receipt = await client.send([fakeIx], { cluster: "devnet", feeToken: USDC_DEVNET });
     expect(receipt.rail).toBe("self-pay");
@@ -185,7 +180,7 @@ describe("client.send", () => {
   it("send without a cluster rejects (cluster is required per-call, no silent default)", async () => {
     const client = createSolanaNamespace({
       connection: fakeSolanaConnection(),
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle() },
+      deps: { solanaRpc: fakeSolanaRpc() },
     });
     await expect(client.send([fakeIx], {})).rejects.toThrow(/cluster required/i);
   });

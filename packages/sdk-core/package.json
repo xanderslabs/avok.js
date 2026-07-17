@@ -44,7 +44,6 @@
   "dependencies": {
     "@avokjs/contracts": "workspace:*",
     "@avokjs/shared-origin": "workspace:*",
-    "@avokjs/oracle": "workspace:*",
     "@avokjs/solana-txengine": "workspace:*",
     "@avokjs/txengine": "workspace:*",
     "@avokjs/wallet-core": "workspace:*",

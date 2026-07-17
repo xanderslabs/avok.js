@@ -1,6 +1,4 @@
 import type { Address, Hex } from "viem";
-import type { PriceFeed } from "@avokjs/contracts";
-import type { PriceOracle } from "@avokjs/oracle";
 import type { RpcClient, SimCallResult, SimulateArgs, SimCall, StateOverride, ReadArgs } from "../src/rpc.js";
 
 export interface FakeRpcConfig {
@@ -54,14 +52,6 @@ export class FakeRpcClient implements RpcClient {
   sendRawTransaction(s: Hex) { this.sent.push(s); return Promise.resolve(("0x" + "ab".repeat(32)) as Hex); }
   getTransactionReceipt(hash: Hex) { return Promise.resolve(this.cfg.receipts?.[hash] ?? null); }
 }
-
-/** Fake oracle: returns nativeE8 for the chain's native feed and feeTokenE8 for any other feed. */
-export function oracleFor(nativeFeed: PriceFeed, nativeE8: bigint, feeTokenE8: bigint): PriceOracle {
-  return { read: async (feed: PriceFeed) => ({ priceE8: feed === nativeFeed ? nativeE8 : feeTokenE8 }) };
-}
-
-/** Dummy oracle for tests that never invoke pricing. */
-export const neverOracle: PriceOracle = { read: async () => { throw new Error("oracle.read not expected in this test"); } };
 
 /** A fetch double routed by `${method} ${pathSuffix}`. */
 export function makeFakeFetch(routes: Record<string, { status?: number; body: unknown }>) {

@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import type { Address } from "viem";
 import type { Connection } from "../src/types.js";
 import type { SolanaRpcClient, LatestBlockhash, KoraClient } from "@avokjs/solana-txengine";
-import type { PriceOracle } from "@avokjs/oracle";
 import { createSolanaNamespace } from "../src/client/solana.js";
 
 const USER_ADDR = "11111111111111111111111111111111";
@@ -55,10 +54,6 @@ function fakeSolanaRpc(): SolanaRpcClient {
   };
 }
 
-function fakeOracle(): PriceOracle {
-  return { async read() { return { priceE8: 100_000_000n }; } };
-}
-
 function fakeKora(): KoraClient {
   return {
     getPayerSigner: async () => ({ payment_address: USER_ADDR, signer_address: USER_ADDR }),
@@ -81,7 +76,7 @@ describe("client.simulate", () => {
     const connection = fakeSolanaConnection({ onSign: () => { signed = true; } });
     const client = createSolanaNamespace({
       connection,
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle() },
+      deps: { solanaRpc: fakeSolanaRpc() },
     });
     const sim = await client.simulate([fakeIx], { cluster: "devnet" });
     expect(sim.success).toBe(true);
@@ -95,7 +90,7 @@ describe("client.simulate", () => {
     const client = createSolanaNamespace({
       connection,
       koraUrl: "http://kora",
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle(), kora: fakeKora() },
+      deps: { solanaRpc: fakeSolanaRpc(), kora: fakeKora() },
     });
     // An explicit null in opts forces self-pay — no quote, no sign — even with a Kora configured.
     const sim = await client.simulate([fakeIx], { cluster: "devnet", feeToken: null });
@@ -108,7 +103,7 @@ describe("client.simulate", () => {
     const client = createSolanaNamespace({
       connection,
       koraUrl: "http://kora",
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle(), kora: fakeKora() },
+      deps: { solanaRpc: fakeSolanaRpc(), kora: fakeKora() },
     });
     const sim = await client.simulate([fakeIx], { cluster: "devnet", feeToken: USDC_DEVNET });
     expect(sim.resolved.rail).toBe("fronted");
@@ -121,7 +116,7 @@ describe("client.simulate", () => {
     const connection = fakeSolanaConnection();
     const client = createSolanaNamespace({
       connection,
-      deps: { solanaRpc: fakeSolanaRpc(), oracle: fakeOracle() },
+      deps: { solanaRpc: fakeSolanaRpc() },
     });
     const sim = await client.simulate([fakeIx], { cluster: "devnet", feeToken: USDC_DEVNET });
     expect(sim.resolved.rail).toBe("self-pay");

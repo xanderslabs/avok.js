@@ -11,11 +11,9 @@ import {
   railFromContext,
   type NativeFeeEstimate,
 } from "@avokjs/txengine";
-import type { PriceOracle } from "@avokjs/oracle";
 
 export interface LeanResolveArgs {
   rpc: RpcClient;
-  oracle: PriceOracle;
   chain: EvmChainProfile;
   address: Address;
   userCalls: Call[];
@@ -35,7 +33,7 @@ export interface LeanResolveArgs {
  */
 export async function leanResolve(args: LeanResolveArgs): Promise<ResolvedBatch> {
   let nativeFee: NativeFeeEstimate | undefined;
-  const { rpc, oracle, chain, address, userCalls, ctx, nonce, deadline } = args;
+  const { rpc, chain, address, userCalls, ctx, nonce, deadline } = args;
 
   const rail = railFromContext(ctx);
   const feeCalls: Call[] = [];
