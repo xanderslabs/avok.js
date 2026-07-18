@@ -31,7 +31,7 @@ function installStrictFetch(handler: (url: string) => unknown) {
 }
 
 const CHAIN_10_CONFIG = {
-  chains: { 10: { fronter: "0x3333333333333333333333333333333333333333", supportedTokens: [], bufferBps: 1500, marginBps: 500 } },
+  chains: { 10: { sponsor: "0x3333333333333333333333333333333333333333", supportedTokens: [], bufferBps: 1500, marginBps: 500 } },
 };
 
 describe("the default fetch is bound to the global", () => {

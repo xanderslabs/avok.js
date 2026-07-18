@@ -5,13 +5,13 @@ import { makeSelfPaySplFixture, makeAltMessageBytes } from "./helpers/solana-fix
 
 describe("decodeCompiledMessage", () => {
   it("decodes fee payer + instructions from a compiled SPL-transfer message", async () => {
-    const { messageBytes, expectedFeePayer, fronterAta, amount } = await makeSelfPaySplFixture();
+    const { messageBytes, expectedFeePayer, sponsorAta, amount } = await makeSelfPaySplFixture();
     const { feePayer, instructions } = decodeCompiledMessage(messageBytes);
 
     expect(feePayer).toBe(expectedFeePayer);
     const transfers = instructions.map(classifySplTransfer).filter(Boolean);
     expect(transfers).toHaveLength(1);
-    expect(transfers[0]).toMatchObject({ destination: fronterAta, amount });
+    expect(transfers[0]).toMatchObject({ destination: sponsorAta, amount });
   });
 
   it("refuses to decode a message that uses Address Lookup Tables (accounts unresolvable from bytes)", async () => {

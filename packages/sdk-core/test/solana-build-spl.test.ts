@@ -64,7 +64,7 @@ describe("solana.buildSplTransfer — create-ATA payer per rail", () => {
   });
 
   // A fee token names a rail the operator has not configured, so the send will fall back to self-pay —
-  // and the rent payer must fall back with it. Naming an absent fronter here would build a transaction
+  // and the rent payer must fall back with it. Naming an absent sponsor here would build a transaction
   // whose payer slot nobody funds or signs for.
   it("sponsored requested but no Kora configured: the rent payer falls back to the user", async () => {
     const cfg = fakeConfig() as unknown as Record<string, unknown>;

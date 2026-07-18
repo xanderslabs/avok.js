@@ -69,7 +69,7 @@ const fakeRpc = {
 export async function makeSelfPaySplFixture(): Promise<{
   messageBytes: Uint8Array;
   expectedFeePayer: string;
-  fronterAta: string;
+  sponsorAta: string;
   amount: bigint;
   mint: string;
 }> {
@@ -83,7 +83,7 @@ export async function makeSelfPaySplFixture(): Promise<{
   const amount = AMOUNT;
 
   // Compute the destination ATA (the address the transfer instruction encodes as destination)
-  const fronterAta = await associatedTokenAddress(mint, RECIPIENT_OWNER);
+  const sponsorAta = await associatedTokenAddress(mint, RECIPIENT_OWNER);
 
   const { instructions } = await buildSplTransfer({
     rpc: fakeRpc,
@@ -111,7 +111,7 @@ export async function makeSelfPaySplFixture(): Promise<{
   return {
     messageBytes,
     expectedFeePayer: signer.address as string,
-    fronterAta,
+    sponsorAta,
     amount,
     mint,
   };

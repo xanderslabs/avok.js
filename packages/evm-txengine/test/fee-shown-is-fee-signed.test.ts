@@ -13,13 +13,13 @@ import type { ResolvedBatch } from "../src/types.js";
  *
  * On real hardware that shipped: the app displayed a 0.001921 USDC network fee and the chain moved
  * 0.004104 — the user consented to one number and signed another. Verified on chain, tx
- * 0xf3f16510…b246: wallet → fronter, 4104 base units, against a 1921 quote.
+ * 0xf3f16510…b246: wallet → sponsor, 4104 base units, against a 1921 quote.
  *
  * The fee is now priced ONCE, at resolve, carried on the batch, and merely SURFACED here. This test
  * decodes the actual feeCall calldata and asserts the displayed amount equals it.
  */
 const FEE_TOKEN = "0x3600000000000000000000000000000000000000" as Address;
-const FRONTER = "0x25eD210D5b4D23e3d3d6cA7FEAB40ebF77Bc6A16" as Address;
+const SPONSOR = "0x25eD210D5b4D23e3d3d6cA7FEAB40ebF77Bc6A16" as Address;
 const WALLET = "0xC459d1c3D00Bc07F06331c0335647DF3D28DEC06" as Address;
 const SIGNED_FEE = 4104n; // what the batch committed to — the number the user signs
 
@@ -31,8 +31,8 @@ const batch: ResolvedBatch = {
     {
       to: FEE_TOKEN,
       value: 0n,
-      // transfer(fronter, 4104)
-      data: `0xa9059cbb${FRONTER.slice(2).padStart(64, "0")}${SIGNED_FEE.toString(16).padStart(64, "0")}` as `0x${string}`,
+      // transfer(sponsor, 4104)
+      data: `0xa9059cbb${SPONSOR.slice(2).padStart(64, "0")}${SIGNED_FEE.toString(16).padStart(64, "0")}` as `0x${string}`,
     },
   ],
   userCalls: [],

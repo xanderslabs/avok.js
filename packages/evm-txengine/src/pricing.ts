@@ -7,7 +7,7 @@ import type { Call, NativeFeeEstimate } from "./types.js";
  * Estimate what a SELF-PAY transaction will cost the wallet in native gas.
  *
  * No oracle and no fee token: self-pay is paid in the chain's own gas asset, so there is no currency
- * to convert into and no fronter to reimburse. Just gas × price. (The old sponsored `priceFee`/
+ * to convert into and no sponsor to reimburse. Just gas × price. (The old sponsored `priceFee`/
  * `buildFeeCall` — the bespoke relay's fee model — retired with the 4337 rewrite; the paymaster now
  * prices the sponsored fee.)
  */

@@ -113,7 +113,7 @@ export function createViemRpcClient(client: ViemLike): RpcClient {
         // above returns gasPrice, so a 0 tip prices the transaction at exactly gasPrice — correct.
         //
         // Anything else (an RPC that is down, a rate limit) must PROPAGATE. Swallowing it would quote
-        // a 0 tip off a transport failure, under-bid the transaction, and leave the fronter short —
+        // a 0 tip off a transport failure, under-bid the transaction, and leave the sponsor short —
         // an error path that eats the error is how the last round of bugs got their disguise.
         if ((e as { name?: string })?.name === "Eip1559FeesNotSupportedError") return 0n;
         throw e;

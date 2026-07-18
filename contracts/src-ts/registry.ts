@@ -405,26 +405,3 @@ export function listFeeTokens(chainId?: ChainId): { chainId: ChainId; token: Tok
   }
   return out;
 }
-
-/** Default fee guardrail: the priced fee may be at most 2× the RAW gas cost (i.e. ≤100% total
- *  buffer+margin markup). Real markups are ~20%, so this only trips on clearly-abusive misconfig. */
-export const DEFAULT_MAX_FEE_MULTIPLE_BPS = 20_000;
-
-/**
- * Sanity guardrail shared by the EVM and Solana fee pricers: fail loud if the operator's fee markup
- * (buffer + margin, in bps over the raw gas cost) would push the priced fee past `maxFeeMultipleBps`
- * (default DEFAULT_MAX_FEE_MULTIPLE_BPS). The raw gas already includes the fronted wrapper + fee
- * transfer, so this bounds ONLY the operator markup — not the legitimate gas the relayer pays — and
- * stops a fat-fingered margin from quietly overcharging the user.
- */
-export function assertFeeMarkupWithinGuardrail(markupBpsOverRaw: number, maxFeeMultipleBps?: number): void {
-  const totalBps = 10_000 + markupBpsOverRaw;
-  const maxBps = maxFeeMultipleBps ?? DEFAULT_MAX_FEE_MULTIPLE_BPS;
-  if (totalBps > maxBps) {
-    throw new Error(
-      `Priced fee would be ${(totalBps / 10_000).toFixed(2)}× the raw gas cost ` +
-        `(${((totalBps - 10_000) / 100).toFixed(2)}% buffer+margin markup), exceeding the ` +
-        `${(maxBps / 10_000).toFixed(2)}× guardrail — check the paymaster fee config (bufferBps/marginBps).`,
-    );
-  }
-}

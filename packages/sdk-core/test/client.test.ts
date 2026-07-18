@@ -13,7 +13,7 @@ import { makeFakePasskey, makeFakeRpc } from "./fakes.js";
 const CHAIN = getChainProfile(10)!;
 const FEE_TOKEN = Object.values(CHAIN.tokens)[0]!.address;
 const WALLET = "0x1111111111111111111111111111111111111111" as const;
-const FRONTER = "0x3333333333333333333333333333333333333333" as const;
+const SPONSOR = "0x3333333333333333333333333333333333333333" as const;
 const TO = "0x2222222222222222222222222222222222222222" as const;
 
 // Non-zero canonical implementation for tests that exercise the undelegated authorization path.
@@ -88,7 +88,7 @@ function makeFakeRelayFetch(id = "r1"): FetchLike {
         status: 200,
         json: async () => ({
           chains: {
-            10: { fronter: FRONTER, supportedTokens: [FEE_TOKEN], bufferBps: 1500, marginBps: 500 },
+            10: { sponsor: SPONSOR, supportedTokens: [FEE_TOKEN], bufferBps: 1500, marginBps: 500 },
           },
         }),
       };

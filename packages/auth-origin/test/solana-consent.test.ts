@@ -71,7 +71,7 @@ async function makeSplFixture() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const signer = toKitSigner({ state, passkey: passkey as any });
 
-  const fronterAta = await associatedTokenAddress(MINT, RECIPIENT_OWNER);
+  const sponsorAta = await associatedTokenAddress(MINT, RECIPIENT_OWNER);
 
   const { instructions } = await buildSplTransfer({
     rpc: fakeRpc,
@@ -98,7 +98,7 @@ async function makeSplFixture() {
   return {
     messageBytes,
     expectedFeePayer: signer.address as string,
-    fronterAta,
+    sponsorAta,
     amount: AMOUNT,
   };
 }
@@ -320,7 +320,7 @@ describe("decodeSolanaConsent", () => {
   });
 
   it("renders an SPL transfer line with destination + amount and the fee payer", async () => {
-    const { messageBytes, expectedFeePayer, fronterAta, amount } = await makeSplFixture();
+    const { messageBytes, expectedFeePayer, sponsorAta, amount } = await makeSplFixture();
     const view = decodeSolanaConsent(messageBytes, { cluster: "mainnet-beta" });
 
     expect(view.feePayer).toBe(expectedFeePayer);
@@ -328,7 +328,7 @@ describe("decodeSolanaConsent", () => {
 
     const transfer = view.instructions.find((l) => l.kind === "spl-transfer");
     expect(transfer?.token).toMatchObject({
-      destination: fronterAta,
+      destination: sponsorAta,
       amount: amount.toString(),
     });
   });
