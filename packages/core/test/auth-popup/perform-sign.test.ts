@@ -4,8 +4,8 @@ import { recoverAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { getUserOperationHash, entryPoint08Address } from "viem/account-abstraction";
 import { parseSiweMessage } from "viem/siwe";
-import { performSign, type SignKeys } from "../src/sign/perform-sign.js";
-import type { WalletState } from "@avokjs/core/wallet";
+import { performSign, type SignKeys } from "../../src/auth-popup/sign/perform-sign.js";
+import type { WalletState } from "../../src/wallet/index.js";
 
 // A real viem account — so signatures are genuinely verifiable, not stubbed.
 const evm = privateKeyToAccount(`0x${"11".repeat(32)}`);

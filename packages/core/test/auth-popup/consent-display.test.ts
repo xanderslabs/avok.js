@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getAddress, maxUint256, parseUnits } from "viem";
-import { formatConsentDisplay } from "../src/sign/consent-display.js";
-import type { ConsentLine } from "../src/sign/consent.js";
+import { formatConsentDisplay } from "../../src/auth-popup/sign/consent-display.js";
+import type { ConsentLine } from "../../src/auth-popup/sign/consent.js";
 
 const ADDR = getAddress("0x9999999999999999999999999999999999999999");
 const TOKEN = getAddress("0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85");

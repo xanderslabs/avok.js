@@ -8,3 +8,9 @@ export { MissingRpIdError, assertRpId } from "./config.js";
 export { resolveAppConfig } from "./app/branding.js";
 export type { AppConfig } from "./app/branding.js";
 export { materializeWalletState } from "./sign/wallet-state.js";
+
+// The ceremony surface the hosted popup page mounts (see core/auth-popup/app + the emitter). Exposed
+// so the page — and a future mountAuthPopup / <AuthPopup> — drive the SAME decode+sign the tests pin.
+export { performSign } from "./sign/perform-sign.js";
+export { decodeSignConsent, type SignConsentRequest } from "./sign/consent.js";
+export { formatConsentDisplay } from "./sign/consent-display.js";

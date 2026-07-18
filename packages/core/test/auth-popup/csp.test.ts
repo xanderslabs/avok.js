@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 
 // These read the BUILT output. `pnpm build:app` must have run — the suite says so loudly rather
 // than silently passing on a stale or absent build.
-const OUT = resolve(process.cwd(), "app-inlined");
+const OUT = resolve(process.cwd(), "auth-popup/app-inlined");
 const built = existsSync(resolve(OUT, "csp-headers.txt"));
 const csp = () => readFileSync(resolve(OUT, "csp-headers.txt"), "utf8");
 
@@ -92,7 +92,7 @@ describe("the CSP guard is not silently skipped", () => {
     // looks passing is the failure mode #6's 78 rotted errors were made of.
     if (!built) {
       throw new Error(
-        "app-inlined/csp-headers.txt is missing — run `pnpm build:app` before this suite. " +
+        "app-inlined/csp-headers.txt is missing — run `pnpm emit:auth-page` before this suite. " +
           "The CSP guards cannot run against a build that does not exist.",
       );
     }

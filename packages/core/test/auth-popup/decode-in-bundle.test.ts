@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const SIGN_TSX = readFileSync(resolve(process.cwd(), "app", "src", "sign.tsx"), "utf8");
+const SIGN_TSX = readFileSync(resolve(process.cwd(), "auth-popup/app", "src", "sign.tsx"), "utf8");
 
 describe("the sign popup is self-contained (#8)", () => {
   it("makes NO network call at all", () => {

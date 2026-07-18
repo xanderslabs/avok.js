@@ -12,7 +12,7 @@ import {
   decodeCompiledMessage,
   classifySplTransfer,
   type DecodedIx,
-} from "@avokjs/core/decode";
+} from "../../solana/decode.js";
 
 // ── Well-known program addresses (protocol constants) ─────────────────────────
 // Solana compute-budget program

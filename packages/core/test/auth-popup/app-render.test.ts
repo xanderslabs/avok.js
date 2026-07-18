@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveAppConfig } from "../src/app/branding.js";
-import type { OriginConfig } from "../src/config.js";
+import { resolveAppConfig } from "../../src/auth-popup/app/branding.js";
+import type { OriginConfig } from "../../src/auth-popup/config.js";
 
 // The operator's baked config. Deliberately mounted on a SUBDOMAIN with a narrower rpId — that gap
 // is what the pinned-rpId guard below exists for.
@@ -38,7 +38,7 @@ describe("the popup's config", () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     for (const entry of ["authorize.tsx", "sign.tsx"]) {
-      const src = readFileSync(join(__dirname, "../app/src", entry), "utf8");
+      const src = readFileSync(join(__dirname, "../../auth-popup/app/src", entry), "utf8");
       expect(src).not.toMatch(/new URL\([^)]*authOrigin[^)]*\)\s*\.hostname/);
       expect(src).not.toMatch(/rpId:\s*new URL/);
     }
@@ -54,7 +54,7 @@ describe("the popup's config", () => {
   it("the popups reply in the channel's ChannelResult shape (kind-discriminated)", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const read = (f: string) => readFileSync(join(__dirname, "../app/src", f), "utf8");
+    const read = (f: string) => readFileSync(join(__dirname, "../../auth-popup/app/src", f), "utf8");
 
     const authorize = read("authorize.tsx");
     expect(authorize).toMatch(/postMessage\(\s*\{\s*kind:\s*"authorize"/);
@@ -78,7 +78,7 @@ describe("the popup's config", () => {
   it("the sign popup announces `ready` so the opener can re-send the lost request", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const sign = readFileSync(join(__dirname, "../app/src/sign.tsx"), "utf8");
+    const sign = readFileSync(join(__dirname, "../../auth-popup/app/src/sign.tsx"), "utf8");
     expect(sign).toMatch(/opener\?\.postMessage\(\s*\{\s*kind:\s*"ready"\s*\}/);
     // It must be sent from the same effect that attaches the listener — announcing before listening
     // reintroduces the race in miniature.
@@ -99,7 +99,7 @@ describe("the popup's config", () => {
   it("the sign popup never enables Approve on a failed consent decode", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const sign = readFileSync(join(__dirname, "../app/src/sign.tsx"), "utf8");
+    const sign = readFileSync(join(__dirname, "../../auth-popup/app/src/sign.tsx"), "utf8");
 
     // Scope to the decode block. (Elsewhere, `setActions(true)` legitimately re-enables Approve
     // after a FAILED PASSKEY attempt — that is post-decode, the user has seen the request, and
@@ -142,7 +142,7 @@ describe("the sign popup constrains its assertion to the session's passkey", () 
   it("authorize RECORDS the credential from the gesture it already performs (no second prompt)", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const authorize = readFileSync(join(__dirname, "../app/src/authorize.tsx"), "utf8");
+    const authorize = readFileSync(join(__dirname, "../../auth-popup/app/src/authorize.tsx"), "utf8");
 
     // The credentialId falls out of withDiscoveredKeys' meta — it must NOT trigger another discover().
     expect(authorize).toMatch(/meta\.credentialId/);
@@ -155,7 +155,7 @@ describe("the sign popup constrains its assertion to the session's passkey", () 
   it("sign PASSES the credential into withDiscoveredKeys, and falls back if it is unusable", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const sign = readFileSync(join(__dirname, "../app/src/sign.tsx"), "utf8");
+    const sign = readFileSync(join(__dirname, "../../auth-popup/app/src/sign.tsx"), "utf8");
 
     expect(sign).toMatch(/credentialId: credential/);
     // A credential that has been removed or synced away must not dead-end the user in a wallet they
@@ -180,7 +180,7 @@ describe("the popups enforce Trusted Types", () => {
   it("the popup sources contain NO script-injection sink", async () => {
     const { readFileSync, readdirSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const dir = join(__dirname, "../app/src");
+    const dir = join(__dirname, "../../auth-popup/app/src");
 
     for (const file of readdirSync(dir).filter((f) => /\.tsx?$/.test(f))) {
       const src = readFileSync(join(dir, file), "utf8");

@@ -6,10 +6,10 @@ import {
   deriveSlotId,
   serializeBlob,
   type VaultReader,
-} from "@avokjs/core/wallet";
-import { OrphanedCredentialError, SlotUnreachableError, materializeWalletState } from "../src/sign/wallet-state.js";
+} from "../../src/wallet/index.js";
+import { OrphanedCredentialError, SlotUnreachableError, materializeWalletState } from "../../src/auth-popup/sign/wallet-state.js";
 // FakePasskeyAdapter and FakeVaultReader live in wallet-core test helpers.
-import { FakePasskeyAdapter, FakeVaultReader } from "../../core/test/wallet/fakes.js";
+import { FakePasskeyAdapter, FakeVaultReader } from "../wallet/fakes.js";
 
 describe("materializeWalletState", () => {
   it("reconstructs a PRIMARY offline with NO vault read", async () => {

@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { encodeAbiParameters, encodeFunctionData, getAddress, type Hex } from "viem";
 import { AvokWalletImplementationABI, MODE_BATCH } from "@avokjs/contracts";
-import { decodeSignConsent, type SignConsentRequest } from "../src/sign/consent.js";
-import { formatConsentDisplay } from "../src/sign/consent-display.js";
+import { decodeSignConsent, type SignConsentRequest } from "../../src/auth-popup/sign/consent.js";
+import { formatConsentDisplay } from "../../src/auth-popup/sign/consent-display.js";
 
 /**
  * The consent screen must show what the user is ACTUALLY sending.

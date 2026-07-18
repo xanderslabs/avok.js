@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { encodeFunctionData, erc20Abi, getAddress, parseUnits } from "viem";
-import { decodeConsent, decodeSignConsent } from "../src/sign/consent.js";
+import { decodeConsent, decodeSignConsent } from "../../src/auth-popup/sign/consent.js";
 
 const OP_USDC = "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"; // from contracts registry (chain 10)
 

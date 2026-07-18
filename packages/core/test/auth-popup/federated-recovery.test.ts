@@ -21,8 +21,8 @@ import {
   deriveSlotId,
   serializeBlob,
   withDiscoveredWalletKey,
-} from "@avokjs/core/wallet";
-import { FakePasskeyAdapter, FakeVaultReader } from "../../core/test/wallet/fakes.js";
+} from "../../src/wallet/index.js";
+import { FakePasskeyAdapter, FakeVaultReader } from "../wallet/fakes.js";
 
 describe("shared-origin fresh-device recovery (origin sign bootstrap)", () => {
   it("reconstructs a SECONDARY from its on-chain access-slot blob on a fresh device, and signs", async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { VERSION } from "../src/index.js";
-import pkg from "../package.json" with { type: "json" };
+import { VERSION } from "../../src/auth-popup/index.js";
+import pkg from "../../package.json" with { type: "json" };
 
 describe("auth-origin", () => {
   /**

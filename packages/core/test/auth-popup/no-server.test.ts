@@ -18,13 +18,13 @@ function codeOf(file: string): string {
     })
     .join("\n");
 }
-const config = () => codeOf("src/config.ts");
+const config = () => codeOf("src/auth-popup/config.ts");
 
 describe("the auth origin is not a server (#8)", () => {
   it("has no HTTP server, no OIDC, no mint, and NO STORE", () => {
     // WHY: Challenge/Code/Session stores were already deleted (store/ports.ts records each);
     // ClientStore was the last one, and it dies with `curated`. The origin now holds NOTHING.
-    for (const f of ["src/http.ts", "src/oidc", "src/mint", "src/store", "src/app/render.ts"]) {
+    for (const f of ["src/auth-popup/http.ts", "src/auth-popup/oidc", "src/auth-popup/mint", "src/auth-popup/store", "src/auth-popup/app/render.ts"]) {
       expect(existsSync(p(f))).toBe(false);
     }
   });
@@ -59,7 +59,7 @@ describe("the auth origin is not a server (#8)", () => {
   it("KEEPS the popup's config resolution, incl. the anchor chain it actually reads", () => {
     // WHY: checked before deleting rather than assumed — app/branding.ts reads anchorChainId to
     // derive defaultChainId for the popup. Removing it as "server config" would have broken the page.
-    const branding = readFileSync(p("src/app/branding.ts"), "utf8");
+    const branding = readFileSync(p("src/auth-popup/app/branding.ts"), "utf8");
     expect(branding).toMatch(/resolveAppConfig/);
     expect(branding).toMatch(/anchorChainId/);
   });

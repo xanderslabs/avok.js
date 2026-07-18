@@ -2,8 +2,8 @@ import { base58, base64 } from "@scure/base";
 import { createSiweMessage } from "viem/siwe";
 import type { Hex, PrivateKeyAccount } from "viem";
 import { getUserOperationHash, entryPoint08Address, type UserOperation } from "viem/account-abstraction";
-import { encodeOffchainMessage } from "@avokjs/core/solana";
-import type { SolanaSigner, WalletState } from "@avokjs/core/wallet";
+import { encodeOffchainMessage } from "../../solana/index.js";
+import type { SolanaSigner, WalletState } from "../../wallet/index.js";
 import type { SignConsentRequest } from "./consent.js";
 
 /** The keys a SINGLE passkey gesture yields (`withDiscoveredKeys`). */

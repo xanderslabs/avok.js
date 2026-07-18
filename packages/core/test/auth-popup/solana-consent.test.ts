@@ -6,15 +6,15 @@ import {
   AccountRole,
   compressTransactionMessageUsingAddressLookupTables,
 } from "@solana/kit";
-import { createWallet } from "@avokjs/core/wallet";
+import { createWallet } from "../../src/wallet/index.js";
 import {
   buildSolanaMessage,
   buildSplTransfer,
   associatedTokenAddress,
   toKitSigner,
-} from "@avokjs/core/solana";
-import { decodeSolanaConsent, formatBaseUnits } from "../src/sign/solana-consent.js";
-import { decodeSignConsent } from "../src/sign/consent.js";
+} from "../../src/solana/index.js";
+import { decodeSolanaConsent, formatBaseUnits } from "../../src/auth-popup/sign/solana-consent.js";
+import { decodeSignConsent } from "../../src/auth-popup/sign/consent.js";
 
 // ── FakePasskeyAdapter (mirrors solana-txengine test helpers) ─────────────────
 class FakePasskeyAdapter {
