@@ -70,7 +70,7 @@ the chain registry (`contracts/src-ts/registry.ts`) that only fed the oracle are
 | Package | Before | After |
 |---|---|---|
 | `oracle` | Chainlink/Pyth USD feeds for the consent fee | **Deleted** — quote-sourced fee display |
-| `txengine` → **`evm-txengine`** | Full engine: prepare/simulate/send/track + bundler + paymaster wrappers + fee bound | **Calldata builder + `toAvokSmartAccount` + delegation/authorization helpers + ABI/mode consts.** simulate/send/track/bundler/paymaster → viem AA / permissionless |
+| `txengine` → **`evm-txengine`** | Full engine: prepare/simulate/send/track + bundler + paymaster wrappers + fee bound | **Renamed; the oracle fee bound is gone.** Keeps the calldata builder, `toAvokSmartAccount`, delegation/authorization helpers, ABI/mode consts, self-pay estimate/track — **and the bundler/paymaster clients, which a prior cleanup had already reduced to thin viem `createBundlerClient`/`createPaymasterClient` wrappers, kept here as the viem adapters Avok provides** (Option A; not inlined into `sdk-core` — moving already-viem code would only churn the 7702 single-gesture test seam, the one this doc's Risks flag as most fragile). `sdk-core` drives them; the manual single-gesture orchestration is unchanged. |
 | `solana-txengine` | Full engine incl. self-pay send/track | **Self-pay thinned to `@solana/kit`;** message/SPL builders, signer adapter, consent decode, and the **Kora sponsored orchestration** kept |
 | `sdk-core` | send handlers call the bespoke engines + oracle | Rewired to the minimal builders + viem/kit; `computeBoundedUserOpFee` / oracle wiring removed; **consent decode kept** (fee input changes only) |
 | `provider` | EIP-1193/Wallet-Standard over the bespoke send | Same surface, over the thinned send path |
@@ -112,6 +112,13 @@ the two-surface model of the vision doc.
 - **Key isolation:** the 7702-authorization / UserOp signing gesture stays after all IO (no live key
   across a network round-trip) even when leaning on viem/permissionless.
 - **Compatibility:** confirm viem AA / permissionless drive the Avok EntryPoint-v0.8 `validateUserOp`
-  account correctly (the `toAvokSmartAccount` adapter is the seam).
+  account correctly (the `toAvokSmartAccount` adapter is the seam). **STILL AN OPEN LIVE GATE, not
+  closed by this redesign.** `validateUserOp` has never run against a real EntryPoint — only against
+  tests (see `contracts/AUDIT-validateUserOp.md`), and the acceptance harness that would close it
+  (`examples/scripts/acceptance-evm-*`, referenced from `sdk-core/src/internal/index.ts`) **does not
+  exist in the repo.** The redesign left the sponsored UserOp assembly + gesture byte-for-byte, so it
+  neither closed nor widened this gate — but "verified" for the sponsored rail means *tests with fake
+  bundler/paymaster/RPC*, never a real testnet send. Closing it needs the harness written + Arc
+  operator infra (paymaster + bundler URLs + a funded wallet on the one chain the contract is deployed).
 - **No self-pay regression:** the type-4 authorization + `execute(MODE_BATCH)` path must produce the
   same on-chain effect the bespoke path did.

@@ -103,7 +103,10 @@ from `contracts/src-ts/`; it does not need the Solidity itself.
 - **`AvokWalletImplementation`** — the EIP-7702 delegate. **Dual-mode 7702 + 4337**: it
   exposes one `validateUserOp` so a *fronted/sponsored* send can ride an ERC-4337
   UserOperation through a **bring-your-own ERC-7677 paymaster**. It imports only two
-  interfaces from account-abstraction (`IAccount`, `PackedUserOperation`).
+  interfaces from account-abstraction (`IAccount`, `PackedUserOperation`). The SDK rail is
+  named **sponsored**, but the model is *fronting*: the paymaster advances the gas and the user
+  **repays it in the fee token** — not a gift. The contract layer keeps the older word "fronted"
+  for exactly this reason; the two terms name the same path, so `fronted/sponsored` above is deliberate.
 
 So there is **one deployed Avok contract** (`AvokWalletImplementation`, a CREATE2 singleton) with
 `PasskeyAccessVault` folded in as an abstract base. Name **registration/minting was removed** —
