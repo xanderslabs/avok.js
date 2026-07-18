@@ -17,7 +17,7 @@ export default defineConfig({
   dts: { resolve: true },
   sideEffects: false,
   treeshake: true,
-  noExternal: [/^@avokjs\/(sdk-core|wallet-core|evm-txengine|solana-txengine)$/],
+  noExternal: [/^@avokjs\/core/],
   external: [
     "react",
     "react/jsx-runtime",
@@ -32,7 +32,7 @@ export default defineConfig({
     /^@noble\//,
     /^@scure\//,
     "micro-key-producer",
-    "@avokjs/shared-origin",
+    "@avokjs/core/channel",
     "@avokjs/contracts",
   ],
 });

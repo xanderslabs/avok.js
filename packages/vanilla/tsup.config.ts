@@ -8,7 +8,7 @@ import { defineConfig } from "tsup";
 // unpublished workspace package, and dts.resolve inlines their types into one
 // self-contained index.d.ts. Only PUBLISHED @avokjs packages (shared-origin,
 // contracts) and third-party runtime deps stay external — the consumer installs
-// those from npm. The lazy shared-origin chunk (dynamic import of @avokjs/shared-origin)
+// those from npm. The lazy shared-origin chunk (dynamic import of @avokjs/core/channel)
 // stays external and code-split, so an own-origin-only app never loads it.
 export default defineConfig({
   entry: ["src/index.ts"],
@@ -17,7 +17,7 @@ export default defineConfig({
   dts: { resolve: true },
   sideEffects: false,
   treeshake: true,
-  noExternal: [/^@avokjs\/(sdk-core|wallet-core|evm-txengine|solana-txengine|provider)$/, /^@wallet-standard\//],
+  noExternal: [/^@avokjs\/core/, /^@wallet-standard\//],
   external: [
     "viem",
     /^viem\//,
@@ -27,7 +27,7 @@ export default defineConfig({
     /^@noble\//,
     /^@scure\//,
     "micro-key-producer",
-    "@avokjs/shared-origin",
+    "@avokjs/core/channel",
     "@avokjs/contracts",
   ],
 });

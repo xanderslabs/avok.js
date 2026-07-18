@@ -1,5 +1,5 @@
-import { createOwnOriginConnection as sdkCreateOwnOrigin, createSharedOriginConnection as sdkSharedOrigin } from "@avokjs/sdk-core";
-import type { StorageAdapter, Connection, SelfCustodyConnection } from "@avokjs/sdk-core";
+import { createOwnOriginConnection as sdkCreateOwnOrigin, createSharedOriginConnection as sdkSharedOrigin } from "@avokjs/core";
+import type { StorageAdapter, Connection, SelfCustodyConnection } from "@avokjs/core";
 import type { ChainId } from "@avokjs/contracts";
 import { buildWebPasskeyAdapter } from "./web-platform.js";
 import { webStorage } from "./web-storage.js";
@@ -8,18 +8,18 @@ import { webStorage } from "./web-storage.js";
 // wallet on construction (VISION §6 Surface 1). See provider-wiring.ts.
 export { createAvokClient } from "./provider-wiring.js";
 export type { WiredAvokClient } from "./provider-wiring.js";
-export type { StorageAdapter, Connection, SelfCustodyConnection, Account, ClientConfig, FullAvokClient, UseOnlyAvokClient, AvokClientFor, AvokClient, CreateOpts, ContinueOpts, TxOpts, EvmFeeToken } from "@avokjs/sdk-core";
+export type { StorageAdapter, Connection, SelfCustodyConnection, Account, ClientConfig, FullAvokClient, UseOnlyAvokClient, AvokClientFor, AvokClient, CreateOpts, ContinueOpts, TxOpts, EvmFeeToken } from "@avokjs/core";
 export type {
   SolanaTxOpts,
   SolanaNamespace,
   SolanaResolved,
   SolanaSimulation,
   FeeToken,
-} from "@avokjs/sdk-core";
+} from "@avokjs/core";
 
 // The named error thrown when a fee token is not supported on the target chain (chain-specific
 // fee-token addresses). Exported as a value so apps can `instanceof`-narrow it.
-export { UnsupportedFeeTokenError } from "@avokjs/sdk-core";
+export { UnsupportedFeeTokenError } from "@avokjs/core";
 
 // Re-export webStorage so callers can supply the same adapter to other seams.
 export { webStorage } from "./web-storage.js";
@@ -54,7 +54,7 @@ export function createOwnOriginConnection(opts: {
 /**
  * Lazily creates a shared-origin connection backed by a web popup channel.
  *
- * Bundle-purity: @avokjs/shared-origin (createWebChannel) is imported DYNAMICALLY
+ * Bundle-purity: @avokjs/core/channel (createWebChannel) is imported DYNAMICALLY
  * inside this function body. An own-origin-only app that never calls
  * createSharedOriginConnection will never pull the network shared-origin chunk — the
  * function must remain async and the network import may not be hoisted to a
@@ -67,13 +67,13 @@ export async function createSharedOriginConnection(opts: {
   authOrigin: string;
   storage?: StorageAdapter;
 }): Promise<Connection> {
-  const { createWebChannel } = await import("@avokjs/shared-origin");
+  const { createWebChannel } = await import("@avokjs/core/channel");
   const channel = createWebChannel({ authOrigin: opts.authOrigin });
   // sdk-core's createSharedOriginConnection internally passes storage to
-  // @avokjs/shared-origin, which expects a synchronous get() → string|null.
+  // @avokjs/core/channel, which expects a synchronous get() → string|null.
   // sdk-core's own StorageAdapter allows async, but all real webStorage() /
   // memoryStorage() implementations are synchronous — narrow the type precisely.
-  const storage = (opts.storage ?? webStorage()) as import("@avokjs/shared-origin").StorageAdapter;
+  const storage = (opts.storage ?? webStorage()) as import("@avokjs/core/channel").StorageAdapter;
   // #8: no redirectUri / clientId / scopes. There is no redirect (the popup postMessages back to
   // its opener), no client registration (open/MetaMask-style — anybody can implement the
   // connection), and no scopes. The config is just the origin to open.

@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { WebAuthnPasskeyAdapter, withDiscoveredKeys } from "@avokjs/wallet-core";
+import { WebAuthnPasskeyAdapter, withDiscoveredKeys } from "@avokjs/core/wallet";
 import { performSign } from "../../src/sign/perform-sign.js";
 import { decodeSignConsent, type SignConsentRequest } from "../../src/sign/consent.js";
 import { formatConsentDisplay } from "../../src/sign/consent-display.js";

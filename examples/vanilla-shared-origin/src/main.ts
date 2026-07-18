@@ -1,6 +1,6 @@
 /**
  * App bootstrap — SHARED-ORIGIN (use-only). The connection is built asynchronously:
- * createSharedOriginConnection dynamically imports @avokjs/shared-origin (bundle
+ * createSharedOriginConnection dynamically imports @avokjs/core/channel (bundle
  * purity), so this shows a "Connecting…" state, then mounts on success or an
  * error state if the operator's auth origin can't be reached. The wallet's keys
  * live at config.authOrigin; signing happens in its popup — only signatures

@@ -6,13 +6,13 @@ import {
   AccountRole,
   compressTransactionMessageUsingAddressLookupTables,
 } from "@solana/kit";
-import { createWallet } from "@avokjs/wallet-core";
+import { createWallet } from "@avokjs/core/wallet";
 import {
   buildSolanaMessage,
   buildSplTransfer,
   associatedTokenAddress,
   toKitSigner,
-} from "@avokjs/solana-txengine";
+} from "@avokjs/core/solana";
 import { decodeSolanaConsent, formatBaseUnits } from "../src/sign/solana-consent.js";
 import { decodeSignConsent } from "../src/sign/consent.js";
 

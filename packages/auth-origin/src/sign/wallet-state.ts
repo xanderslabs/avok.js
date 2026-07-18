@@ -8,7 +8,7 @@ import {
   reconstructWalletState,
   resolveBlob,
   vaultForChainFromRegistry,
-} from "@avokjs/wallet-core";
+} from "@avokjs/core/wallet";
 import { getChainProfile } from "@avokjs/contracts";
 
 /**

@@ -1,0 +1,98 @@
+{
+  "name": "@avokjs/core",
+  "version": "0.0.1",
+  "description": "Avok core: passkey/access-vault smart-EOA wallet engine — wallet primitives, EVM (7702) + Solana tx, client, provider, shared-origin channel. Framework-agnostic.",
+  "keywords": [
+    "passkey",
+    "eip-7702",
+    "smart-eoa",
+    "wallet",
+    "solana",
+    "avok"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "author": "kamsich02",
+  "homepage": "https://github.com/xanderslabs/avok.js#readme",
+  "bugs": {
+    "url": "https://github.com/xanderslabs/avok.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xanderslabs/avok.js.git",
+    "directory": "packages/core"
+  },
+  "private": true,
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./engine": {
+      "types": "./dist/engine.d.ts",
+      "import": "./dist/engine.js"
+    },
+    "./internal": {
+      "types": "./dist/internal/index.d.ts",
+      "import": "./dist/internal/index.js"
+    },
+    "./decode": {
+      "types": "./dist/solana/decode.d.ts",
+      "import": "./dist/solana/decode.js"
+    },
+    "./wallet": {
+      "types": "./dist/wallet/index.d.ts",
+      "import": "./dist/wallet/index.js"
+    },
+    "./evm": {
+      "types": "./dist/evm/index.d.ts",
+      "import": "./dist/evm/index.js"
+    },
+    "./solana": {
+      "types": "./dist/solana/index.d.ts",
+      "import": "./dist/solana/index.js"
+    },
+    "./channel": {
+      "types": "./dist/channel/index.d.ts",
+      "import": "./dist/channel/index.js"
+    },
+    "./provider": {
+      "types": "./dist/provider/index.d.ts",
+      "import": "./dist/provider/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "@avokjs/contracts": "workspace:*",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "@scure/base": "^2.2.0",
+    "@scure/bip39": "^2.2.0",
+    "@solana-program/compute-budget": "^0.16.0",
+    "@solana-program/system": "^0.12.2",
+    "@solana-program/token": "^0.13.0",
+    "@solana/kit": "^6.10.0",
+    "@wallet-standard/base": "^1.1.0",
+    "@wallet-standard/wallet": "^1.1.0",
+    "micro-key-producer": "^0.9.0",
+    "viem": "^2.54.6"
+  },
+  "devDependencies": {
+    "@solana/kora": "^0.2.1",
+    "@types/node": "^26.1.0",
+    "@wallet-standard/app": "^1.1.0",
+    "jsdom": "^29.1.1",
+    "tsup": "^8.5.1",
+    "vitest": "^4.1.10"
+  }
+}

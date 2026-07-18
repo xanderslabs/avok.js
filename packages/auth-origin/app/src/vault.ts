@@ -1,4 +1,4 @@
-import { vaultForChainFromRegistry, type VaultReader } from "@avokjs/wallet-core";
+import { vaultForChainFromRegistry, type VaultReader } from "@avokjs/core/wallet";
 import { getChainProfile } from "@avokjs/contracts";
 
 /**

@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { WebAuthnPasskeyAdapter, withDiscoveredKeys } from "@avokjs/wallet-core";
+import { WebAuthnPasskeyAdapter, withDiscoveredKeys } from "@avokjs/core/wallet";
 import { vaultForChain } from "./vault.js";
 import { readConfig } from "./config.js";
 

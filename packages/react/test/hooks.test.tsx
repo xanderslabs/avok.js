@@ -9,7 +9,7 @@ import {
   useLogin,
   useLogout,
 } from "../src/index.js";
-import type { AvokClient } from "@avokjs/sdk-core";
+import type { AvokClient } from "@avokjs/core";
 
 afterEach(cleanup);
 

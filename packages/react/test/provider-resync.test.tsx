@@ -1,7 +1,7 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { afterEach, describe, it, expect } from "vitest";
 import { AvokProvider, useAccount } from "../src/index.js";
-import type { AvokClient } from "@avokjs/sdk-core";
+import type { AvokClient } from "@avokjs/core";
 
 afterEach(cleanup);
 

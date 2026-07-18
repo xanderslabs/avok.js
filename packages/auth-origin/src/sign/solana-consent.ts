@@ -4,7 +4,7 @@
  * Converts compiled Solana message bytes (the unsigned wire format the user signs)
  * into a human-readable SolanaConsentView. No passkey gesture, no RPC calls.
  *
- * Shared decode core: @avokjs/solana-txengine/decode
+ * Shared decode core: @avokjs/core/decode
  */
 import { base64 } from "@scure/base";
 import { getSolanaTokenProfile } from "@avokjs/contracts";
@@ -12,7 +12,7 @@ import {
   decodeCompiledMessage,
   classifySplTransfer,
   type DecodedIx,
-} from "@avokjs/solana-txengine/decode";
+} from "@avokjs/core/decode";
 
 // ── Well-known program addresses (protocol constants) ─────────────────────────
 // Solana compute-budget program

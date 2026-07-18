@@ -17,7 +17,7 @@
  * IMPORTANT: values stored here are NON-SECRET strings only (session metadata,
  * subname, etc.). Cryptographic key material never passes through here.
  */
-import type { StorageAdapter } from "@avokjs/sdk-core";
+import type { StorageAdapter } from "@avokjs/core";
 
 /** Mirrors the async subset of expo-secure-store that this adapter uses. */
 export interface SecureStoreShape {

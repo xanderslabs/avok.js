@@ -7,7 +7,7 @@ import { render, screen, act, cleanup } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { afterEach, describe, it, expect, vi } from "vitest";
-import type { AvokClient } from "@avokjs/sdk-core";
+import type { AvokClient } from "@avokjs/core";
 import { AvokProvider, useAccount, useCreate } from "../src/index.js";
 
 afterEach(cleanup);

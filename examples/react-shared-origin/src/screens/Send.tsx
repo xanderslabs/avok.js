@@ -287,7 +287,7 @@ export function Send() {
           method: "wallet_sendCalls",
           params: [{
             version: "2.0.0",
-            from: account.evm.address,
+            from: account!.evm.address, // guarded by the component-level `if (!account) return null`
             chainId: numberToHex(chain.id),
             atomicRequired: false,
             calls: evmSendCalls.map((c) => ({ to: c.to, value: numberToHex(c.value), data: c.data })),

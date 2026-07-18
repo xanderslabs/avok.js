@@ -47,7 +47,7 @@
   },
   "dependencies": {
     "@avokjs/contracts": "workspace:*",
-    "@avokjs/shared-origin": "workspace:*",
+    "@avokjs/core": "workspace:*",
     "@noble/curves": "^2.2.0",
     "@noble/hashes": "^2.2.0",
     "@scure/base": "^2.2.0",
@@ -59,13 +59,8 @@
     "viem": "^2.54.6"
   },
   "devDependencies": {
-    "@avokjs/provider": "workspace:*",
-    "@avokjs/sdk-core": "workspace:*",
     "@wallet-standard/base": "^1.1.0",
     "@wallet-standard/wallet": "^1.1.0",
-    "@avokjs/solana-txengine": "workspace:*",
-    "@avokjs/evm-txengine": "workspace:*",
-    "@avokjs/wallet-core": "workspace:*",
     "@types/node": "^26.1.0",
     "jsdom": "^29.1.1",
     "tsup": "^8.5.1",

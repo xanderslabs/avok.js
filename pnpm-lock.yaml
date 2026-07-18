@@ -247,6 +247,9 @@ importers:
 
   packages/auth-origin:
     dependencies:
+      '@avokjs/core':
+        specifier: workspace:*
+        version: link:../core
       '@noble/curves':
         specifier: ^2.2.0
         version: 2.2.0
@@ -266,15 +269,9 @@ importers:
       '@avokjs/react':
         specifier: workspace:*
         version: link:../react
-      '@avokjs/solana-txengine':
-        specifier: workspace:*
-        version: link:../solana-txengine
       '@avokjs/vanilla':
         specifier: workspace:*
         version: link:../vanilla
-      '@avokjs/wallet-core':
-        specifier: workspace:*
-        version: link:../wallet-core
       '@solana/kit':
         specifier: ^6.10.0
         version: 6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)
@@ -318,18 +315,63 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
 
-  packages/evm-txengine:
+  packages/core:
     dependencies:
       '@avokjs/contracts':
         specifier: workspace:*
         version: link:../../contracts
-      '@avokjs/wallet-core':
-        specifier: workspace:*
-        version: link:../wallet-core
+      '@noble/curves':
+        specifier: ^2.2.0
+        version: 2.2.0
+      '@noble/hashes':
+        specifier: ^2.2.0
+        version: 2.2.0
+      '@scure/base':
+        specifier: ^2.2.0
+        version: 2.2.0
+      '@scure/bip39':
+        specifier: ^2.2.0
+        version: 2.2.0
+      '@solana-program/compute-budget':
+        specifier: ^0.16.0
+        version: 0.16.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3))
+      '@solana-program/system':
+        specifier: ^0.12.2
+        version: 0.12.2(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3))
+      '@solana-program/token':
+        specifier: ^0.13.0
+        version: 0.13.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3))
+      '@solana/kit':
+        specifier: ^6.10.0
+        version: 6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)
+      '@wallet-standard/base':
+        specifier: ^1.1.0
+        version: 1.1.1
+      '@wallet-standard/wallet':
+        specifier: ^1.1.0
+        version: 1.1.1
+      micro-key-producer:
+        specifier: ^0.9.0
+        version: 0.9.0
       viem:
         specifier: ^2.54.6
         version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
     devDependencies:
+      '@solana/kora':
+        specifier: ^0.2.1
+        version: 0.2.1(@solana-program/compute-budget@0.16.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana-program/token@0.13.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana/kit-plugin-instruction-plan@0.6.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana/kit-plugin-payer@0.6.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana/kit-plugin-rpc@0.6.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6))
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
+      '@wallet-standard/app':
+        specifier: ^1.1.0
+        version: 1.1.1
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1(@noble/hashes@2.2.0)
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(postcss@8.5.16)(typescript@6.0.3)(yaml@2.9.0)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
@@ -365,43 +407,15 @@ importers:
         specifier: ^1.5.5
         version: 1.5.6
 
-  packages/provider:
-    dependencies:
-      '@avokjs/evm-txengine':
-        specifier: workspace:*
-        version: link:../evm-txengine
-      '@avokjs/sdk-core':
-        specifier: workspace:*
-        version: link:../sdk-core
-      '@wallet-standard/base':
-        specifier: ^1.1.0
-        version: 1.1.1
-      '@wallet-standard/wallet':
-        specifier: ^1.1.0
-        version: 1.1.1
-      viem:
-        specifier: ^2.54.6
-        version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
-    devDependencies:
-      '@wallet-standard/app':
-        specifier: ^1.1.0
-        version: 1.1.1
-      jsdom:
-        specifier: ^29.1.1
-        version: 29.1.1(@noble/hashes@2.2.0)
-      vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
-
   packages/react:
     dependencies:
       '@avokjs/vanilla':
         specifier: workspace:*
         version: link:../vanilla
     devDependencies:
-      '@avokjs/sdk-core':
+      '@avokjs/core':
         specifier: workspace:*
-        version: link:../sdk-core
+        version: link:../core
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -429,9 +443,9 @@ importers:
       '@avokjs/contracts':
         specifier: workspace:*
         version: link:../../contracts
-      '@avokjs/shared-origin':
+      '@avokjs/core':
         specifier: workspace:*
-        version: link:../shared-origin
+        version: link:../core
       '@noble/curves':
         specifier: ^2.2.0
         version: 2.2.0
@@ -466,18 +480,6 @@ importers:
         specifier: ^2.54.6
         version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
     devDependencies:
-      '@avokjs/evm-txengine':
-        specifier: workspace:*
-        version: link:../evm-txengine
-      '@avokjs/sdk-core':
-        specifier: workspace:*
-        version: link:../sdk-core
-      '@avokjs/solana-txengine':
-        specifier: workspace:*
-        version: link:../solana-txengine
-      '@avokjs/wallet-core':
-        specifier: workspace:*
-        version: link:../wallet-core
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -500,107 +502,14 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
 
-  packages/sdk-core:
-    dependencies:
-      '@avokjs/contracts':
-        specifier: workspace:*
-        version: link:../../contracts
-      '@avokjs/evm-txengine':
-        specifier: workspace:*
-        version: link:../evm-txengine
-      '@avokjs/shared-origin':
-        specifier: workspace:*
-        version: link:../shared-origin
-      '@avokjs/solana-txengine':
-        specifier: workspace:*
-        version: link:../solana-txengine
-      '@avokjs/wallet-core':
-        specifier: workspace:*
-        version: link:../wallet-core
-      '@scure/base':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@solana/kit':
-        specifier: ^6.10.0
-        version: 6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)
-      viem:
-        specifier: ^2.54.6
-        version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
-    devDependencies:
-      '@noble/curves':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@types/node':
-        specifier: ^26.1.0
-        version: 26.1.0
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(postcss@8.5.16)(typescript@6.0.3)(yaml@2.9.0)
-      vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
-
-  packages/shared-origin:
-    dependencies:
-      '@scure/base':
-        specifier: ^2.2.0
-        version: 2.2.0
-      viem:
-        specifier: ^2.54.6
-        version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
-    devDependencies:
-      '@types/node':
-        specifier: ^26.1.0
-        version: 26.1.0
-      vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
-
-  packages/solana-txengine:
-    dependencies:
-      '@avokjs/contracts':
-        specifier: workspace:*
-        version: link:../../contracts
-      '@avokjs/wallet-core':
-        specifier: workspace:*
-        version: link:../wallet-core
-      '@noble/hashes':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@solana-program/compute-budget':
-        specifier: ^0.16.0
-        version: 0.16.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3))
-      '@solana-program/system':
-        specifier: ^0.12.2
-        version: 0.12.2(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3))
-      '@solana-program/token':
-        specifier: ^0.13.0
-        version: 0.13.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3))
-      '@solana/kit':
-        specifier: ^6.10.0
-        version: 6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)
-    devDependencies:
-      '@noble/curves':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@scure/base':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@solana/kora':
-        specifier: ^0.2.1
-        version: 0.2.1(@solana-program/compute-budget@0.16.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana-program/token@0.13.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana/kit-plugin-instruction-plan@0.6.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana/kit-plugin-payer@0.6.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana/kit-plugin-rpc@0.6.0(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6)))(@solana/kit@6.10.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)(utf-8-validate@6.0.6))
-      vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
-
   packages/vanilla:
     dependencies:
       '@avokjs/contracts':
         specifier: workspace:*
         version: link:../../contracts
-      '@avokjs/shared-origin':
+      '@avokjs/core':
         specifier: workspace:*
-        version: link:../shared-origin
+        version: link:../core
       '@noble/curves':
         specifier: ^2.2.0
         version: 2.2.0
@@ -629,21 +538,6 @@ importers:
         specifier: ^2.54.6
         version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
     devDependencies:
-      '@avokjs/evm-txengine':
-        specifier: workspace:*
-        version: link:../evm-txengine
-      '@avokjs/provider':
-        specifier: workspace:*
-        version: link:../provider
-      '@avokjs/sdk-core':
-        specifier: workspace:*
-        version: link:../sdk-core
-      '@avokjs/solana-txengine':
-        specifier: workspace:*
-        version: link:../solana-txengine
-      '@avokjs/wallet-core':
-        specifier: workspace:*
-        version: link:../wallet-core
       '@types/node':
         specifier: ^26.1.0
         version: 26.1.0
@@ -659,34 +553,6 @@ importers:
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(postcss@8.5.16)(typescript@6.0.3)(yaml@2.9.0)
-      vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
-
-  packages/wallet-core:
-    dependencies:
-      '@avokjs/contracts':
-        specifier: workspace:*
-        version: link:../../contracts
-      '@noble/curves':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@scure/base':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@scure/bip39':
-        specifier: ^2.2.0
-        version: 2.2.0
-      micro-key-producer:
-        specifier: ^0.9.0
-        version: 0.9.0
-      viem:
-        specifier: ^2.54.6
-        version: 2.54.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@3.25.76)
-    devDependencies:
-      jsdom:
-        specifier: ^29.1.1
-        version: 29.1.1(@noble/hashes@2.2.0)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.1.3(@types/node@26.1.0)(esbuild@0.27.7)(terser@5.48.0)(yaml@2.9.0))
