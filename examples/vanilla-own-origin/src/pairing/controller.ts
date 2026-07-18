@@ -13,7 +13,7 @@
  *   holder.confirm(wrapQr)→ writes the access slot on chain, and PAYS for it
  *   ...then the new device calls continue() to log in, like any other passkey.
  */
-import type { FullAvokClient } from "@avokjs/vanilla";
+import type { FullAvokClient } from "@avokjs/core";
 
 type Pairing = FullAvokClient["enrollAccessSlot"]["viaPairing"];
 /** Derived from the SDK so the demo cannot drift from the real `complete()` shape. */

@@ -1,5 +1,5 @@
-import { WebAuthnPasskeyAdapter } from "@avokjs/core/wallet";
-import type { PasskeyAdapter } from "@avokjs/core/wallet";
+import { WebAuthnPasskeyAdapter } from "../wallet/index.js";
+import type { PasskeyAdapter } from "../wallet/index.js";
 
 /**
  * Builds a WebAuthnPasskeyAdapter for the own-origin connection path.

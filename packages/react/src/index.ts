@@ -17,8 +17,8 @@ export {
   createOwnOriginConnection,
   createSharedOriginConnection,
   webStorage,
-} from "@avokjs/vanilla";
+} from "@avokjs/core";
 
-// ─── Types (re-exported from @avokjs/vanilla so the published .d.ts is self-contained) ───
-export type { AvokClient, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, Account, CreateOpts, ContinueOpts, TxOpts, ClientConfig, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/vanilla";
-export { UnsupportedFeeTokenError } from "@avokjs/vanilla";
+// ─── Types (re-exported from @avokjs/core so the published .d.ts is self-contained) ───
+export type { AvokClient, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, Account, CreateOpts, ContinueOpts, TxOpts, ClientConfig, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/core";
+export { UnsupportedFeeTokenError } from "@avokjs/core";

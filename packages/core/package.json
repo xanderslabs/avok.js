@@ -22,7 +22,6 @@
     "url": "git+https://github.com/xanderslabs/avok.js.git",
     "directory": "packages/core"
   },
-  "private": true,
   "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

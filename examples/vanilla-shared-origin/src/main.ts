@@ -9,8 +9,8 @@
 import "./theme/tokens.css";
 import "./ui/ui.css";
 
-import { createAvokClient, createSharedOriginConnection } from "@avokjs/vanilla";
-import type { UseOnlyAvokClient } from "@avokjs/vanilla";
+import { createAvokClient, createSharedOriginConnection } from "@avokjs/core";
+import type { UseOnlyAvokClient } from "@avokjs/core";
 import { el } from "./core/el.js";
 import { config } from "./config.js";
 import { createCtx, mountApp } from "./core/app.js";

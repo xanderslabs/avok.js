@@ -3,7 +3,7 @@ import {
   createAuthorizeController,
   createSetupController,
 } from "../src/pairing/controller.js";
-import type { FullAvokClient } from "@avokjs/vanilla";
+import type { FullAvokClient } from "@avokjs/core";
 
 type Pairing = FullAvokClient["pairing"];
 

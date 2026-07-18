@@ -7,7 +7,7 @@
  * useSend/useSimulate/useSign/useFeeTokens hooks are gone.
  */
 import { useCallback, useState } from "react";
-import type { UseOnlyAvokClient, FullAvokClient, Account, CreateOpts, ContinueOpts } from "@avokjs/core";
+import type { UseOnlyAvokClient, FullAvokClient, Account, CreateOpts, ContinueOpts } from "@avokjs/core/engine";
 import { useAvokContext } from "./provider.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

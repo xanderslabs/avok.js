@@ -56,7 +56,6 @@
     "@avokjs/contracts": "workspace:*",
     "@avokjs/design": "workspace:*",
     "@avokjs/react": "workspace:*",
-    "@avokjs/vanilla": "workspace:*",
     "@noble/curves": "^2.2.0",
     "@solana/kit": "^6.10.0",
     "@testing-library/react": "^16.3.2",

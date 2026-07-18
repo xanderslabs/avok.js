@@ -12,7 +12,6 @@
   "dependencies": {
     "@avokjs/contracts": "workspace:*",
     "@avokjs/core": "workspace:*",
-    "@avokjs/vanilla": "workspace:*",
     "@solana-program/system": "^0.12.2",
     "@solana/kit": "^6.10.0",
     "viem": "^2.54.6"

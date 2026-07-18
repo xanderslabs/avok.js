@@ -49,7 +49,7 @@ export function Onboard(ctx: Ctx): HTMLElement {
   async function run(kind: Exclude<Busy, null>, op: () => Promise<{ evm: unknown }>): Promise<void> {
     set({ busy: kind, error: null });
     try {
-      const account = (await op()) as import("@avokjs/vanilla").Account;
+      const account = (await op()) as import("@avokjs/core").Account;
       markReturning();
       ctx.setAccount(account);
       ctx.go("home");

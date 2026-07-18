@@ -5,7 +5,7 @@
  * (Home · Send · Account) plus the active screen. Secondary screens (device,
  * access) render full-bleed with their own back affordance (no nav bar).
  */
-import type { Account, FullAvokClient } from "@avokjs/vanilla";
+import type { Account, FullAvokClient } from "@avokjs/core";
 import { el } from "./el.js";
 import { createStore, type Store } from "./store.js";
 import { config } from "../config.js";

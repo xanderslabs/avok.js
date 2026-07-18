@@ -13,8 +13,8 @@
  * Peer deps: react, react-native, expo-secure-store (all injected; not static).
  * No DOM imports in this graph.
  */
-import { createOwnOriginConnection as sdkCreateOwnOrigin } from "@avokjs/core";
-import type { StorageAdapter, Connection, SelfCustodyConnection } from "@avokjs/core";
+import { createOwnOriginConnection as sdkCreateOwnOrigin } from "@avokjs/core/engine";
+import type { StorageAdapter, Connection, SelfCustodyConnection } from "@avokjs/core/engine";
 import type { ChainId } from "@avokjs/contracts";
 import type { ReactNativePasskeyLike } from "@avokjs/core/wallet";
 import { buildNativePasskeyAdapter } from "./native-platform.js";
@@ -22,9 +22,9 @@ import { secureStoreStorage } from "./native-storage.js";
 
 // ─── Re-exports ───────────────────────────────────────────────────────────────
 
-export { createAvokClient } from "@avokjs/core";
-export type { StorageAdapter, Connection, Account, ClientConfig, CreateOpts, ContinueOpts, AvokClient, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, TxOpts, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/core";
-export { UnsupportedFeeTokenError } from "@avokjs/core";
+export { createAvokClient } from "@avokjs/core/engine";
+export type { StorageAdapter, Connection, Account, ClientConfig, CreateOpts, ContinueOpts, AvokClient, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, TxOpts, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/core/engine";
+export { UnsupportedFeeTokenError } from "@avokjs/core/engine";
 
 export type { ReactNativePasskeyLike, ReactNativePasskeyCreateResult, ReactNativePasskeyGetResult } from "@avokjs/core/wallet";
 

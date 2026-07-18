@@ -1,11 +1,11 @@
-import { createAvokClient as coreCreateAvokClient } from "@avokjs/core";
-import type { ClientConfig, Connection, AvokClientFor } from "@avokjs/core";
+import { createAvokClient as coreCreateAvokClient } from "../engine.js";
+import type { ClientConfig, Connection, AvokClientFor } from "../engine.js";
 import {
   createEip1193Provider,
   announceEip6963,
   registerAvokSolanaWallet,
   type Eip1193Provider,
-} from "@avokjs/core/provider";
+} from "../provider/index.js";
 
 // EIP-6963 identity for the announced Avok provider. A minimal inline icon keeps the bundle self-contained.
 const AVOK_ICON = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=";

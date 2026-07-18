@@ -6,8 +6,8 @@
 import "./theme/tokens.css";
 import "./ui/ui.css";
 
-import { createAvokClient, createOwnOriginConnection } from "@avokjs/vanilla";
-import type { FullAvokClient } from "@avokjs/vanilla";
+import { createAvokClient, createOwnOriginConnection } from "@avokjs/core";
+import type { FullAvokClient } from "@avokjs/core";
 import { config } from "./config.js";
 import { createCtx, mountApp } from "./core/app.js";
 import { Onboard } from "./screens/Onboard.js";

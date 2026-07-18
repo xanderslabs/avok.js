@@ -2,7 +2,7 @@ import { defineConfig } from "tsup";
 
 // @avokjs/core — the framework-agnostic engine (wallet primitives, EVM + Solana tx, client,
 // provider, shared-origin channel). Platform-neutral; the browser/RN platform adapters are injected
-// by the facades. Deps stay external (resolved by the consumer or re-bundled by @avokjs/vanilla).
+// by the facades. Deps stay external — @avokjs/core is published, so the consumer installs them.
 export default defineConfig({
   entry: [
     "src/index.ts",

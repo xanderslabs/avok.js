@@ -17,7 +17,7 @@ export default defineConfig({
   dts: { resolve: true },
   sideEffects: false,
   treeshake: true,
-  noExternal: [/^@avokjs\/core/],
+  noExternal: [],
   external: [
     "react",
     "react/jsx-runtime",

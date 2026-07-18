@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import * as vanilla from "../src/index.js";
+import * as vanilla from "../../../src/index.js";
 
 // cwd, not import.meta.url: this suite runs in a jsdom environment, where import.meta.url is
 // not a file: URL and `new URL(...)` would throw.

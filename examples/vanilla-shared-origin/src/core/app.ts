@@ -6,7 +6,7 @@
  * (Home · Send · Account) plus the active screen. Disconnect lives in Account
  * (not the shell), mirroring react-shared-origin.
  */
-import type { Account, UseOnlyAvokClient } from "@avokjs/vanilla";
+import type { Account, UseOnlyAvokClient } from "@avokjs/core";
 import { el } from "./el.js";
 import { createStore, type Store } from "./store.js";
 import { config } from "../config.js";

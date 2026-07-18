@@ -1,4 +1,4 @@
-import type { StorageAdapter } from "@avokjs/core";
+import type { StorageAdapter } from "../engine.js";
 
 /**
  * Returns a localStorage-backed StorageAdapter.

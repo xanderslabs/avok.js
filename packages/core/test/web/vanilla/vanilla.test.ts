@@ -1,12 +1,12 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
-import { createOwnOriginConnection, createSharedOriginConnection, webStorage } from "../src/index.js";
+import { createOwnOriginConnection, createSharedOriginConnection, webStorage } from "../../../src/index.js";
 import type {
   SolanaTxOpts,
   SolanaNamespace,
   SolanaResolved,
   SolanaSimulation,
   FeeToken,
-} from "@avokjs/vanilla";
+} from "../../../src/index.js";
 
 describe("createOwnOriginConnection", () => {
   // Step 1 (TDD): failing test — own-origin entry point wires the web trio.

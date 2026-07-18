@@ -6,9 +6,9 @@
  * The old useSend/useSimulate/useSign/useFeeTokens hooks are gone.
  */
 import { useCallback, useState } from "react";
-// Types are sourced from @avokjs/vanilla (a published dep whose .d.ts inlines
+// Types are sourced from @avokjs/core (a published dep whose .d.ts inlines
 // the private sdk-core types) so this package's published .d.ts stays self-contained.
-import type { UseOnlyAvokClient, FullAvokClient, Account, CreateOpts, ContinueOpts } from "@avokjs/vanilla";
+import type { UseOnlyAvokClient, FullAvokClient, Account, CreateOpts, ContinueOpts } from "@avokjs/core";
 import { useAvokContext } from "./provider.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

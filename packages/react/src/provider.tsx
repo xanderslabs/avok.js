@@ -16,7 +16,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { UseOnlyAvokClient, Account } from "@avokjs/vanilla";
+import type { UseOnlyAvokClient, Account } from "@avokjs/core";
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 

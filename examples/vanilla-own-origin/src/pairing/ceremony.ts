@@ -10,7 +10,7 @@ import { runImportCeremony, runExportCeremony, type PairingTransport, type Impor
 import { createBrowserQrTransport, CameraUnavailableError } from "@avokjs/core/qr";
 import { Button, Card } from "../ui/index.js";
 import { createSetupController, createAuthorizeController } from "./controller.js";
-import type { Account } from "@avokjs/vanilla";
+import type { Account } from "@avokjs/core";
 
 type Role = "import" | "export";
 type Phase = "loading" | "show" | "prompt-scan" | "scanning" | "working" | "camera-error" | "sas" | "done" | "rejected";
