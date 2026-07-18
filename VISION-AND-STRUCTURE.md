@@ -153,7 +153,7 @@ Each package must have one clear purpose; anything that duplicates another, or s
 out-of-scope item, is churn.
 
 **Publishing & bundling model (load-bearing — read before "fixing" a facade dependency).**
-`sdk-core` and the engines (`wallet-core`, `txengine`, `solana-txengine`, `oracle`, `provider`) are
+`sdk-core` and the engines (`wallet-core`, `evm-txengine`, `solana-txengine`, `provider`) are
 **private — never published standalone.** The published web artifact is **`@avokjs/vanilla`**, which
 **bundles** that engine graph (tsup `noExternal`) into one self-contained package whose `.d.ts`
 inlines their types. Consequently published packages (`react`, `helpers`) source their **types from
@@ -168,9 +168,8 @@ every facade). So `react → vanilla` and `helpers → vanilla` are **correct**,
 | `auth-origin` | Static clone-and-own popup page for the shared-origin ceremony. |
 | `shared-origin` *(was `network`)* | Browser client that drives the `auth-origin` popup. |
 | `provider` | EIP-1193/6963 + Solana Wallet Standard surface over a connection. |
-| `txengine` | EVM 7702 tx: simulate / send / track over self-pay and fronted rails. |
+| `evm-txengine` *(was `txengine`)* | EVM 7702 tx: simulate / send / track over self-pay and sponsored rails. |
 | `solana-txengine` | Solana tx: build / simulate / sign / submit / track. |
-| `oracle` | Pluggable USD price-feed readers (Chainlink, Pyth) for fee pricing. |
 | `helpers` | Read-only name **resolution** (`.eth` / `.sol` → address) + shared utilities. No registration. |
 | `sdk-core` | Platform-agnostic facades + utilities the framework facades build on. |
 | `react` / `react-native` / `vanilla` | Framework front doors over the core. |
