@@ -57,7 +57,7 @@ const solFinal = await client.solana.wait(solReceipt);
 
 **`send()` is not a confirmation, and `wait()` is not optional.** `send()` returns as soon as the
 transaction is handed off — `"submitted"` on self-pay (broadcast, not mined) and `"pending"` on
-fronted, where the receipt's `id` is the *relayer's intent id* and there is no signature yet at all.
+sponsored, where the receipt's `id` is the *relayer's intent id* and there is no signature yet at all.
 Neither status means the money moved, and neither can be linked to an explorer. `wait()` polls until
 the transaction actually lands and is **the only producer of `"confirmed"`**. Treat `send()` as done
 and you will report a transaction that never landed as a success. Both rails work the same way.

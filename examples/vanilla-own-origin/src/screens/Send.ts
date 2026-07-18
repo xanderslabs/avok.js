@@ -1,6 +1,6 @@
 /**
  * Send — framework-free port of react-own-origin's Send.tsx. Rail toggle (EVM /
- * Solana), per-rail self-pay vs fronted (fronted gated + the fronted-unavailable
+ * Solana), per-rail self-pay vs sponsored (sponsored gated + the sponsored-unavailable
  * copy when unconfigured), a "sign what you saw" consent review, then submit.
  *
  * Review SIMULATES, and Confirm sends THAT simulation — not a freshly built batch.
@@ -22,12 +22,12 @@ import { solanaExplorerTxUrl } from "@avokjs/helpers";
 import { formatAmount, txReduce, type TxState } from "@avokjs/helpers";
 import { classifySendError, type SendErrorKind } from "@avokjs/helpers";
 import { resolveRecipient } from "@avokjs/helpers";
-import { hasEvmFronted, hasSolanaFronted, type SolanaCluster } from "../config.js";
+import { hasEvmSponsored, hasSolanaSponsored, type SolanaCluster } from "../config.js";
 import { resolver } from "../resolver.js";
 import { Screen, Card, Field, AmountField, ConsentLines, TxStatus, ErrorNote, Button, ChainSwitcher, AddressText, Icon } from "../ui/index.js";
 
 type Rail = "evm" | "solana";
-type FeeMode = "self" | "fronted";
+type FeeMode = "self" | "sponsored";
 
 type EvmSim = Awaited<ReturnType<Ctx["client"]["evm"]["simulate"]>>;
 type SolanaSim = Awaited<ReturnType<Ctx["client"]["solana"]["simulate"]>>;
@@ -78,7 +78,7 @@ export function Send(ctx: Ctx): HTMLElement {
   let feeTokenLoad = 0;
   function loadSolanaFeeTokens(cluster: string) {
     const load = ++feeTokenLoad;
-    if (!hasSolanaFronted) {
+    if (!hasSolanaSponsored) {
       set({ solFeeTokens: [] });
       return;
     }
@@ -98,19 +98,19 @@ export function Send(ctx: Ctx): HTMLElement {
     const decimals = s.rail === "evm" ? (evmToken?.decimals ?? 18) : solToken.decimals;
     const symbol = s.rail === "evm" ? (evmToken?.symbol ?? "") : solToken.symbol;
     // Fee tokens are chain-specific ERC-20/SPL addresses — read them for the chain THIS transaction
-    // executes on, never from a global env var. Fronted needs the paymaster/bundler (EVM) or Kora
+    // executes on, never from a global env var. Sponsored needs the paymaster/bundler (EVM) or Kora
     // (Solana) URL AND at least one supported fee token on that chain. Solana asks KORA what it
     // accepts rather than offering the whole registry catalogue: a token the configured fee payer
     // refuses would fail at signing time for no reason the user could see.
-    const frontedFeeTokens =
+    const sponsoredFeeTokens =
       s.rail === "evm"
         ? ctx.client.evm.feeTokens(s.chainId).map((t) => ({ key: t.address as string, symbol: t.symbol }))
         : s.solFeeTokens.map((t) => ({ key: t.mint, symbol: t.symbol }));
-    const canFronted = (s.rail === "evm" ? hasEvmFronted : hasSolanaFronted) && frontedFeeTokens.length > 0;
-    const effectiveFeeMode: FeeMode = canFronted ? s.feeMode : "self";
+    const canSponsored = (s.rail === "evm" ? hasEvmSponsored : hasSolanaSponsored) && sponsoredFeeTokens.length > 0;
+    const effectiveFeeMode: FeeMode = canSponsored ? s.feeMode : "self";
     const selectedFeeToken =
-      effectiveFeeMode === "fronted" ? (frontedFeeTokens[s.feeTokenIdx]?.key ?? null) : null;
-    return { canFronted, effectiveFeeMode, chain, evmToken, solTokens, solToken, decimals, symbol, frontedFeeTokens, selectedFeeToken };
+      effectiveFeeMode === "sponsored" ? (sponsoredFeeTokens[s.feeTokenIdx]?.key ?? null) : null;
+    return { canSponsored, effectiveFeeMode, chain, evmToken, solTokens, solToken, decimals, symbol, sponsoredFeeTokens, selectedFeeToken };
   }
 
   function amountBaseFor(decimals: number): bigint | null {
@@ -231,7 +231,7 @@ export function Send(ctx: Ctx): HTMLElement {
           feeToken: selectedFeeToken as Address | null,
         });
         const signed = txReduce(s.txState, "signed");
-        // A self-pay receipt is SUBMITTED (broadcast, not mined); a fronted receipt is PENDING and its
+        // A self-pay receipt is SUBMITTED (broadcast, not mined); a sponsored receipt is PENDING and its
         // `id` is the relayer's INTENT ID — not a transaction hash, and it will never appear on an
         // explorer. Linking it, and calling this "confirmed", is how a transaction that never landed
         // was reported as a success. Ask the chain.
@@ -248,7 +248,7 @@ export function Send(ctx: Ctx): HTMLElement {
           // And the relayer's own reason was never surfaced here at all (the React demos do it): a
           // bare "Failed" is undiagnosable.
           ...(final.status === "failed" && final.error
-            ? { err: { kind: "fronted-unavailable" as const, message: `The relayer could not submit this transaction: ${final.error}` } }
+            ? { err: { kind: "sponsored-unavailable" as const, message: `The relayer could not submit this transaction: ${final.error}` } }
             : final.status !== "confirmed" && final.status !== "failed"
               ? { err: { kind: "unknown" as const, message: "The transaction was accepted but has not confirmed yet. Check the explorer before retrying — it may still land." } }
               : {}),
@@ -262,7 +262,7 @@ export function Send(ctx: Ctx): HTMLElement {
         });
         const signed = txReduce(s.txState, "signed");
         // Same rule as the EVM branch. A self-pay receipt is SUBMITTED (broadcast, not mined); a
-        // fronted receipt is PENDING, carries NO signature, and its `id` is the relayer's INTENT ID.
+        // sponsored receipt is PENDING, carries NO signature, and its `id` is the relayer's INTENT ID.
         // Linking that id produced an explorer page reading "Signature ... is not valid" underneath a
         // screen that said Confirmed. Never link an id; never claim a confirmation the chain has not
         // given.
@@ -276,7 +276,7 @@ export function Send(ctx: Ctx): HTMLElement {
           ...(final.signature ? { explorerUrl: solanaExplorerTxUrl(s.cluster, final.signature) } : {}),
           // A bare "Failed" is undiagnosable. The relayer tells us why it could not submit; show it.
           ...(final.status === "failed" && final.error
-            ? { err: { kind: "fronted-unavailable" as const, message: `The relayer could not submit this transaction: ${final.error}` } }
+            ? { err: { kind: "sponsored-unavailable" as const, message: `The relayer could not submit this transaction: ${final.error}` } }
             : final.status !== "confirmed" && final.status !== "failed"
               ? {
                   err: {
@@ -299,7 +299,7 @@ export function Send(ctx: Ctx): HTMLElement {
     set({ step: "form", evmSim: null, solSim: null, formError: null, err: null, explorerUrl: undefined, txState: txReduce(s.txState, "reset") });
   }
 
-  /** FRONTED fees are exact and signed. SELF-PAY fees are not: the chain charges at inclusion, so the
+  /** SPONSORED fees are exact and signed. SELF-PAY fees are not: the chain charges at inclusion, so the
    *  number is an estimate — but an estimate is still a number, and the user is owed one. */
   function feeLabel(): string {
     const { chain, symbol, solToken } = derive();
@@ -342,7 +342,7 @@ export function Send(ctx: Ctx): HTMLElement {
     //
     // Resolve the fee symbol on the rail the transaction actually runs on. Searching only the EVM
     // chain's tokens left a Solana fee token unfound, so the consent screen printed its raw mint.
-    const feeSymbol = effectiveFeeMode === "fronted"
+    const feeSymbol = effectiveFeeMode === "sponsored"
       ? (s.rail === "solana"
           ? (ctx.client.solana.feeTokens(s.cluster).find((t) => t.mint === selectedFeeToken)?.symbol ?? "the fee token")
           : (chain?.tokens.find((t) => t.address.toLowerCase() === (selectedFeeToken ?? "").toLowerCase())?.symbol ?? "the fee token"))
@@ -354,8 +354,8 @@ export function Send(ctx: Ctx): HTMLElement {
       s.resolvedFrom
         ? `Send: ${s.amount} ${symbol} to ${s.resolvedFrom} (${s.resolvedTo})`
         : `Send: ${s.amount} ${symbol} to ${s.resolvedTo ?? s.to}`,
-      effectiveFeeMode === "fronted"
-        ? `Fee mode: fronted — the paymaster pays the network fee and you repay it in ${feeSymbol}`
+      effectiveFeeMode === "sponsored"
+        ? `Fee mode: sponsored — the paymaster pays the network fee and you repay it in ${feeSymbol}`
         : `Fee mode: self-pay — you pay the network fee yourself, in ${feeSymbol} (this chain's native gas asset)`,
       `Transaction fee: ${feeLabel()}`,
     ];
@@ -394,7 +394,7 @@ export function Send(ctx: Ctx): HTMLElement {
   }
 
   function formView(): Node {
-    const { canFronted, effectiveFeeMode, chain, symbol, frontedFeeTokens, solTokens } = derive();
+    const { canSponsored, effectiveFeeMode, chain, symbol, sponsoredFeeTokens, solTokens } = derive();
     const multiToken = s.rail === "evm" && !!chain && chain.tokens.length > 1;
     const solMultiToken = s.rail === "solana" && solTokens.length > 1;
     return Screen(
@@ -473,10 +473,10 @@ export function Send(ctx: Ctx): HTMLElement {
           "div",
           { style: { display: "flex", gap: "8px" } },
           Button({ variant: effectiveFeeMode === "self" ? "primary" : "ghost", label: "Self-pay", onClick: () => set({ feeMode: "self" }) }),
-          Button({ variant: effectiveFeeMode === "fronted" ? "primary" : "ghost", label: "Fronted", disabled: !canFronted, onClick: () => set({ feeMode: "fronted" }) }),
+          Button({ variant: effectiveFeeMode === "sponsored" ? "primary" : "ghost", label: "Sponsored", disabled: !canSponsored, onClick: () => set({ feeMode: "sponsored" }) }),
         ),
-        effectiveFeeMode === "fronted" &&
-          frontedFeeTokens.length > 0 &&
+        effectiveFeeMode === "sponsored" &&
+          sponsoredFeeTokens.length > 0 &&
           el(
             "div",
             { style: { marginTop: "10px" } },
@@ -484,22 +484,22 @@ export function Send(ctx: Ctx): HTMLElement {
             el(
               "div",
               { style: { display: "flex", gap: "8px" } },
-              ...frontedFeeTokens.map((t, i) =>
+              ...sponsoredFeeTokens.map((t, i) =>
                 Button({ variant: s.feeTokenIdx === i ? "primary" : "ghost", label: t.symbol, onClick: () => set({ feeTokenIdx: i }) }),
               ),
             ),
           ),
-        !canFronted &&
+        !canSponsored &&
           el(
             "div",
             { style: { fontSize: "11px", marginTop: "8px", color: "var(--text3)" } },
             s.rail === "evm"
-              ? hasEvmFronted
-                ? "Fronted unavailable — no supported fee token on this chain."
-                : "Fronted (fronted) sends aren't available for this app."
-              : hasSolanaFronted
-                ? "Fronted unavailable — no supported fee token on this cluster."
-                : "Fronted (fronted) sends aren't available for this app.",
+              ? hasEvmSponsored
+                ? "Sponsored unavailable — no supported fee token on this chain."
+                : "Sponsored (sponsored) sends aren't available for this app."
+              : hasSolanaSponsored
+                ? "Sponsored unavailable — no supported fee token on this cluster."
+                : "Sponsored (sponsored) sends aren't available for this app.",
           ),
       ),
 

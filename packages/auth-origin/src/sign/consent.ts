@@ -124,7 +124,7 @@ export type SignConsentRequest =
   // Composite ops — one gesture. `authorization` present ⇒ the wallet is still undelegated and this
   // signature ALSO installs the 7702 delegation. The consent screen must disclose that; see below.
   | { op: "signSend"; tx: TransactionSerializable; authorization?: AuthorizationRequest }
-  | { op: "signFronted"; typedData: TypedDataDefinition; authorization?: AuthorizationRequest }
+  | { op: "signSponsored"; typedData: TypedDataDefinition; authorization?: AuthorizationRequest }
   | { op: "signUserOp"; userOp: UserOpRequest; chainId: number; authorization?: AuthorizationRequest }
   | { op: "signSolanaTransaction"; messageBytesB64: string; cluster?: string }
   | { op: "signSolanaMessage"; message: string };
@@ -149,8 +149,8 @@ export type SignConsent =
       maxFeeWei?: bigint;
       delegation?: Address;
     }
-  | { op: "signFronted"; view: ConsentView; delegation?: Address }
-  /** A 4337 fronted UserOp. `delegation` present ⇒ this ALSO installs the 7702 delegate. The paymaster
+  | { op: "signSponsored"; view: ConsentView; delegation?: Address }
+  /** A 4337 sponsored UserOp. `delegation` present ⇒ this ALSO installs the 7702 delegate. The paymaster
    *  charges the fee, so there is no fee line here (fee disclosure is the bounded FeeBreakdown, surfaced
    *  by the SDK's simulate) — only the batched calls and any delegation are shown. */
   | { op: "signUserOp"; chainId: number; calls: ConsentLine[]; delegation?: Address }
@@ -329,11 +329,11 @@ export function decodeSignConsent(request: SignConsentRequest): SignConsent {
         ...(request.authorization ? { delegation: request.authorization.address } : {}),
       };
 
-    case "signFronted": {
+    case "signSponsored": {
       const view = decodeSignConsent({ op: "signTypedData", typedData: request.typedData });
-      if (view.op !== "signTypedData") throw new Error("signFronted consent: expected a typed-data view");
+      if (view.op !== "signTypedData") throw new Error("signSponsored consent: expected a typed-data view");
       return {
-        op: "signFronted",
+        op: "signSponsored",
         view: view.view,
         ...(request.authorization ? { delegation: request.authorization.address } : {}),
       };

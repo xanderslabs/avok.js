@@ -24,9 +24,9 @@ describe("public API exports", () => {
   });
 
   // The bespoke Solana relay is GONE — not deprecated, not re-exported under an alias. Kora replaces it
-  // wholesale (sub-project #5); leaving a shim would keep a second, untested fronting dialect alive.
+  // wholesale (sub-project #5); leaving a shim would keep a second, untested sponsoring dialect alive.
   //
-  // `priceSolanaFee` went with it: KORA prices the fronted rail now, and a second pricer derived here
+  // `priceSolanaFee` went with it: KORA prices the sponsored rail now, and a second pricer derived here
   // could only ever disagree with the one that actually decides — which is what `fee_too_low` was.
   it("no longer exports the bespoke relay or a rival fee pricer", () => {
     for (const name of ["relay", "getStatus", "SolanaRelayerRejectedError", "priceSolanaFee"]) {

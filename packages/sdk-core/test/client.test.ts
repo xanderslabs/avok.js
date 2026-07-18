@@ -61,14 +61,14 @@ function makeFakeConnection(overrides: Partial<Connection> & { address?: Address
       authorizationList: [signedAuth],
     });
   });
-  c.signFronted = vi.fn(async (args: { typedData: unknown; authorization?: unknown }) => {
+  c.signSponsored = vi.fn(async (args: { typedData: unknown; authorization?: unknown }) => {
     const authorization = args.authorization
       ? await (conn.signAuthorization as (a: unknown) => Promise<unknown>)(args.authorization)
       : undefined;
     const signature = await (conn.signTypedData as (t: unknown) => Promise<Hex>)(args.typedData);
     return { signature, ...(authorization ? { authorization } : {}) };
   });
-  // The 4337 fronted composite: one gesture yields the raw userOpHash signature and, when undelegated,
+  // The 4337 sponsored composite: one gesture yields the raw userOpHash signature and, when undelegated,
   // the 7702 authorization. Delegates to signAuthorization so the existing spy counts the gestures.
   c.signUserOp = vi.fn(async (args: { userOp: unknown; chainId: number; authorization?: unknown }) => {
     const authorization = args.authorization
@@ -178,8 +178,8 @@ function makeFakeBundler(userOpHash = "0xuserophash" as Hex) {
   };
 }
 
-describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
-  it("builds a UserOp, runs the 7677 handshake, submits to the bundler, and returns rail=fronted with the userOpHash", async () => {
+describe("createAvokClient — sponsored send via 4337 UserOp (D3)", () => {
+  it("builds a UserOp, runs the 7677 handshake, submits to the bundler, and returns rail=sponsored with the userOpHash", async () => {
     const connection = makeFakeConnection() as Connection & { signUserOp: Mock };
     const bundler = makeFakeBundler("0xabc123hash");
     const paymaster = makeFakePaymaster();
@@ -204,7 +204,7 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
     expect(submitted.signature).toBe("0xu5e40p"); // the connection's signature, not the stub
     expect(submitted.paymasterData).toBe("0xfinal"); // the FINAL sponsorship, not the stub
     // The receipt id is the bundler's userOpHash — an intent id, not a tx hash.
-    expect(receipt.rail).toBe("fronted");
+    expect(receipt.rail).toBe("sponsored");
     expect(receipt.status).toBe("pending");
     expect(receipt.id).toBe("0xabc123hash");
   });
@@ -245,7 +245,7 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
     expect(connection.signSend).toHaveBeenCalledOnce();
   });
 
-  it("fronted simulate returns a bounded FeeBreakdown (total gas limits × maxFeePerGas)", async () => {
+  it("sponsored simulate returns a bounded FeeBreakdown (total gas limits × maxFeePerGas)", async () => {
     const connection = makeFakeConnection();
     const bundler = makeFakeBundler();
     const paymaster = makeFakePaymaster();
@@ -290,7 +290,7 @@ describe("createAvokClient — fronted send via 4337 UserOp (D3)", () => {
     expect(paymaster.getPaymasterData).toHaveBeenCalledOnce();
     expect(bundler.estimateUserOperationGas).toHaveBeenCalledOnce();
     expect(bundler.sendUserOperation).toHaveBeenCalledOnce();
-    expect(receipt.rail).toBe("fronted");
+    expect(receipt.rail).toBe("sponsored");
     expect(receipt.id).toBe("0xfeehash");
   });
 });
@@ -367,7 +367,7 @@ describe("createAvokClient — self-pay send (D3)", () => {
 
     const receipt = await evm.send([{ to: TO, value: 0n, data: "0x" }], { chainId: 10 });
 
-    // Self-fronting invariant: authorization nonce = txNonce + 1 (5 → 6).
+    // Self-sponsoring invariant: authorization nonce = txNonce + 1 (5 → 6).
     expect(signAuthorization).toHaveBeenCalledOnce();
     expect(signAuthorization.mock.calls[0]![0].nonce).toBe(6);
     // The signed tx carries the authorizationList (eip7702) and is broadcast as-is.

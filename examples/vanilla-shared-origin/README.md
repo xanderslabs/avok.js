@@ -6,7 +6,7 @@ the operator's popup and only receives signatures. Same framework-free stack as
 [`vanilla-own-origin`](../vanilla-own-origin) (a tiny `el()` DOM helper + a ~30-line reactive store),
 with the shared-origin custody deltas.
 
-Screens: Connect (sign in with the operator) → Home → Send (EVM + Solana, self-pay or fronted)
+Screens: Connect (sign in with the operator) → Home → Send (EVM + Solana, self-pay or sponsored)
 → Account (sign, resolve a name, link to the operator's management app, disconnect). There is
 **no** create / export / addPasskey / pairing / subname-register here — those
 are the operator's (Own-origin) actions.
@@ -24,7 +24,7 @@ pnpm --filter @avok-demo/vanilla-shared-origin dev
 
 - **VITE_AUTH_ORIGIN** — the operator origin where keys live and signing popups run.
 - **VITE_MANAGEMENT_URL** — the operator's own-origin wallet app (create / manage / back up there).
-- Shared EVM/Solana/fronted/subname vars match `vanilla-own-origin` (Arc testnet `5042002` + Solana
+- Shared EVM/Solana/sponsored/subname vars match `vanilla-own-origin` (Arc testnet `5042002` + Solana
   `devnet` defaults).
 
 ## Architecture (framework-free, shared-origin)

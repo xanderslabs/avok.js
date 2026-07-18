@@ -16,7 +16,7 @@ const userInstr = {
 };
 
 describe("buildSolanaMessage", () => {
-  it("fronted: fee payer is the provided address (no signer on feePayer)", async () => {
+  it("sponsored: fee payer is the provided address (no signer on feePayer)", async () => {
     const feePayerAddr = "So11111111111111111111111111111111111111112";
     const { message, lastValidBlockHeight } = await buildSolanaMessage({
       rpc: fakeRpc,

@@ -50,14 +50,14 @@ export interface Signer {
    */
   signSend(args: { tx: TransactionSerializable; authorization?: AuthorizationTriple }): Promise<Hex>;
 
-  /** ONE GESTURE. Sign a fronted batch and, if undelegated, its EIP-7702 authorization. */
-  signFronted(args: {
+  /** ONE GESTURE. Sign a sponsored batch and, if undelegated, its EIP-7702 authorization. */
+  signSponsored(args: {
     typedData: TypedDataDefinition;
     authorization?: AuthorizationTriple;
   }): Promise<{ signature: Hex; authorization?: SignedAuthorizationLike }>;
 
   /**
-   * ONE GESTURE — the 4337 fronted analogue of `signFronted`. Sign a v0.8 UserOperation (the origin
+   * ONE GESTURE — the 4337 sponsored analogue of `signSponsored`. Sign a v0.8 UserOperation (the origin
    * recomputes its EIP-712 `userOpHash` from these same fields, so what the user is shown and what is
    * signed cannot drift) and, if the wallet is still undelegated, its EIP-7702 authorization. The
    * `userOp` is UNSIGNED here; the returned `signature` goes into `userOp.signature`.
@@ -113,7 +113,7 @@ export type SignRequest =
   // Hence a composite: the origin signs the authorization, embeds it, and signs the transaction,
   // all under the single gesture it already performs.
   | { op: "signSend"; tx: TransactionSerializable; authorization?: AuthorizationTriple }
-  | { op: "signFronted"; typedData: TypedDataDefinition; authorization?: AuthorizationTriple }
+  | { op: "signSponsored"; typedData: TypedDataDefinition; authorization?: AuthorizationTriple }
   | { op: "signUserOp"; userOp: UserOperation<"0.8">; chainId: number; authorization?: AuthorizationTriple }
   | { op: "signSolanaTransaction"; messageBytesB64: string; cluster?: string }
   | { op: "signSolanaMessage"; message: string };
@@ -125,7 +125,7 @@ export type SignRequest =
 // ---------------------------------------------------------------------------
 export type SignResult =
   | { signature: Hex }
-  /** signFronted — the batch signature plus, when undelegated, the signed 7702 authorization. */
+  /** signSponsored — the batch signature plus, when undelegated, the signed 7702 authorization. */
   | { signature: Hex; authorization?: SignedAuthorizationLike }
   | { signature: Hex; consent: unknown }
   | { message: string; signature: Hex }

@@ -30,8 +30,8 @@ export function isDelegatedTo(code: `0x${string}`, implementation: Address): boo
 }
 
 /**
- * Assembles a ResolvedBatch from on-chain reads only. The FRONTED (4337) rail commits no fee call —
- * the ERC-7677 paymaster fronts the gas and charges the user, so nothing is priced here; the bounded
+ * Assembles a ResolvedBatch from on-chain reads only. The SPONSORED (4337) rail commits no fee call —
+ * the ERC-7677 paymaster sponsors the gas and charges the user, so nothing is priced here; the bounded
  * fee is derived at send/simulate time from the bundler estimate. SELF-PAY signs no fee either but
  * still surfaces a native-cost estimate. (Mirrors sdk-core's `leanResolve`.)
  */
@@ -65,7 +65,7 @@ export async function resolveBatch(args: ResolveArgs): Promise<ResolvedBatch> {
     disclosures.push({ kind: "delegation", implementation: args.chain.canonicalImplementation });
   }
 
-  // 2. Fee. FRONTED commits none (the paymaster charges it). SELF-PAY signs none but gets an estimate.
+  // 2. Fee. SPONSORED commits none (the paymaster charges it). SELF-PAY signs none but gets an estimate.
   if (rail === "self-pay") {
     nativeFee = await estimateNativeFee({
       rpc: args.rpc,
@@ -86,7 +86,7 @@ export async function resolveBatch(args: ResolveArgs): Promise<ResolvedBatch> {
     nonce: args.nonce,
     deadline: args.deadline,
     disclosures,
-    ...(rail === "fronted" ? { feeToken: args.ctx.feeToken ?? null } : {}),
+    ...(rail === "sponsored" ? { feeToken: args.ctx.feeToken ?? null } : {}),
     ...(nativeFee ? { nativeFee } : {}),
   };
 }

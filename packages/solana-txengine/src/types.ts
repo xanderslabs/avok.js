@@ -1,28 +1,28 @@
-export type Rail = "self-pay" | "fronted";
+export type Rail = "self-pay" | "sponsored";
 
 export interface SolanaExecutionContext {
   cluster: "mainnet" | "devnet";
-  /** Present (mint) ⇒ fronted; absent/null ⇒ self-pay. */
+  /** Present (mint) ⇒ sponsored; absent/null ⇒ self-pay. */
   feeToken?: string | null;
   /** Optional priority-fee override (micro-lamports per CU). */
   computeUnitPrice?: bigint;
 }
 
 export function railFromContext(ctx: SolanaExecutionContext): Rail {
-  return ctx.feeToken ? "fronted" : "self-pay";
+  return ctx.feeToken ? "sponsored" : "self-pay";
 }
 
 export interface DecodedInstruction { programAddress: string; accountCount: number; label?: string }
 
 /**
- * The exact, bounded fee a FRONTED transaction pays in an SPL token — the number the user consents to
+ * The exact, bounded fee a SPONSORED transaction pays in an SPL token — the number the user consents to
  * and the signed bytes then transfer (sign-what-you-saw).
  *
  * Three fields, because a Kora quote IS three numbers. Kora simulates the transaction it is being asked
  * to pay for and answers with one all-in total, so there is no base/priority/rent split to report and no
  * oracle rate behind it. This deliberately does not carry optional fields for those: a type that
  * advertises a breakdown nothing can populate invites a caller to render `rent: 0` and tell the user
- * rent is free — which is the under-pricing that made every fronted send opening a token account come
+ * rent is free — which is the under-pricing that made every sponsored send opening a token account come
  * back `fee_too_low`. The self-pay estimate is a different animal and says so: `SolanaNativeFeeEstimate`.
  */
 export interface FeeBreakdown {
@@ -49,7 +49,7 @@ export interface SolanaNativeFeeEstimate {
 export type SimulationConfidence = "exact" | "unsupported";
 export interface SimulationResult {
   success: boolean; computeUnits: bigint;
-  /** Fronted only — the exact fee, signed, paid in an SPL token. */
+  /** Sponsored only — the exact fee, signed, paid in an SPL token. */
   fee?: FeeBreakdown;
   /** Self-pay only — the ESTIMATED SOL cost. Never signed. */
   nativeFee?: SolanaNativeFeeEstimate;

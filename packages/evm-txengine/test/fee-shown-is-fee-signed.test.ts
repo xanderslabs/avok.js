@@ -24,7 +24,7 @@ const WALLET = "0xC459d1c3D00Bc07F06331c0335647DF3D28DEC06" as Address;
 const SIGNED_FEE = 4104n; // what the batch committed to — the number the user signs
 
 const batch: ResolvedBatch = {
-  rail: "fronted",
+  rail: "sponsored",
   chainId: 5042002,
   walletAddress: WALLET,
   feeCalls: [

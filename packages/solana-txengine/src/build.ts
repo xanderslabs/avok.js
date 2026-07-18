@@ -13,12 +13,12 @@ import { getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction } 
 import type { SolanaRpcClient } from "./rpc.js";
 
 export type FeePayer =
-  | { kind: "address"; address: string }          // fronted: the relayer (we don't hold its key)
+  | { kind: "address"; address: string }          // sponsored: the relayer (we don't hold its key)
   | { kind: "signer"; signer: TransactionPartialSigner }; // self-pay: the user
 
 export async function buildSolanaMessage(args: {
   rpc: SolanaRpcClient;
-  instructions: Instruction[];   // user (+ fronted fee/ATA) instructions, already assembled by the caller
+  instructions: Instruction[];   // user (+ sponsored fee/ATA) instructions, already assembled by the caller
   feePayer: FeePayer;
   computeUnitLimit: number;
   computeUnitPrice: bigint;      // micro-lamports per CU

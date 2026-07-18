@@ -47,7 +47,7 @@ function evmCallLines(chainId: number, line: ConsentLine): string[] {
   return [`⚠ Unrecognized call to ${line.to} — value ${line.valueWei} wei, data ${line.raw}`];
 }
 
-/** FRONTED: an exact fee, committed to the batch and covered by this signature. */
+/** SPONSORED: an exact fee, committed to the batch and covered by this signature. */
 function feeLine(chainId: number, fee: ConsentLine): string {
   if (fee.token && fee.token.symbol && fee.token.amount !== undefined) {
     return `Network fee: ${fee.token.amount} ${fee.token.symbol} (repaid to the paymaster)`;
@@ -127,7 +127,7 @@ export function formatConsentDisplay(consent: SignConsent): string[] {
     case "signTypedData":
       return evmViewLines(consent.view);
     case "signTransaction":
-      // `fee` is populated for a fronted batch — the fee the user pays is part of what they are
+      // `fee` is populated for a sponsored batch — the fee the user pays is part of what they are
       // approving, so it must reach the screen, not be dropped on the way here.
       return evmViewLines({
         chainId: consent.chainId,
@@ -153,7 +153,7 @@ export function formatConsentDisplay(consent: SignConsent): string[] {
         }),
       ];
 
-    case "signFronted":
+    case "signSponsored":
       return [
         ...(consent.delegation ? [`⚠ Authorize account upgrade to ${consent.delegation}`] : []),
         ...evmViewLines(consent.view),

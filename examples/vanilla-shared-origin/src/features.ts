@@ -1,7 +1,7 @@
 export type FeatureId =
   | "create" | "continue" | "import" | "export" | "accessSlot"
-  | "evm-send-selfpay" | "evm-send-fronted"
-  | "solana-send-selfpay" | "solana-send-fronted"
+  | "evm-send-selfpay" | "evm-send-sponsored"
+  | "solana-send-selfpay" | "solana-send-sponsored"
   | "sign" | "subname-resolve"
   | "add-passkey" | "pairing" | "access-roster" | "shared-origin-connect";
 
@@ -13,7 +13,7 @@ export type FeatureId =
  */
 export const FEATURES: FeatureId[] = [
   "shared-origin-connect",
-  "evm-send-selfpay", "evm-send-fronted",
-  "solana-send-selfpay", "solana-send-fronted",
+  "evm-send-selfpay", "evm-send-sponsored",
+  "solana-send-selfpay", "solana-send-sponsored",
   "sign", "subname-resolve",
 ];

@@ -108,13 +108,13 @@ describe("composite ops — one round-trip, one popup", () => {
     });
   });
 
-  it("signFronted sends ONE request and returns both the signature and the signed authorization", async () => {
+  it("signSponsored sends ONE request and returns both the signature and the signed authorization", async () => {
     const signedAuth = { ...AUTH, r: "0xr", s: "0xs", yParity: 0 } as unknown as SignedAuthorizationLike;
     const open = vi.fn().mockResolvedValue({ kind: "sign", result: { signature: "0xsig", authorization: signedAuth } });
     const signer = createRemoteSigner({ channel: { open } as SigningChannel, credentialId: "s" });
 
     const td = { domain: { name: "t" }, types: {}, primaryType: "T", message: {} };
-    const out = await signer.signFronted({ typedData: td, authorization: AUTH });
+    const out = await signer.signSponsored({ typedData: td, authorization: AUTH });
 
     expect(out.signature).toBe("0xsig");
     expect(out.authorization).toEqual(signedAuth);
@@ -131,7 +131,7 @@ describe("composite ops — one round-trip, one popup", () => {
     expect(open.mock.calls[0]![0].request).toEqual({ op: "signSend", tx: { chainId: 10 }, authorization: undefined });
   });
 
-  // signUserOp is the 4337 fronted analogue of signFronted: instead of a FrontedBatch typed-data it
+  // signUserOp is the 4337 sponsored analogue of signSponsored: instead of a SponsoredBatch typed-data it
   // carries the (unsigned) v0.8 UserOperation + chainId, so the ORIGIN recomputes the userOpHash from
   // the same fields it shows the user (sign-what-you-saw) and signs it, plus the 7702 authorization
   // when undelegated — all under the single gesture.

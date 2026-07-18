@@ -29,7 +29,7 @@ function toCluster(chain: string | undefined): SolanaCluster {
  * Sending here submits the transaction the DAPP built: self-pay when the dapp made the user its fee
  * payer, and handed back to Kora when the dapp built for a Kora fee payer of its own (the engine routes
  * on that — see `createSolanaEngine`). The wallet never rewrites a dapp's transaction to front it; Kora
- * is integrated at build time, so Avok's own fronting lives on the own-origin `client.solana` rail.
+ * is integrated at build time, so Avok's own sponsoring lives on the own-origin `client.solana` rail.
  *
  * Note there is no fee-token capability to expose here: unlike EIP-5792's `paymasterService`, the Solana
  * Wallet Standard has no slot through which a dapp could name one.

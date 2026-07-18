@@ -8,7 +8,7 @@ import type { ResolvedBatch } from "../src/types.js";
 /**
  * SELF-PAY MUST STILL DISCLOSE A FEE.
  *
- * The fronted rail commits a fee to `feeCalls`, so the amount is exact and signed. Self-pay commits
+ * The sponsored rail commits a fee to `feeCalls`, so the amount is exact and signed. Self-pay commits
  * nothing — the chain debits the wallet's native balance at inclusion — and the consent screen used to
  * respond to that by showing the user no number at all ("paid in USDC at the current gas price").
  * "You will be charged something" is not a fee disclosure.

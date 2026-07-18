@@ -215,7 +215,7 @@ const ERC20_BALANCE_ABI = [
         const sim = await evm.simulate([probe], { chainId, feeToken: null });
 
         if (sim.fee) {
-          // Fronted: the paymaster advances the gas and the user repays in the fee token, so the fee
+          // Sponsored: the paymaster advances the gas and the user repays in the fee token, so the fee
           // TOKEN balance is what must cover it.
           const token = sim.fee.feeToken;
           const rpc = resolveRpc(config, chainId);

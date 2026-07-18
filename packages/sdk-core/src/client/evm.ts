@@ -24,7 +24,7 @@ import {
   type ViemLike,
 } from "@avokjs/evm-txengine";
 import { leanResolve } from "./resolve.js";
-import { prepareFrontedUserOp, boundedFrontedFee, type FrontedInfra, type PreparedFrontedUserOp } from "./fronted-userop.js";
+import { prepareSponsoredUserOp, boundedSponsoredFee, type SponsoredInfra, type PreparedSponsoredUserOp } from "./sponsored-userop.js";
 import { randomNonceAllocator } from "../nonce.js";
 import { UnsupportedFeeTokenError } from "./fee-token-error.js";
 import type { ClientConfig, ScopedSigner } from "../types.js";
@@ -45,11 +45,11 @@ export interface EvmNamespace {
   send(input: SimulationResult | Call[], opts?: TxOpts): Promise<Receipt>;
   /**
    * WAIT FOR THE CHAIN TO AGREE. `send()` returns as soon as the transaction is HANDED OFF — a
-   * self-pay receipt is `submitted` (broadcast, not mined) and a fronted receipt is `pending` with
+   * self-pay receipt is `submitted` (broadcast, not mined) and a sponsored receipt is `pending` with
    * the relayer's INTENT ID, which is not a transaction hash and will never appear on any explorer.
    *
    * Nothing may be shown to a user as "confirmed" until this resolves with `confirmed`. The demos
-   * used to fire "mined" the moment send() returned, so a fronted transaction that had not been
+   * used to fire "mined" the moment send() returned, so a sponsored transaction that had not been
    * submitted at all was reported as confirmed, with an explorer link to the intent id.
    */
   wait(receipt: Receipt, opts?: { timeoutMs?: number; intervalMs?: number }): Promise<Receipt>;
@@ -105,7 +105,7 @@ export type PreparedAccessSlotWrite = {
 };
 
 // Access-slot writes are SELF-PAY (SPEC §5: internal management writes default to self-pay). The
-// fronted rail is now a 4337 UserOp, which the three-phase key-isolated writer does not use.
+// sponsored rail is now a 4337 UserOp, which the three-phase key-isolated writer does not use.
 export type SignedAccessSlotWrite = { rail: "self-pay"; raw: Hex };
 
 /** The three-phase access-slot writer. See `AccessSlotWriter` on AccessCtx for why it is split this way. */
@@ -125,23 +125,23 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
     return address;
   }
 
-  /** Fronted (4337) needs BOTH a 7677 paymaster and a bundler. Without both, a send self-pays. */
-  function canFront(): boolean {
+  /** Sponsored (4337) needs BOTH a 7677 paymaster and a bundler. Without both, a send self-pays. */
+  function canSponsor(): boolean {
     return Boolean((paymasterUrl || deps?.paymaster) && (bundlerUrl || deps?.bundler));
   }
 
-  /** The bring-your-own 4337 infra for a fronted send on `rpc`. Only called when `canFront()`. */
-  function frontedInfra(rpc: RpcClient): FrontedInfra {
+  /** The bring-your-own 4337 infra for a sponsored send on `rpc`. Only called when `canSponsor()`. */
+  function sponsoredInfra(rpc: RpcClient): SponsoredInfra {
     const bundler: Bundler = deps?.bundler ?? createBundler({ url: bundlerUrl! });
     const paymaster: Paymaster7677 = deps?.paymaster ?? createPaymaster7677({ url: paymasterUrl! });
     return { rpc, bundler, paymaster };
   }
 
-  /** Prepare the fronted UserOp (nonce + 7677 handshake + gas estimate). ALL IO, NO KEY — shared by
-   *  `simulate` (to price the bounded fee) and `send` (to sign it). Only called when `canFront()`. */
-  async function prepareFronted(rpc: RpcClient, batch: ResolvedBatch): Promise<PreparedFrontedUserOp> {
+  /** Prepare the sponsored UserOp (nonce + 7677 handshake + gas estimate). ALL IO, NO KEY — shared by
+   *  `simulate` (to price the bounded fee) and `send` (to sign it). Only called when `canSponsor()`. */
+  async function prepareSponsored(rpc: RpcClient, batch: ResolvedBatch): Promise<PreparedSponsoredUserOp> {
     const [suggestedTip, baseFee] = await Promise.all([rpc.getMaxPriorityFeePerGas(), rpc.getBaseFeePerGas()]);
-    return prepareFrontedUserOp(frontedInfra(rpc), {
+    return prepareSponsoredUserOp(sponsoredInfra(rpc), {
       sender: batch.walletAddress,
       calls: batch.userCalls,
       chainId: batch.chainId,
@@ -167,10 +167,10 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
     // Fee-token is PER-SEND — there is no client-level default (SPEC §5). Absent/null ⇒ self-pay.
     const token = opts && "feeToken" in opts ? (opts.feeToken ?? null) : null;
     if (!token) return null;
-    // No 4337 infra on this deployment (no bundler+paymaster) ⇒ a fronted attempt falls back to
-    // self-pay (SPEC §1: "self-pay everywhere; fronted only where a bundler+paymaster exist"). Don't
+    // No 4337 infra on this deployment (no bundler+paymaster) ⇒ a sponsored attempt falls back to
+    // self-pay (SPEC §1: "self-pay everywhere; sponsored only where a bundler+paymaster exist"). Don't
     // validate/forward the token — the chain will simply be paid in native.
-    if (!canFront()) return null;
+    if (!canSponsor()) return null;
     // A fee token is an ERC-20 address, and addresses are chain-specific. Validate against the
     // TARGET chain's registry tokens — never forward a token that means nothing here.
     if (!feeTokens(chainId).some((t) => t.address.toLowerCase() === token.toLowerCase())) {
@@ -180,7 +180,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
   }
 
   /** Resolve a fresh ResolvedBatch from raw calls (delegation + userCalls; the 4337 paymaster prices
-   *  the fronted fee, so nothing is priced here). */
+   *  the sponsored fee, so nothing is priced here). */
   async function buildBatch(
     calls: Call[],
     chain: EvmChainProfile,
@@ -213,7 +213,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
    *   broadcast() → IO, no key
    *
    * Self-pay is exactly equivalent: `resolveBatch`'s only IO is getCode/getTransactionCount, neither of
-   * which reads `userCalls` — they are copied verbatim into the batch. Fronted estimates gas over the
+   * which reads `userCalls` — they are copied verbatim into the batch. Sponsored estimates gas over the
    * calldata, which is the same length either way; any residual drift lands inside the relayer's
    * existing tolerance band.
    */
@@ -254,7 +254,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
         ...selfPayFees(p.suggestedTip, p.baseFee),
       };
       if (batch.authorization) {
-        // Self-fronting invariant: the authorization is signed over txNonce + 1 (see send()).
+        // Self-sponsoring invariant: the authorization is signed over txNonce + 1 (see send()).
         const signedAuth = await signer.signAuthorization({
           chainId: batch.authorization.chainId,
           address: batch.authorization.address,
@@ -284,12 +284,12 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
 
       let current = receipt;
       for (;;) {
-        if (current.rail === "fronted") {
+        if (current.rail === "sponsored") {
           // 4337: track the UserOp through the bundler (`eth_getUserOperationReceipt`). Its `id` is the
           // userOpHash, not a tx hash — the mined tx hash only appears in the receipt once included.
           // Without a bundler configured there is nothing to poll; return the pending receipt as-is.
-          if (canFront()) {
-            const rcpt = await frontedInfra(rpc).bundler.getUserOperationReceipt(current.id as Hex);
+          if (canSponsor()) {
+            const rcpt = await sponsoredInfra(rpc).bundler.getUserOperationReceipt(current.id as Hex);
             if (rcpt) {
               current = {
                 ...current,
@@ -326,15 +326,15 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
       const batch = await buildBatch(calls, chain, rpc, feeToken);
       const sim = await simulateResolved(batch, { rpc, chain });
 
-      // FRONTED: run the 7677 handshake now so the consent screen shows the BOUNDED fee the send will
+      // SPONSORED: run the 7677 handshake now so the consent screen shows the BOUNDED fee the send will
       // sign (sign-what-you-saw), and carry the prepared UserOp so `send` signs that exact op rather
       // than re-preparing (a fresh estimate could disagree with what the user saw). The fee is derived
       // from the prepared op's gas ceiling only when the token is known; a single-token paymaster (null
       // feeToken) discloses no amount here.
-      if (batch.rail === "fronted" && canFront()) {
-        const preparedUserOp = await prepareFronted(rpc, batch);
+      if (batch.rail === "sponsored" && canSponsor()) {
+        const preparedUserOp = await prepareSponsored(rpc, batch);
         const fee = batch.feeToken
-          ? boundedFrontedFee(preparedUserOp.op, batch.feeToken)
+          ? boundedSponsoredFee(preparedUserOp.op, batch.feeToken)
           : undefined;
         return { ...sim, ...(fee ? { fee } : {}), preparedUserOp };
       }
@@ -347,9 +347,9 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
       let batch: ResolvedBatch;
       let chain: EvmChainProfile;
       let rpc: RpcClient;
-      // A prior fronted SimulationResult carries the prepared UserOp; reuse it so the signed op is the
+      // A prior sponsored SimulationResult carries the prepared UserOp; reuse it so the signed op is the
       // exact one the user was quoted (sign-what-you-saw), never a fresh estimate.
-      let reusedUserOp: PreparedFrontedUserOp | undefined;
+      let reusedUserOp: PreparedSponsoredUserOp | undefined;
       if (Array.isArray(input)) {
         const chainId = resolveChainId(opts?.chainId);
         chain = requireChain(config, chainId);
@@ -360,18 +360,18 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
         batch = input.batch;
         chain = requireChain(config, batch.chainId);
         rpc = resolveRpc(config, batch.chainId);
-        reusedUserOp = (input as SimulationResult & { preparedUserOp?: PreparedFrontedUserOp }).preparedUserOp;
+        reusedUserOp = (input as SimulationResult & { preparedUserOp?: PreparedSponsoredUserOp }).preparedUserOp;
       }
 
-      if (batch.rail === "fronted" && canFront()) {
-        // 4337 fronted send: build a UserOp whose callData is the user's batch, sponsor it via the
+      if (batch.rail === "sponsored" && canSponsor()) {
+        // 4337 sponsored send: build a UserOp whose callData is the user's batch, sponsor it via the
         // ERC-7677 paymaster, and submit through the bundler. ALL IO (nonce, 7677 handshake, gas
         // estimate, fee prices) happens BEFORE the single passkey gesture — the key must never be live
         // across a network round-trip. A reused SimulationResult skips the handshake entirely.
-        const infra = frontedInfra(rpc);
-        const prepared = reusedUserOp ?? (await prepareFronted(rpc, batch));
+        const infra = sponsoredInfra(rpc);
+        const prepared = reusedUserOp ?? (await prepareSponsored(rpc, batch));
         // ONE gesture: the raw userOpHash signature and, if undelegated, the 7702 authorization the
-        // first fronted send installs. viem forwards `op.authorization` as the UserOp's eip7702Auth.
+        // first sponsored send installs. viem forwards `op.authorization` as the UserOp's eip7702Auth.
         const { signature, authorization } = await connection.signUserOp({
           userOp: prepared.op,
           chainId: prepared.chainId,
@@ -380,9 +380,9 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
         prepared.op.signature = signature;
         if (authorization) prepared.op.authorization = authorization;
         const id = await infra.bundler.sendUserOperation(prepared.op);
-        return { id, rail: "fronted", status: "pending", chainId: batch.chainId };
+        return { id, rail: "sponsored", status: "pending", chainId: batch.chainId };
       }
-      // A fronted batch on a chain without 4337 infra falls through to self-pay (SPEC §1).
+      // A sponsored batch on a chain without 4337 infra falls through to self-pay (SPEC §1).
 
       // self-pay: the wallet EOA is both authority AND tx sender.
       const txNonce = await rpc.getTransactionCount(batch.walletAddress);
@@ -400,7 +400,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
       // useless — "at most 0.09 USDC" for a transaction that costs 0.0046.
       //
       // 2× headroom, not 1.2×: self-pay is the one rail nobody re-estimates downstream (the relayer
-      // re-estimates the fronted rail authoritatively), and an out-of-gas transaction still costs the
+      // re-estimates the sponsored rail authoritatively), and an out-of-gas transaction still costs the
       // user the fee. Overshooting the limit is free; undershooting it is not.
       const gasLimit = batch.nativeFee ? batch.nativeFee.gasUnits * 2n : 1_000_000n;
 
@@ -418,7 +418,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
       // the duration of this callback. An undelegated wallet needs the 7702 authorization AND the
       // transaction; signing them through the connection's individual verbs opened two key scopes, so
       // a single "Send" asked the user for a fingerprint twice.
-      // Self-fronting invariant: EIP-7702 validates the outer tx nonce first (N → N+1), then processes
+      // Self-sponsoring invariant: EIP-7702 validates the outer tx nonce first (N → N+1), then processes
       // the authorization against the now-incremented account nonce. When the wallet is both authority
       // AND sender, the authorization MUST be signed over txNonce + 1, not txNonce.
       // One gesture on BOTH rails — the signer embeds the signed authorization for us.

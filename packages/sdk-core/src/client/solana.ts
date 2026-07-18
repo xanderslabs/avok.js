@@ -35,7 +35,7 @@ export interface FeeToken {
 
 export interface SolanaTxOpts {
   cluster?: string;
-  // A fee-token mint → fronted (when a Kora is configured); absent or null → self-pay. There is no
+  // A fee-token mint → sponsored (when a Kora is configured); absent or null → self-pay. There is no
   // default to override: the token is chosen per send — mirrors EVM's `feeToken: null`.
   feeToken?: string | null;
   computeUnitPrice?: bigint;
@@ -46,7 +46,7 @@ export interface SolanaResolved {
   message: unknown;
   lastValidBlockHeight: bigint;
   cluster: "mainnet" | "devnet";
-  rail: "self-pay" | "fronted";
+  rail: "self-pay" | "sponsored";
   feeToken?: string;
   expectedFee?: bigint;
 }
@@ -62,7 +62,7 @@ export interface SolanaNamespace {
    * list to put in front of a user: `feeTokens` is a catalogue, and offering a token the configured
    * fee payer refuses produces a send that fails at signing time for no reason the user can see.
    *
-   * Empty when no Kora is configured — there is no fronting on offer, so there is nothing to pick.
+   * Empty when no Kora is configured — there is no sponsoring on offer, so there is nothing to pick.
    */
   supportedFeeTokens(cluster?: string): Promise<FeeToken[]>;
   // Public boundary stays permissive: callers pass whatever @solana/kit instruction builders emit.
@@ -74,7 +74,7 @@ export interface SolanaNamespace {
    * Poll until the transaction actually lands. THE ONLY PRODUCER OF `"confirmed"`.
    *
    * `send()` returns as soon as the transaction is handed off — "submitted" on self-pay (broadcast,
-   * not mined) and "pending" on fronted, where the receipt's `id` is the RELAYER'S INTENT ID and
+   * not mined) and "pending" on sponsored, where the receipt's `id` is the RELAYER'S INTENT ID and
    * there is no signature yet at all. Neither is a confirmation, and neither can be linked to an
    * explorer. Treating them as success is how a transaction that never landed gets reported as done.
    */
@@ -82,7 +82,7 @@ export interface SolanaNamespace {
   signMessage(message: string): Promise<{ signature: string }>;
   /** Build the instructions for an SPL token transfer. Derives the recipient ATA and prepends an
    *  idempotent create-ATA when it is missing. The create-ATA rent payer is resolved per rail:
-   *  in fronted (a `feeToken` mint) Kora's fee payer fronts the rent (Kora prices it into its own
+   *  in sponsored (a `feeToken` mint) Kora's fee payer sponsors the rent (Kora prices it into its own
    *  quote); in self-pay the user funds it in SOL. `decimals`
    *  and `tokenProgram` are looked up from the registry — throws when the mint is unknown to the
    *  cluster. Pass the result straight to `simulate`/`send` with the SAME `{ cluster, feeToken }`. */
@@ -179,7 +179,7 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
 
   /**
    * Ask the CHAIN what actually happened. Both rails answer the same way now: self-pay broadcast it, and
-   * Kora broadcast the fronted one, so either way we hold a real signature and the chain is the single
+   * Kora broadcast the sponsored one, so either way we hold a real signature and the chain is the single
    * source of truth. (The bespoke relayer held the transaction under an opaque INTENT id and had to be
    * asked for the signature; that indirection died with it.)
    *
@@ -201,8 +201,8 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
       const height = await rpc.getBlockHeight();
       if (height > receipt.lastValidBlockHeight) return { ...receipt, status: "expired" };
     }
-    // Fronted stays "pending" until the chain confirms it: Kora accepted it, which is not inclusion.
-    return { ...receipt, status: receipt.rail === "fronted" ? "pending" : "submitted" };
+    // Sponsored stays "pending" until the chain confirms it: Kora accepted it, which is not inclusion.
+    return { ...receipt, status: receipt.rail === "sponsored" ? "pending" : "submitted" };
   }
 
   /** Assemble the (instructions, feePayer, [fee meta]) for a rail. No gesture. */
@@ -213,10 +213,10 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
   ): Promise<{
     allIx: Instruction[];
     feePayer: FeePayer;
-    rail: "self-pay" | "fronted";
+    rail: "self-pay" | "sponsored";
     feeToken?: string;
     expectedFee?: bigint;
-    /** The FULL priced fee (fronted). `expectedFee` is only its amount — the consent screen needs the
+    /** The FULL priced fee (sponsored). `expectedFee` is only its amount — the consent screen needs the
      *  breakdown, and dropping it here is why the fee read "unavailable". */
     fee?: SolanaFeeBreakdown;
     rpc: SolanaRpcClient;
@@ -234,7 +234,7 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
       return { allIx: instructions, feePayer: { kind: "signer", signer }, rail: "self-pay", rpc, computeUnitLimit, computeUnitPrice };
     }
 
-    // fronted — but only if a Kora is actually reachable. No Kora ⇒ self-pay: a fronted attempt on a
+    // sponsored — but only if a Kora is actually reachable. No Kora ⇒ self-pay: a sponsored attempt on a
     // cluster with no fee payer must degrade, not fail (SPEC-05 §1).
     const kora = resolveKora();
     if (!kora) {
@@ -251,7 +251,7 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
     // We deliberately do NOT re-derive the fee locally from oracle + rent + signature counts, the way
     // the bespoke relay path did. Kora simulates and prices what it will actually pay — including the
     // rent for any token account this opens — and any number we compute in parallel is one it will
-    // disagree with. That disagreement is precisely what made every fronted send come back
+    // disagree with. That disagreement is precisely what made every sponsored send come back
     // `fee_too_low`. One pricer, one number, and it is the one the user signs.
     const probe = await buildSolanaMessage({
       rpc,
@@ -289,7 +289,7 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
     return {
       allIx,
       feePayer: { kind: "address", address: koraSigner },
-      rail: "fronted",
+      rail: "sponsored",
       feeToken,
       expectedFee: quote.feeInToken,
       fee,
@@ -357,7 +357,7 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
       const rpc = resolveSolanaRpc(cluster);
       const authority = solanaSigner(from, cluster);
 
-      // Per-rail create-ATA rent payer. A fee-token mint means fronted → Kora is the fee payer, so Kora
+      // Per-rail create-ATA rent payer. A fee-token mint means sponsored → Kora is the fee payer, so Kora
       // funds the new account (and prices that rent into its quote); self-pay → the user funds it in SOL.
       // No Kora ⇒ the send will fall back to self-pay, so the user is the payer here too.
       let payer = from;
@@ -386,7 +386,7 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
       const { built, resolved, rpc, assembled } = await buildResolved(instructions as Instruction[], opts, cluster);
       // SURFACE THE PRICED FEE. It was computed in assemble(), committed to the fee-transfer
       // instruction the user is about to sign — and then not passed here, so `SimulationResult.fee`
-      // was ALWAYS undefined on Solana and every fronted consent screen read "Transaction fee:
+      // was ALWAYS undefined on Solana and every sponsored consent screen read "Transaction fee:
       // unavailable". The number existed the whole time; nobody handed it over.
       const result = await simulateSolanaMessage({
         rpc,
@@ -460,9 +460,9 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
         });
       }
       const kora = resolveKora();
-      if (!kora) throw new Error("fronted requires koraUrl");
+      if (!kora) throw new Error("sponsored requires koraUrl");
       return sendSolana({
-        rail: "fronted",
+        rail: "sponsored",
         message: resolved.message,
         lastValidBlockHeight: resolved.lastValidBlockHeight,
         cluster: resolved.cluster,

@@ -3,7 +3,7 @@ import { associatedTokenAddress, type KoraClient } from "@avokjs/solana-txengine
 import { createSolanaNamespace } from "../src/client/solana.js";
 
 /**
- * The fronted rail's two standing obligations, now that KORA prices the fee (sub-project #5):
+ * The sponsored rail's two standing obligations, now that KORA prices the fee (sub-project #5):
  * the number the user is shown must be the number the signed bytes pay, and it must be Kora's — not
  * one we re-derived beside it.
  */
@@ -57,7 +57,7 @@ function fakeConfig(overrides: Record<string, unknown> = {}) {
   } as never;
 }
 
-describe("solana fronted: the quoted fee reaches the consent screen", () => {
+describe("solana sponsored: the quoted fee reaches the consent screen", () => {
   it("simulate() surfaces the fee — it is not left undefined", async () => {
     const sol = createSolanaNamespace(fakeConfig());
     const ix = await sol.buildSplTransfer({
@@ -66,19 +66,19 @@ describe("solana fronted: the quoted fee reaches the consent screen", () => {
     const sim = await sol.simulate(ix as never, { cluster: "devnet", feeToken: USDC_DEVNET });
 
     // The fee is committed to the fee-transfer instruction the user is about to sign — and was once
-    // never passed to the simulation, so `fee` was ALWAYS undefined on Solana and every fronted consent
+    // never passed to the simulation, so `fee` was ALWAYS undefined on Solana and every sponsored consent
     // screen read "Transaction fee: unavailable". The number existed the whole time; nobody handed it over.
     expect(sim.fee).toBeDefined();
     expect(sim.fee!.feeToken).toBe(USDC_DEVNET);
     expect(sim.fee!.amount).toBeGreaterThan(0n);
-    // Fronted commits an exact fee, so there is no native estimate to show alongside it.
+    // Sponsored commits an exact fee, so there is no native estimate to show alongside it.
     expect(sim.nativeFee).toBeUndefined();
   });
 
-  // THE DISCLOSED FEE IS KORA'S QUOTE — we do not price the fronted rail ourselves.
+  // THE DISCLOSED FEE IS KORA'S QUOTE — we do not price the sponsored rail ourselves.
   //
   // The bespoke relay path re-derived the fee locally (oracle + rent + signature count) and shipped it
-  // alongside the relayer's own pricing. The two disagreed, and the relayer REFUSED: every fronted send
+  // alongside the relayer's own pricing. The two disagreed, and the relayer REFUSED: every sponsored send
   // that opened a token account came back `fee_too_low`, the relayer declining to be short ~2,039,280
   // lamports of rent. Kora simulates and prices what it will actually pay, rent included. One pricer,
   // one number, and it is the one the user signs.
@@ -109,7 +109,7 @@ describe("solana fronted: the quoted fee reaches the consent screen", () => {
       mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: USDC_DEVNET,
     });
     const sim = await sol.simulate(ix as never, { cluster: "devnet", feeToken: USDC_DEVNET });
-    expect(sim.resolved.rail).toBe("fronted");
+    expect(sim.resolved.rail).toBe("sponsored");
 
     // Kora only co-signs a transaction that pays it: the fee transfer must land in the ATA of its
     // payment_address (a different account from its signer — paying the wrong one means it never sees
@@ -121,8 +121,8 @@ describe("solana fronted: the quoted fee reaches the consent screen", () => {
   });
 });
 
-describe("solana fronted: rail selection", () => {
-  // A fronted attempt on a cluster with no fee payer must DEGRADE, not fail (SPEC-05 §1). The user
+describe("solana sponsored: rail selection", () => {
+  // A sponsored attempt on a cluster with no fee payer must DEGRADE, not fail (SPEC-05 §1). The user
   // asked to not pay SOL; the honest answer when nobody will front is to self-pay, not to error.
   it("a fee token with no Kora configured falls back to self-pay", async () => {
     const cfg = fakeConfig() as unknown as Record<string, unknown>;
@@ -158,7 +158,7 @@ describe("solana: the fee-token picker asks Kora, not the catalogue", () => {
     expect(tokens.map((t) => t.mint)).toEqual([USDC_DEVNET]);
   });
 
-  it("offers nothing when there is no Kora — there is no fronting to pick", async () => {
+  it("offers nothing when there is no Kora — there is no sponsoring to pick", async () => {
     const cfg = fakeConfig() as unknown as Record<string, unknown>;
     delete cfg.koraUrl;
     delete (cfg.deps as Record<string, unknown>).kora;

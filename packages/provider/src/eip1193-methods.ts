@@ -140,7 +140,7 @@ export async function dispatch(
 
     case "wallet_sendCalls": {
       // EIP-5792 + ERC-7677. A `paymasterService` capability (dapp-supplied here; operator-default is
-      // the config's paymaster/bundler) routes this send FRONTED; the per-send fee token rides in its
+      // the config's paymaster/bundler) routes this send SPONSORED; the per-send fee token rides in its
       // `context`. A single-token paymaster (e.g. Circle USDC) omits the token, so fall back to the
       // chain's default registry fee token. No `paymasterService` ⇒ self-pay (no fee token passed).
       const [req] = _params as [{

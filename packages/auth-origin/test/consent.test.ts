@@ -56,7 +56,7 @@ describe("decodeSignConsent", () => {
       .toEqual({ op: "signMessage", message: "approve login" });
   });
 
-  it("decodes a FrontedBatch typedData to a ConsentView", () => {
+  it("decodes a SponsoredBatch typedData to a ConsentView", () => {
     const typedData = {
       domain: { chainId: 10 },
       message: { feeCalls: [], userCalls: [{ to: "0x1234567890123456789012345678901234567890", value: 1n, data: "0xdeadbeef" }], nonce: 1n, deadline: 0n },

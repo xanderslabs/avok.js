@@ -78,7 +78,7 @@ hash is a page that silently does not run.
 - **Related Origin Requests (`/.well-known/webauthn`).** That is your *own-origin* mechanism, and it must
   sit at your **rpId root**, which is usually not this host. Put the static JSON there. The
   `passkey-access-vault` standard carries the tooling (`reference/src/related-origins.ts`, `vectors/`).
-- **A paymaster.** Fronted sends use any ERC-7677 paymaster + bundler, or Kora on Solana. Avok ships none.
+- **A paymaster.** Sponsored sends use any ERC-7677 paymaster + bundler, or Kora on Solana. Avok ships none.
 - **Anything that stores a user.** No database, no session, no key.
 
 ## Config
@@ -92,7 +92,7 @@ hash is a page that silently does not run.
 | `branding.operatorName` | no | Shown in the passkey prompt and the popup. |
 | `anchorChainId` | no | CAIP-2 anchor chain. Defaults to `eip155:10` (Optimism). |
 | `managementUrl` | no | Your own-origin app, where users create/manage/back up their wallet. |
-| `paymasterUrl`, `feeToken` | no | Passthrough for fronted sends. |
+| `paymasterUrl`, `feeToken` | no | Passthrough for sponsored sends. |
 
 ## Verification
 

@@ -24,7 +24,7 @@ export interface AppState {
 // every call site, and hand-written rather than imported from sdk-core/internal: an operator app
 // should not reach into another package's internals. Mirrors vanilla-own-origin's OwnOriginClient.
 type EvmSim = { success: boolean; revertReason?: string; fee?: { feeToken: string; amount: bigint }; nativeFee?: { amount: bigint }; [k: string]: unknown };
-// The Solana SELF-PAY estimate keeps a base/priority/rent split; the FRONTED quote does not —
+// The Solana SELF-PAY estimate keeps a base/priority/rent split; the SPONSORED quote does not —
 // Kora answers one all-in number (#5). Not the same animal.
 type SolanaSim = { success: boolean; error?: string; fee?: { feeToken: string; amount: bigint }; nativeFee?: { baseFee: bigint; priorityFee: bigint; rent: bigint }; [k: string]: unknown };
 type EvmToken = { address: string; symbol: string; decimals: number };

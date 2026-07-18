@@ -2,7 +2,7 @@ import type { Address } from "viem";
 import type { StorageAdapter } from "./storage.js";
 
 /**
- * Allocates the single-use 256-bit intent nonce for each FrontedBatch / ExecuteBatch. The contract
+ * Allocates the single-use 256-bit intent nonce for each SponsoredBatch / ExecuteBatch. The contract
  * stores consumed nonces in a Permit2-style bitmap where nonce = (word << 8) | bit, so the choice of
  * allocator decides storage density: random nonces scatter across words (one cold SSTORE each),
  * sequential nonces cluster 256-per-word (one cold SSTORE, then 255 warm ~4× cheaper writes).

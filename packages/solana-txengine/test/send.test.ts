@@ -152,8 +152,8 @@ function fakeKora(): KoraClient & { sent: string[] } {
   };
 }
 
-describe("sendSolana – fronted", () => {
-  it("partially signs (user slot filled, Kora fee-payer slot null), hands the wire tx to Kora once, returns Receipt{rail:fronted,status:pending}", async () => {
+describe("sendSolana – sponsored", () => {
+  it("partially signs (user slot filled, Kora fee-payer slot null), hands the wire tx to Kora once, returns Receipt{rail:sponsored,status:pending}", async () => {
     const passkey = new FakePasskeyAdapter();
     const authSpy = vi.spyOn(passkey, "authenticate");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -180,7 +180,7 @@ describe("sendSolana – fronted", () => {
       data: new Uint8Array(0),
     };
 
-    const { message: frontedMsg, lastValidBlockHeight: frontedHeight } = await buildSolanaMessage({
+    const { message: sponsoredMsg, lastValidBlockHeight: sponsoredHeight } = await buildSolanaMessage({
       rpc: fakeRpc,
       instructions: [userSignerInstruction],
       feePayer: { kind: "address", address: RELAYER_ADDRESS },
@@ -191,9 +191,9 @@ describe("sendSolana – fronted", () => {
     const kora = fakeKora();
 
     const receipt = await sendSolana({
-      rail: "fronted",
-      message: frontedMsg,
-      lastValidBlockHeight: frontedHeight,
+      rail: "sponsored",
+      message: sponsoredMsg,
+      lastValidBlockHeight: sponsoredHeight,
       cluster: "devnet",
       kora,
     });
@@ -207,18 +207,18 @@ describe("sendSolana – fronted", () => {
 
     // Receipt shape. The id IS the signature now: Kora broadcast it, so there is a real transaction to
     // point at immediately. The bespoke relayer returned an opaque INTENT id and no signature at all,
-    // which is why a fronted receipt could not be linked to an explorer until the relayer was polled.
-    expect(receipt.rail).toBe("fronted");
+    // which is why a sponsored receipt could not be linked to an explorer until the relayer was polled.
+    expect(receipt.rail).toBe("sponsored");
     expect(receipt.status).toBe("pending");
     expect(receipt.cluster).toBe("devnet");
     expect(receipt.id).toBe("SIGFROMKORA");
     expect(receipt.signature).toBe("SIGFROMKORA");
     // Carried so `wait` can call a never-landable transaction expired instead of pending forever.
-    expect(receipt.lastValidBlockHeight).toBe(frontedHeight);
+    expect(receipt.lastValidBlockHeight).toBe(sponsoredHeight);
 
     // Signature-map: PARTIALLY signed — user slot filled, Kora's fee-payer slot left null for Kora.
     // Sign the same message independently to inspect the kit signatures object.
-    const partialForAssertion = await partiallySignTransactionMessageWithSigners(frontedMsg as never);
+    const partialForAssertion = await partiallySignTransactionMessageWithSigners(sponsoredMsg as never);
     const partialSigs = partialForAssertion.signatures as Record<string, Uint8Array | null>;
     expect(partialSigs[signer.address]).not.toBeNull();
     expect(partialSigs[RELAYER_ADDRESS]).toBeNull();
@@ -233,11 +233,11 @@ describe("sendSolana – guard clauses", () => {
   });
 
   // A missing Kora here is a programming error, not a rail choice: the caller already decided this send
-  // is fronted. Falling back to self-pay at THIS depth would silently bill a user who chose not to pay
+  // is sponsored. Falling back to self-pay at THIS depth would silently bill a user who chose not to pay
   // — the fallback belongs upstream, where the rail is still being chosen (sdk-core `assemble`).
-  it("throws if fronted is called without a kora client", async () => {
+  it("throws if sponsored is called without a kora client", async () => {
     await expect(
-      sendSolana({ rail: "fronted", message: {} as never, lastValidBlockHeight: 0n, cluster: "devnet" }),
+      sendSolana({ rail: "sponsored", message: {} as never, lastValidBlockHeight: 0n, cluster: "devnet" }),
     ).rejects.toThrow("kora");
   });
 });

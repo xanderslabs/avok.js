@@ -98,7 +98,7 @@ describe("client.simulate", () => {
     expect(signed).toBe(false);
   });
 
-  it("fronted simulate quotes the fee + assembles the SPL fee instruction", async () => {
+  it("sponsored simulate quotes the fee + assembles the SPL fee instruction", async () => {
     const connection = fakeSolanaConnection();
     const client = createSolanaNamespace({
       connection,
@@ -106,11 +106,11 @@ describe("client.simulate", () => {
       deps: { solanaRpc: fakeSolanaRpc(), kora: fakeKora() },
     });
     const sim = await client.simulate([fakeIx], { cluster: "devnet", feeToken: USDC_DEVNET });
-    expect(sim.resolved.rail).toBe("fronted");
+    expect(sim.resolved.rail).toBe("sponsored");
     expect(sim.resolved.expectedFee).toBe(10_456n);
   });
 
-  // Fronting is an OFFER, not a promise: the user asked not to pay SOL, and where no fee payer is
+  // Sponsoring is an OFFER, not a promise: the user asked not to pay SOL, and where no fee payer is
   // configured the honest answer is to self-pay, not to refuse the send outright (SPEC-05 §1).
   it("falls back to self-pay when a feeToken is set but no Kora is configured", async () => {
     const connection = fakeSolanaConnection();

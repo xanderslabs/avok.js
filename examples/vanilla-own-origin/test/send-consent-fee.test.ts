@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 // The demo's config validates VITE_RP_ID against the serving origin at MODULE LOAD, which throws
 // under jsdom ("localhost"). Stub the module — this test is about the consent screen, not the guard.
 vi.mock("../src/config.js", () => ({
-  hasEvmFronted: false,
-  hasSolanaFronted: false,
+  hasEvmSponsored: false,
+  hasSolanaSponsored: false,
   config: { anchorChainNumeric: 5042002 },
 }));
 

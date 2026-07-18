@@ -43,7 +43,7 @@ test("stock viem: getAddresses + signMessage + sendCalls over the provider, no A
   expect(id).toBe("0xbundle");
 });
 
-test("stock viem: sendCalls with a paymasterService capability drives the 4337 FRONTED path end-to-end", async () => {
+test("stock viem: sendCalls with a paymasterService capability drives the 4337 SPONSORED path end-to-end", async () => {
   // The whole Avok stack runs for real (provider → engine → evm.send → UserOp build → 7677 handshake →
   // bundler) against fake bring-your-own infra; the CONSUMER writes zero Avok-specific code.
   const IMPL = "0x1234567890123456789012345678901234567890" as Address;

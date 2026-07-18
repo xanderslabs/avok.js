@@ -15,7 +15,7 @@ const PROGRAM_NAMES: Record<string, string> = {
  * Turn `{"InstructionError":["3","InvalidAccountData"]}` into something a human can act on.
  *
  * The index is into the FINAL transaction, which the user never assembled and cannot see: it counts
- * the two compute-budget instructions and, on the fronted rail, the fee transfer that was prepended
+ * the two compute-budget instructions and, on the sponsored rail, the fee transfer that was prepended
  * for them. Reporting the bare index makes the reader reverse-engineer our own assembly order before
  * they can even start debugging.
  */

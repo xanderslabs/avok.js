@@ -105,7 +105,7 @@ export class OrphanedCredentialError extends Error {
  * afford is an ORPHAN by construction. Refuse to start what cannot finish.
  *
  * `required` is a GATE, not a quote — it carries a buffer over the simulated cost, deliberately.
- * `token: null` means native gas (self-pay); otherwise it is the fee token (fronted mode).
+ * `token: null` means native gas (self-pay); otherwise it is the fee token (sponsored mode).
  */
 export class EnrolmentUnaffordableError extends Error {
   readonly chainId: number;
@@ -390,8 +390,8 @@ export function createOwnOriginConnection(opts: {
       });
     },
 
-    /** ONE gesture: the fronted batch signature and, if undelegated, its 7702 authorization. */
-    async signFronted(args: {
+    /** ONE gesture: the sponsored batch signature and, if undelegated, its 7702 authorization. */
+    async signSponsored(args: {
       typedData: TypedDataDefinition;
       authorization?: AuthorizationTriple;
     }): Promise<{ signature: Hex; authorization?: SignedAuthorizationLike }> {

@@ -10,7 +10,7 @@ export function signMessage(args: SignArgs & { message: string }): Promise<Hex> 
   return withWalletKey(args, (account) => account.signMessage({ message: args.message }));
 }
 
-/** EIP-712 typed-data signature (the Tx Engine builds the FrontedBatch typed data, signs here). */
+/** EIP-712 typed-data signature (the Tx Engine builds the SponsoredBatch typed data, signs here). */
 export function signTypedData(args: SignArgs & { typedData: TypedDataDefinition }): Promise<Hex> {
   return withWalletKey(args, (account) => account.signTypedData(args.typedData));
 }

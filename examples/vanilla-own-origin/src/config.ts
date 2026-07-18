@@ -96,11 +96,11 @@ export const config = {
   koraUrl: env.VITE_KORA_URL as string | undefined,
 } as const;
 
-// Fronted readiness is the 4337 infra URLs only — the fee TOKEN is chain-specific and is read
+// Sponsored readiness is the 4337 infra URLs only — the fee TOKEN is chain-specific and is read
 // per-chain from the registry (client.evm.feeTokens / client.solana.feeTokens) at send time, never
 // from a global env var. The Send screen ANDs these with "target chain has ≥1 supported fee token".
-/** True when BOTH the EVM 7677 paymaster AND the 4337 bundler are configured (fronted needs both). */
-export const hasEvmFronted = Boolean(config.paymasterUrl && config.bundlerUrl);
+/** True when BOTH the EVM 7677 paymaster AND the 4337 bundler are configured (sponsored needs both). */
+export const hasEvmSponsored = Boolean(config.paymasterUrl && config.bundlerUrl);
 /** True when a Kora URL is configured. Kora is BOTH the fee payer and the submitter, so unlike EVM
- *  (which needs a paymaster AND a bundler) Solana fronting needs this one endpoint. */
-export const hasSolanaFronted = Boolean(config.koraUrl);
+ *  (which needs a paymaster AND a bundler) Solana sponsoring needs this one endpoint. */
+export const hasSolanaSponsored = Boolean(config.koraUrl);

@@ -27,7 +27,7 @@ export interface AppState {
 // internals, and this way the view states exactly what this demo depends on.
 type EvmSim = { success: boolean; revertReason?: string; fee?: { feeToken: string; amount: bigint }; nativeFee?: { amount: bigint }; [k: string]: unknown };
 // The Solana SELF-PAY estimate keeps a base/priority/rent split (SolanaNativeFeeEstimate); the
-// FRONTED quote does not — Kora answers one all-in number (#5). Not the same animal.
+// SPONSORED quote does not — Kora answers one all-in number (#5). Not the same animal.
 type SolanaSim = { success: boolean; error?: string; fee?: { feeToken: string; amount: bigint }; nativeFee?: { baseFee: bigint; priorityFee: bigint; rent: bigint }; [k: string]: unknown };
 type EvmToken = { address: string; symbol: string; decimals: number };
 type SolanaToken = { mint: string; symbol: string; decimals: number };

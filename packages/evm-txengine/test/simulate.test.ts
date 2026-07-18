@@ -60,7 +60,7 @@ test("delegated chain without simulateV1 → fail loud (no low-confidence fallba
   ).rejects.toThrow(/lacks eth_simulateV1/i);
 });
 
-test("fronted: result.fee is the fee the batch COMMITTED TO — simulate never re-prices it", async () => {
+test("sponsored: result.fee is the fee the batch COMMITTED TO — simulate never re-prices it", async () => {
   // THIS TEST USED TO ASSERT THE BUG. It fed a batch whose committed fee was 0 and expected simulate
   // to report a fee re-derived from the SIMULATION's own gas (70k → 161_000). That is exactly the
   // defect: the batch's `feeCalls` are priced at resolve from fullGasEstimate (which also covers the
@@ -75,7 +75,7 @@ test("fronted: result.fee is the fee the batch COMMITTED TO — simulate never r
   });
   const SIGNED = 161_000n;
   const apBatch = batch({
-    rail: "fronted",
+    rail: "sponsored",
     disclosures: [{ kind: "fee", feeToken: FEE_TOKEN, amount: SIGNED }],
     fee: { feeToken: FEE_TOKEN, amount: SIGNED, gasUnits: 111_535n, gasPrice: 1_000_000_000n },
   });
@@ -85,9 +85,9 @@ test("fronted: result.fee is the fee the batch COMMITTED TO — simulate never r
   expect(res.fee!.amount).toBe(SIGNED); // ← what is SIGNED, not what the sim's gas implies
 });
 
-test("fronted with no priced fee on the batch: simulate invents nothing", async () => {
+test("sponsored with no priced fee on the batch: simulate invents nothing", async () => {
   const rpc = new FakeRpcClient({ simResults: [{ status: "success", gasUsed: 70_000n, returnData: "0x" }] });
-  const res = await simulateResolved(batch({ rail: "fronted" }), {
+  const res = await simulateResolved(batch({ rail: "sponsored" }), {
     rpc, chain,
   });
   // No committed fee → nothing to show. Better to show nothing than a number nobody will sign.

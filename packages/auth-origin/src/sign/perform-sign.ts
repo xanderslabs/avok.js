@@ -77,7 +77,7 @@ export async function performSign(
       } as unknown as Parameters<typeof keys.evm.signTransaction>[0]);
     }
 
-    case "signFronted": {
+    case "signSponsored": {
       const authorization = request.authorization
         ? await keys.evm.signAuthorization(request.authorization)
         : undefined;

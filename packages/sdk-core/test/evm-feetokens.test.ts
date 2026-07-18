@@ -46,13 +46,13 @@ describe("evm.feeTokens", () => {
     await expect(evm.simulate([USER_CALL])).rejects.toThrow(/chainId is required/i);
   });
 
-  it("returns USDG (and only USDG) for Robinhood Chain 4663 — so fronted gating (paymaster + ≥1 fee token) can engage", () => {
+  it("returns USDG (and only USDG) for Robinhood Chain 4663 — so sponsored gating (paymaster + ≥1 fee token) can engage", () => {
     const evm = createEvmNamespace({ connection: makeFakeConnection() });
     const rhc = evm.feeTokens(4663);
     expect(rhc.length).toBe(1);
     expect(rhc[0].symbol).toBe("USDG");
     expect(rhc[0].decimals).toBe(6);
-    // Length > 0 → the fronted fee-token side of the gate is satisfied for this chain.
+    // Length > 0 → the sponsored fee-token side of the gate is satisfied for this chain.
     expect(rhc.length > 0).toBe(true);
     // Regression guard: the USDC/USDT feeds exist on-chain but the tokens do not.
     expect(rhc.some((t) => t.symbol === "USDC")).toBe(false);
@@ -63,10 +63,10 @@ describe("evm.feeTokens", () => {
 describe("resolveFeeToken chain validation", () => {
   it("throws UnsupportedFeeTokenError when the per-send feeToken is not a fee token on the TARGET chain", async () => {
     // The per-send feeToken is Base USDC, but the tx targets Arbitrum, where that address means
-    // nothing. With a bundler + paymaster configured (canFront), the validation is the only thing
-    // standing between the caller and a fronted send. Assert the concrete error TYPE.
+    // nothing. With a bundler + paymaster configured (canSponsor), the validation is the only thing
+    // standing between the caller and a sponsored send. Assert the concrete error TYPE.
     // Mutation guard: delete the `throw` in resolveFeeToken and this stops rejecting (it would proceed
-    // into the fronted path), so the assertion goes red on the ABSENCE of the throw.
+    // into the sponsored path), so the assertion goes red on the ABSENCE of the throw.
     const evm = createEvmNamespace({
       connection: makeFakeConnection(),
       paymasterUrl: "http://p",
@@ -79,7 +79,7 @@ describe("resolveFeeToken chain validation", () => {
   });
 
   it("a mismatched feeToken on a chain WITHOUT a bundler/paymaster falls back to self-pay (no throw)", async () => {
-    // No 4337 infra → a fronted attempt self-pays instead of erroring (SPEC §1); the token is not even
+    // No 4337 infra → a sponsored attempt self-pays instead of erroring (SPEC §1); the token is not even
     // validated because it is never forwarded.
     const evm = createEvmNamespace({
       connection: makeFakeConnection(),

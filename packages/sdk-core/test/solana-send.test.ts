@@ -88,7 +88,7 @@ describe("client.send", () => {
     expect(connection.signSolanaCallCount).toBe(1);
   });
 
-  it("fronted send partial-signs ONCE and hands off to Kora", async () => {
+  it("sponsored send partial-signs ONCE and hands off to Kora", async () => {
     const connection = fakeSolanaConnection();
     const client = createSolanaNamespace({
       connection,
@@ -96,7 +96,7 @@ describe("client.send", () => {
       deps: { solanaRpc: fakeSolanaRpc(), kora: fakeKora() },
     });
     const receipt = await client.send([fakeIx], { cluster: "devnet", feeToken: USDC_DEVNET });
-    expect(receipt.rail).toBe("fronted");
+    expect(receipt.rail).toBe("sponsored");
     expect(receipt.status).toBe("pending");
     // The receipt id IS the broadcast signature: Kora submits, so there is a real transaction to point
     // at immediately — no opaque intent id standing in for one.
@@ -150,7 +150,7 @@ describe("client.send", () => {
     expect(sim.resolved.message).toBeDefined();
   });
 
-  it("fronted simulate resolves feeToken and Kora's quoted expectedFee", async () => {
+  it("sponsored simulate resolves feeToken and Kora's quoted expectedFee", async () => {
     const connection = fakeSolanaConnection();
     const client = createSolanaNamespace({
       connection,
@@ -159,14 +159,14 @@ describe("client.send", () => {
     });
     const sim = await client.simulate([fakeIx], { cluster: "devnet", feeToken: USDC_DEVNET });
 
-    expect(sim.resolved.rail).toBe("fronted");
+    expect(sim.resolved.rail).toBe("sponsored");
     expect(sim.resolved.feeToken).toBe(USDC_DEVNET);
     expect(sim.resolved.expectedFee).toBe(10_456n);
   });
 
   // The user asked not to pay SOL; where no fee payer is configured the honest answer is to self-pay,
   // not to refuse the send (SPEC-05 §1).
-  it("fronted send without a koraUrl falls back to self-pay", async () => {
+  it("sponsored send without a koraUrl falls back to self-pay", async () => {
     const connection = fakeSolanaConnection();
     const client = createSolanaNamespace({
       connection,

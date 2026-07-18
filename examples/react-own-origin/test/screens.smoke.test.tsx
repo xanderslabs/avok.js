@@ -79,7 +79,7 @@ const mount = (node: ReactNode) => render(<ThemeProvider>{node}</ThemeProvider>)
 const noop = () => {};
 
 // Each affordance is queried as the control a user actually operates, not as loose
-// page text: "Fronted" and "ENS" both also appear in nearby explanatory prose, so a
+// page text: "Sponsored" and "ENS" both also appear in nearby explanatory prose, so a
 // getByText would match the copy even if the button were gone.
 const button = (name: RegExp) => screen.getByRole("button", { name });
 
@@ -189,10 +189,10 @@ describe("every screen mounts and shows its key affordance", () => {
     expect(container.firstChild).toBeTruthy();
   });
 
-  it("Send exposes BOTH fee modes — the self-pay/fronted toggle is the demo's point", () => {
+  it("Send exposes BOTH fee modes — the self-pay/sponsored toggle is the demo's point", () => {
     mount(<Send />);
     expect(button(/self-pay/i)).toBeTruthy();
-    expect(button(/^fronted$/i)).toBeTruthy();
+    expect(button(/^sponsored$/i)).toBeTruthy();
   });
 
   it("Account mounts and shows the Export entry point", () => {

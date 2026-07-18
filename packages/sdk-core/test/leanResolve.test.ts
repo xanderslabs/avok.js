@@ -20,7 +20,7 @@ const USER_CALL = { to: "0x2222222222222222222222222222222222222222" as const, v
 
 
 describe("leanResolve", () => {
-  it("fronted (4337): undelegated wallet gets an authorization and NO fee call — the paymaster charges the fee", async () => {
+  it("sponsored (4337): undelegated wallet gets an authorization and NO fee call — the paymaster charges the fee", async () => {
     const rpc = makeFakeRpc({ delegated: false, nonce: 3n });
     const batch = await leanResolve({
       rpc,
@@ -32,9 +32,9 @@ describe("leanResolve", () => {
       deadline: 9_999_999_999n,
     });
 
-    expect(batch.rail).toBe("fronted");
+    expect(batch.rail).toBe("sponsored");
     expect(batch.authorization?.address).toBe(testChain.canonicalImplementation);
-    // No feeCall: the 4337 paymaster fronts the gas and charges the user; nothing is priced here.
+    // No feeCall: the 4337 paymaster sponsors the gas and charges the user; nothing is priced here.
     expect(batch.feeCalls).toHaveLength(0);
     // The paymaster context token is carried so a re-sent SimulationResult sponsors identically.
     expect(batch.feeToken?.toLowerCase()).toBe(feeToken.toLowerCase());
@@ -58,7 +58,7 @@ describe("leanResolve", () => {
     expect(batch.authorization?.address).toBe(testChain.canonicalImplementation);
   });
 
-  it("already-delegated fronted: no authorization emitted, still no fee call", async () => {
+  it("already-delegated sponsored: no authorization emitted, still no fee call", async () => {
     // Return the EIP-7702 designator for the canonical implementation.
     const rpc = makeFakeRpc({ delegated: NON_ZERO_IMPL, nonce: 0n });
     const batch = await leanResolve({
@@ -90,7 +90,7 @@ describe("leanResolve", () => {
     ).resolves.toMatchObject({ rail: "self-pay", feeCalls: [] });
   });
 
-  it("disclosures: delegation present for undelegated fronted; NO fee disclosure (the paymaster charges it)", async () => {
+  it("disclosures: delegation present for undelegated sponsored; NO fee disclosure (the paymaster charges it)", async () => {
     const rpc = makeFakeRpc({ delegated: false, nonce: 0n });
     const batch = await leanResolve({
       rpc,

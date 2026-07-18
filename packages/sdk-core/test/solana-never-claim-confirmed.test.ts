@@ -9,14 +9,14 @@ import type { Receipt } from "@avokjs/solana-txengine";
  * ALL, so it could not have obeyed the rule even in principle:
  *
  *   - self-pay → status "submitted": broadcast, NOT mined.
- *   - fronted  → status "pending", NO signature, and `id` was the relayer's INTENT ID.
+ *   - sponsored  → status "pending", NO signature, and `id` was the relayer's INTENT ID.
  *
  * The demos fired "mined" unless the status was literally "failed", and linked
- * `receipt.signature ?? receipt.id` — so a fronted transaction the relayer had not even submitted was
+ * `receipt.signature ?? receipt.id` — so a sponsored transaction the relayer had not even submitted was
  * shown as CONFIRMED above an explorer page reading `Signature "6c8bbfa…" is not valid`. Verified on
  * real hardware, twice.
  *
- * Under Kora (#5) the intent-id indirection is gone — Kora broadcasts, so a fronted receipt carries a
+ * Under Kora (#5) the intent-id indirection is gone — Kora broadcasts, so a sponsored receipt carries a
  * REAL signature from the start. That removes the "linked a non-signature" half of the bug outright,
  * but not the other half: a signature is not a confirmation. Kora accepting a transaction says nothing
  * about inclusion, so `wait()` remains the ONLY producer of "confirmed", and only the CHAIN says so —
@@ -34,10 +34,10 @@ function namespaceWith(deps: Record<string, unknown>) {
   } as never);
 }
 
-const frontedReceipt: Receipt = {
+const sponsoredReceipt: Receipt = {
   // Kora broadcast it, so the id IS the signature — a real one, linkable from the moment it exists.
   id: SIG,
-  rail: "fronted",
+  rail: "sponsored",
   status: "pending",
   signature: SIG,
   cluster: "devnet",
@@ -53,7 +53,7 @@ const selfPayReceipt: Receipt = {
   lastValidBlockHeight: 200n,
 };
 
-describe("solana wait(): fronted", () => {
+describe("solana wait(): sponsored", () => {
   const rpc = (over: Record<string, unknown>) => ({
     solanaRpc: { getSignatureStatus: async () => null, getBlockHeight: async () => 100n, ...over },
   });
@@ -61,7 +61,7 @@ describe("solana wait(): fronted", () => {
   it("resolves confirmed ONLY when the CHAIN says so", async () => {
     const sol = namespaceWith(rpc({ getSignatureStatus: async () => ({ confirmationStatus: "confirmed", err: null }) }));
 
-    const final = await sol.wait(frontedReceipt, { intervalMs: 1 });
+    const final = await sol.wait(sponsoredReceipt, { intervalMs: 1 });
 
     expect(final.status).toBe("confirmed");
     expect(final.signature).toBe(SIG);
@@ -72,7 +72,7 @@ describe("solana wait(): fronted", () => {
   it("does NOT claim confirmed while the chain has not seen it, even at the timeout", async () => {
     const sol = namespaceWith(rpc({}));
 
-    const final = await sol.wait(frontedReceipt, { timeoutMs: 5, intervalMs: 1 });
+    const final = await sol.wait(sponsoredReceipt, { timeoutMs: 5, intervalMs: 1 });
 
     // An unconfirmed transaction is exactly the thing a wallet must never round up to success.
     expect(final.status).toBe("pending");
@@ -81,12 +81,12 @@ describe("solana wait(): fronted", () => {
 
   it("reports an on-chain error as failed", async () => {
     const sol = namespaceWith(rpc({ getSignatureStatus: async () => ({ confirmationStatus: null, err: { InstructionError: [0, "Custom"] } }) }));
-    expect((await sol.wait(frontedReceipt, { intervalMs: 1 })).status).toBe("failed");
+    expect((await sol.wait(sponsoredReceipt, { intervalMs: 1 })).status).toBe("failed");
   });
 
   it("reports EXPIRED when the blockhash lapsed — Kora's copy can never land either", async () => {
     const sol = namespaceWith(rpc({ getBlockHeight: async () => 999n })); // > lastValidBlockHeight
-    expect((await sol.wait(frontedReceipt, { intervalMs: 1 })).status).toBe("expired");
+    expect((await sol.wait(sponsoredReceipt, { intervalMs: 1 })).status).toBe("expired");
   });
 });
 

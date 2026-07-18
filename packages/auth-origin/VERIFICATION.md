@@ -86,7 +86,7 @@ green against it. Chrome/macOS + iPad, iCloud Keychain.
 > root unchanged). Re-deployed and hardware-verified against the new address.
 
 > **Superseded again 2026-07-15.** The dual-mode 7702+4337 rework added `validateUserOp` + an
-> EntryPoint-gated execute and removed the bespoke `executeFronted`/`FrontedBatch` path — unlike the
+> EntryPoint-gated execute and removed the bespoke `executeSponsored`/`SponsoredBatch` path — unlike the
 > prior two moves this is a real bytecode/logic change, moving the CREATE2 address to
 > `0x11c840C10e641f00f6874Fc909eD2Dc5dc31f68C` (ERC-7201 storage root `0xa4fa…0600` still unchanged; a
 > StorageLayout forge test guards it). Re-deployed and hardware-verified against the new address.
@@ -102,17 +102,17 @@ it.)
 - **Trusted Types enforcing**, with no violation.
 - The account picker no longer appears after the first sign-in.
 
-**The fronted rail (gasless), both chains — verified 2026-07-13.** Both relayers were run with real
+**The sponsored rail (gasless), both chains — verified 2026-07-13.** Both relayers were run with real
 keys and a USDC send completed on each:
 
-- **EVM paymaster** — fronted send, **fee paid in USDC**.
-- **Solana relayer** — fronted SPL send, **fee paid in USDC**, to a recipient with **no existing
+- **EVM paymaster** — sponsored send, **fee paid in USDC**.
+- **Solana relayer** — sponsored SPL send, **fee paid in USDC**, to a recipient with **no existing
   token account**. That last detail matters: it is the only path that exercises **create-ATA rent
-  fronting**, where the relayer's fee payer fronts the rent and re-prices it into the fee token.
+  sponsoring**, where the relayer's fee payer sponsors the rent and re-prices it into the fee token.
   It fires only for a fresh recipient, so a send to an existing holder would have proved nothing about
   it.
 
-The user pays in the fee token and holds no gas asset — which is the entire point of fronted.
+The user pays in the fee token and holds no gas asset — which is the entire point of sponsored.
 
 ---
 

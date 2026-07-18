@@ -9,7 +9,7 @@ import { makeFakeRpc } from "./fakes.js";
  * `const f = globalThis.fetch; f(url)` calls it with `this === undefined`. Safari rejects that with
  * "Failed to execute 'fetch' on 'Window': Illegal invocation". Chrome is lenient and lets it through —
  * which is exactly why this survived an appmode test on Chrome and only blew up on real Safari
- * hardware, on the FRONTED rail, because that is the only send path that talks to the paymaster.
+ * hardware, on the SPONSORED rail, because that is the only send path that talks to the paymaster.
  *
  * So the default fetch must be BOUND. This test installs a `fetch` that enforces the receiver the way
  * a browser does; an unbound reference fails it.
@@ -35,14 +35,14 @@ const CHAIN_10_CONFIG = {
 };
 
 describe("the default fetch is bound to the global", () => {
-  it("a FRONTED send does not die with 'Illegal invocation'", async () => {
+  it("a SPONSORED send does not die with 'Illegal invocation'", async () => {
     installStrictFetch(() => CHAIN_10_CONFIG);
 
     const connection = {
       account: () => ({ evm: { address: "0x1111111111111111111111111111111111111111" }, solana: { address: "1" } }),
       status: () => true,
       signSend: vi.fn(),
-      signFronted: vi.fn(),
+      signSponsored: vi.fn(),
     } as unknown as Connection;
 
     const client = createEvmNamespace({

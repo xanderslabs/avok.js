@@ -6,7 +6,7 @@ import type { Call } from "./types.js";
 /**
  * Protocol gas constants. Deliberately FEW: gas is now MEASURED by simulating the batch, so the only
  * constant left is the 7702 authorization a simulation cannot show, plus the base intrinsic. Fail-loud
- * guarded at load. (The fronted-envelope constant + calldata-cost helpers retired with the bespoke
+ * guarded at load. (The sponsored-envelope constant + calldata-cost helpers retired with the bespoke
  * relay — the 4337 rail measures gas through the bundler.)
  */
 

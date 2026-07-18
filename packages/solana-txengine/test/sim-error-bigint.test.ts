@@ -47,7 +47,7 @@ describe("solana simulation errors survive being reported", () => {
  * "instruction 3" is not a fact anyone can act on.
  *
  * The index is into the FINAL transaction — which the user never assembled and cannot see. It counts
- * two compute-budget instructions and, on the fronted rail, a fee transfer prepended on their behalf.
+ * two compute-budget instructions and, on the sponsored rail, a fee transfer prepended on their behalf.
  * Reporting the bare index forces the reader to reverse-engineer our assembly order before they can
  * begin debugging. Name the instruction.
  */
@@ -55,7 +55,7 @@ describe("a failing instruction is named, not numbered", () => {
   const ORDER = [
     "ComputeBudget111111111111111111111111111111",
     "ComputeBudget111111111111111111111111111111",
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",  // 2: the fronted FEE transfer
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",  // 2: the sponsored FEE transfer
     "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",  // 3: the user's own Token-2022 transfer
   ];
 

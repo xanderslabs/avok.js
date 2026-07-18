@@ -7,7 +7,7 @@ published SDK + a small CSS-variable design kit. One family with the React demos
 vanilla expression.
 
 Screens: Onboard (create / continue / set up this device) → Home → Send (EVM + Solana, self-pay or
-fronted) → Account (sign, export) → Subname (register / resolve) → Device
+sponsored) → Account (sign, export) → Subname (register / resolve) → Device
 (add a passkey, SAS pairing) — the same own-origin surface as `react-own-origin`, rendered with a tiny
 `el()` DOM helper + a ~30-line reactive store, no framework.
 
@@ -23,7 +23,7 @@ pnpm --filter @avok-demo/vanilla-own-origin dev
 
 - **EVM**: Arc testnet, chain id `5042002` (Circle's stablechain; native gas is USDC).
 - **Solana**: `devnet` cluster.
-- Fronted sends ("fronted") and Subname (ENS registrar/parent) are opt-in — set the
+- Sponsored sends ("sponsored") and Subname (ENS registrar/parent) are opt-in — set the
   relevant `VITE_*` vars in `.env` to enable them.
 
 ## Architecture (framework-free)
@@ -72,7 +72,7 @@ const account = await client.continue(); // existing passkey on this device
 There is no import: the wallet key is derived from a WebAuthn PRF evaluation, not a seed you can
 type in, so there's nothing to import from.
 
-### EVM send — self-pay + fronted — `src/screens/Send.ts`
+### EVM send — self-pay + sponsored — `src/screens/Send.ts`
 
 ```ts
 import { encodeFunctionData, erc20Abi } from "viem";
@@ -84,12 +84,12 @@ const call = {
 };
 // Fee tokens are chain-specific — read the supported ones for THIS chain from the registry and let
 // the user pick. `client.evm.feeTokens(chainId)` is the EVM mirror of `client.solana.feeTokens`.
-const selectedFeeToken = feeMode === "fronted" ? (client.evm.feeTokens(chain.id)[feeTokenIdx]?.address ?? null) : null;
+const selectedFeeToken = feeMode === "sponsored" ? (client.evm.feeTokens(chain.id)[feeTokenIdx]?.address ?? null) : null;
 const receipt = await client.evm.send([call], { chainId: chain.id, feeToken: selectedFeeToken }); // null = self-pay
 ```
 
 `feeToken: null` pays gas from the account's own balance (self-pay); passing a fee-token **address
-supported on that chain** (with `VITE_PAYMASTER_URL` set) fronts the send (fronted). The address is
+supported on that chain** (with `VITE_PAYMASTER_URL` set) sponsors the send (sponsored). The address is
 chain-specific, so it comes from `client.evm.feeTokens(chainId)`, never from a global env var. The
 demo drives a `pending → confirmed | failed` status (`@avokjs/helpers`) and links the receipt to
 the chain's explorer.
@@ -107,7 +107,7 @@ const ix = [
   }),
 ];
 // Same pattern on Solana: the fee MINT is cluster-specific — read it from the registry and pick.
-const selectedFeeMint = feeMode === "fronted" ? (client.solana.feeTokens(config.solanaCluster)[feeTokenIdx]?.mint ?? null) : null;
+const selectedFeeMint = feeMode === "sponsored" ? (client.solana.feeTokens(config.solanaCluster)[feeTokenIdx]?.mint ?? null) : null;
 const receipt = await client.solana.send(ix, { cluster: config.solanaCluster, feeToken: selectedFeeMint });
 ```
 

@@ -57,7 +57,7 @@ describe("solana.buildSplTransfer — create-ATA payer per rail", () => {
     expect(ataPayer(ix)).toBe(USER);
   });
 
-  it("fronted: the create-ATA rent payer is Kora's fee-payer signer", async () => {
+  it("sponsored: the create-ATA rent payer is Kora's fee-payer signer", async () => {
     const ns = createSolanaNamespace(fakeConfig());
     const ix = await ns.buildSplTransfer({ mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: USDC_DEVNET });
     expect(ataPayer(ix)).toBe(KORA_SIGNER);
@@ -66,7 +66,7 @@ describe("solana.buildSplTransfer — create-ATA payer per rail", () => {
   // A fee token names a rail the operator has not configured, so the send will fall back to self-pay —
   // and the rent payer must fall back with it. Naming an absent fronter here would build a transaction
   // whose payer slot nobody funds or signs for.
-  it("fronted requested but no Kora configured: the rent payer falls back to the user", async () => {
+  it("sponsored requested but no Kora configured: the rent payer falls back to the user", async () => {
     const cfg = fakeConfig() as unknown as Record<string, unknown>;
     delete cfg.koraUrl;
     delete (cfg.deps as Record<string, unknown>).kora;

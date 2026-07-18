@@ -99,8 +99,8 @@ export function createSharedOriginConnection(opts: {
       return net.signSend(args);
     },
 
-    async signFronted(args) {
-      return net.signFronted(args);
+    async signSponsored(args) {
+      return net.signSponsored(args);
     },
 
     async signUserOp(args) {

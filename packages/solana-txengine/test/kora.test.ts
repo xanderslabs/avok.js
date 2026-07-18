@@ -61,7 +61,7 @@ describe("createKora", () => {
   });
 
   // The bespoke relayer's original sin was throwing away the reason and reporting the bare status, which
-  // made every fronted failure identical and undiagnosable. Kora says WHY in `error.message` — carry it,
+  // made every sponsored failure identical and undiagnosable. Kora says WHY in `error.message` — carry it,
   // and phrase it like the EVM paymaster's so `classifySendError` can read one dialect, not two.
   it("carries the reason out of a JSON-RPC error", async () => {
     const f = fakeKora({}, { error: { code: -32602, message: "unsupported_token" } });

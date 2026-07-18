@@ -3,11 +3,11 @@ import type { Call } from "@avokjs/wallet-core";
 
 export type { Call };
 
-export type Rail = "self-pay" | "fronted";
+export type Rail = "self-pay" | "sponsored";
 
 export interface ExecutionContext {
   chainId: number;
-  /** Present (per-call or client default) ⇒ fronted; absent/null ⇒ self-pay. */
+  /** Present (per-call or client default) ⇒ sponsored; absent/null ⇒ self-pay. */
   feeToken?: Address | null;
   /** `false` opts out of gas estimation (fixed-fallback confidence). */
   gas?: boolean;
@@ -15,7 +15,7 @@ export interface ExecutionContext {
 
 /** The single source of rail selection — the rail is data, not a verb. */
 export function railFromContext(ctx: ExecutionContext): Rail {
-  return ctx.feeToken ? "fronted" : "self-pay";
+  return ctx.feeToken ? "sponsored" : "self-pay";
 }
 
 export type Disclosure =
@@ -39,13 +39,13 @@ export interface ResolvedBatch {
   feeCalls: Call[];
   /** The app's revert-isolated calls. */
   userCalls: Call[];
-  /** FRONTED (4337) only — the ERC-7677 paymaster `context` fee token this batch is sponsored in
+  /** SPONSORED (4337) only — the ERC-7677 paymaster `context` fee token this batch is sponsored in
    *  (`null`/absent ⇒ a single-token paymaster implies it, e.g. Circle USDC). Carried so a
    *  `SimulationResult` re-sent verbatim sponsors in the SAME token the user saw. */
   feeToken?: Address | null;
   authorization?: PendingAuthorization;
-  /** The self-pay intent nonce. (The 4337 fronted rail uses the EntryPoint's own 2D nonce instead,
-   *  fetched at send time — this field is not the fronted nonce.) */
+  /** The self-pay intent nonce. (The 4337 sponsored rail uses the EntryPoint's own 2D nonce instead,
+   *  fetched at send time — this field is not the sponsored nonce.) */
   nonce: bigint;
   deadline: bigint;
   disclosures: Disclosure[];
@@ -116,7 +116,7 @@ export interface SimulationResult {
   batch: ResolvedBatch;
   success: boolean;
   gasEstimate: bigint;
-  /** Fronted only — the signed, committed fee. */
+  /** Sponsored only — the signed, committed fee. */
   fee?: FeeBreakdown;
   /** Self-pay only — the ESTIMATED native cost. Never signed. */
   nativeFee?: NativeFeeEstimate;
@@ -130,7 +130,7 @@ export interface SimulationResult {
 export type ReceiptStatus = "pending" | "submitted" | "confirmed" | "failed";
 
 export interface Receipt {
-  /** txHash (self-pay) or intent id (fronted). */
+  /** txHash (self-pay) or intent id (sponsored). */
   id: string;
   rail: Rail;
   status: ReceiptStatus;

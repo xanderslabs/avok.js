@@ -14,9 +14,9 @@ import type { AvokUserOperation } from "./bundler.js";
 
 /**
  * The signing seam `sdk-core`'s `Connection` provides (wired in Task 9). Both signatures come from
- * the SAME passkey gesture as today's composite `signFronted`: `signUserOpHash` is the ecrecover
+ * the SAME passkey gesture as today's composite `signSponsored`: `signUserOpHash` is the ecrecover
  * signature the contract's `validateUserOp` checks; `signAuthorization` is the EIP-7702 delegation
- * tuple attached to the first (undelegated) fronted send.
+ * tuple attached to the first (undelegated) sponsored send.
  */
 export interface UserOpSigner {
   signUserOpHash(userOpHash: Hex): Promise<Hex>;
@@ -39,7 +39,7 @@ export interface BuildUserOpArgs {
     paymasterPostOpGasLimit?: bigint;
   };
   /**
-   * The EIP-7702 authorization for an undelegated account's first fronted send. Attached to the UserOp
+   * The EIP-7702 authorization for an undelegated account's first sponsored send. Attached to the UserOp
    * (viem forwards it as `eip7702Auth`); NOT viem's built-in account-authorization, which requires a
    * `PrivateKeyAccount` and cannot express Avok's passkey signer.
    */
@@ -120,7 +120,7 @@ export async function toAvokSmartAccount(args: ToAvokSmartAccountArgs): Promise<
     async getStubSignature() {
       return STUB_SIGNATURE;
     },
-    // The fronted rail signs ONLY the userOpHash (below). Message / typed-data signing is the
+    // The sponsored rail signs ONLY the userOpHash (below). Message / typed-data signing is the
     // Connection/provider's job, not this internal account — fail loud if something routes here.
     async signMessage(): Promise<Hex> {
       throw new Error("toAvokSmartAccount: signMessage is not supported; sign via the Connection/provider");

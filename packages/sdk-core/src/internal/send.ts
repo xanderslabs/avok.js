@@ -5,7 +5,7 @@ import type { ClientConfig } from "../types.js";
 
 /** Per-chain capabilities the provider surfaces via `wallet_getCapabilities`. */
 export interface EngineCapabilities {
-  /** Fronted (4337) is available when this deployment has BOTH a bundler and a 7677 paymaster. */
+  /** Sponsored (4337) is available when this deployment has BOTH a bundler and a 7677 paymaster. */
   paymasterService: { supported: boolean };
   /** The chain's registry fee tokens — the fee-token picker's option list. */
   feeTokens: EvmFeeToken[];
@@ -21,14 +21,14 @@ export interface SendEngine {
   send(calls: Call[], opts: { chainId: number; feeToken?: Address | null }): Promise<Receipt>;
   /** A SINGLE, non-blocking status poll — for `wallet_getCallsStatus`. */
   status(receipt: Receipt): Promise<Receipt>;
-  /** Per-chain fronted support + fee tokens — for `wallet_getCapabilities`. */
+  /** Per-chain sponsored support + fee tokens — for `wallet_getCapabilities`. */
   capabilities(chainId: number): EngineCapabilities;
 }
 
 export function createSendEngine(config: ClientConfig): SendEngine {
   const evm = createEvmNamespace(config);
-  // Fronted needs BOTH a bundler and a 7677 paymaster (matches evm.ts `canFront`).
-  const frontedSupported = Boolean(
+  // Sponsored needs BOTH a bundler and a 7677 paymaster (matches evm.ts `canSponsor`).
+  const sponsoredSupported = Boolean(
     (config.paymasterUrl || config.deps?.paymaster) && (config.bundlerUrl || config.deps?.bundler),
   );
   return {
@@ -36,8 +36,8 @@ export function createSendEngine(config: ClientConfig): SendEngine {
     // timeoutMs:0 makes evm.wait poll once and return immediately (see evm.ts `wait`).
     status: (receipt) => evm.wait(receipt, { timeoutMs: 0, intervalMs: 0 }),
     capabilities: (chainId) => ({
-      paymasterService: { supported: frontedSupported },
-      feeTokens: frontedSupported ? evm.feeTokens(chainId) : [],
+      paymasterService: { supported: sponsoredSupported },
+      feeTokens: sponsoredSupported ? evm.feeTokens(chainId) : [],
     }),
   };
 }

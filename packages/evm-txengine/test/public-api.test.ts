@@ -7,7 +7,7 @@ test("public surface exposes the pipeline verbs and adapters", () => {
     "createViemRpcClient", "createViemVaultReader",
     "estimateNativeFee",
     "railFromContext", "getChainProfile",
-    // 4337 fronted rail (replaces the deleted bespoke relay client)
+    // 4337 sponsored rail (replaces the deleted bespoke relay client)
     "createPaymaster7677", "createBundler", "buildUserOp", "getAvokUserOpHash", "toAvokSmartAccount",
   ]) {
     expect(api[name as keyof typeof api], `missing export: ${name}`).toBeTypeOf("function");

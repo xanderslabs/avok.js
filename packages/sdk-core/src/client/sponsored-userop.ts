@@ -13,8 +13,8 @@ import {
   type RpcClient,
 } from "@avokjs/evm-txengine";
 
-/** The bring-your-own 4337 infra a fronted send routes through. */
-export interface FrontedInfra {
+/** The bring-your-own 4337 infra a sponsored send routes through. */
+export interface SponsoredInfra {
   rpc: RpcClient;
   bundler: Bundler;
   paymaster: Paymaster7677;
@@ -31,7 +31,7 @@ function stubAuthorization(a: PendingAuthorization): SignedAuthorization {
   return { chainId: a.chainId, address: a.address, nonce: a.nonce, r: STUB_R, s: STUB_S, yParity: 0 };
 }
 
-export interface PreparedFrontedUserOp {
+export interface PreparedSponsoredUserOp {
   /** The final UserOp: gas + paymaster sponsorship filled; `signature`/`authorization` still stubs. */
   op: AvokUserOperation;
   /** The v0.8 hash the connection signs (already the EIP-712 digest `validateUserOp` checks). */
@@ -47,8 +47,8 @@ export interface PreparedFrontedUserOp {
  * unsigned UserOp plus its hash. Mirrors the key-isolation discipline of the self-pay path: every
  * network round-trip is done here, before the single `signUserOp` gesture.
  */
-export async function prepareFrontedUserOp(
-  infra: FrontedInfra,
+export async function prepareSponsoredUserOp(
+  infra: SponsoredInfra,
   args: {
     sender: Address;
     calls: Call[];
@@ -59,7 +59,7 @@ export async function prepareFrontedUserOp(
     suggestedTip: bigint;
     baseFee: bigint;
   },
-): Promise<PreparedFrontedUserOp> {
+): Promise<PreparedSponsoredUserOp> {
   const { rpc, bundler, paymaster } = infra;
   const { sender, calls, chainId, authorization, feeToken } = args;
   const fees = selfPayFees(args.suggestedTip, args.baseFee);
@@ -136,7 +136,7 @@ function totalGasUnits(op: AvokUserOperation): bigint {
 }
 
 /**
- * The BOUNDED gas cost a fronted UserOp commits — sign-what-you-saw: derived from the SIGNED op's
+ * The BOUNDED gas cost a sponsored UserOp commits — sign-what-you-saw: derived from the SIGNED op's
  * gas limits × `maxFeePerGas` (the ceiling the signature authorises). Post-oracle this is the raw gas
  * ceiling in the chain's NATIVE units; no USD conversion is applied (the oracle is retired, and the
  * ERC-7677 response carries no token amount). `feeToken` labels the token the paymaster sponsors in.
@@ -144,7 +144,7 @@ function totalGasUnits(op: AvokUserOperation): bigint {
  * response, so it is not folded in here. When the fee token is unknown (a single-token paymaster), the
  * caller shows no amount rather than calling this — disclose none, exactly as before.
  */
-export function boundedFrontedFee(op: AvokUserOperation, feeToken: Address): FeeBreakdown {
+export function boundedSponsoredFee(op: AvokUserOperation, feeToken: Address): FeeBreakdown {
   const gasUnits = totalGasUnits(op);
   const gasPrice = op.maxFeePerGas; // the committed ceiling
   return { feeToken, amount: gasUnits * gasPrice, gasUnits, gasPrice };

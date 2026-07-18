@@ -156,7 +156,7 @@ describe("createOwnOriginConnection signing verbs", () => {
     expect(result.yParity).toBeTypeOf("number");
   });
 
-  // signUserOp is the 4337 fronted composite: ONE gesture yields the raw ecrecover signature over the
+  // signUserOp is the 4337 sponsored composite: ONE gesture yields the raw ecrecover signature over the
   // v0.8 userOpHash (what validateUserOp checks) and, when undelegated, the 7702 authorization.
   function makeUserOp(sender: Address): AvokUserOperation {
     return {

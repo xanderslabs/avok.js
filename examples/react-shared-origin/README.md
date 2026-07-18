@@ -6,7 +6,7 @@ via a shared-origin popup and only receives signatures back. It's the sibling of
 [`react-own-origin`](../react-own-origin) (self-custody); same screen kit, honest custody split.
 
 Screens: Connect (continue via the operator's popup — **no create / import**) → Home → Send
-(EVM + Solana, self-pay or fronted — signed over the shared-origin channel) → Account (sign,
+(EVM + Solana, self-pay or sponsored — signed over the shared-origin channel) → Account (sign,
 subname **resolve**, disconnect, link out to the operator for management).
 
 Because keys aren't here, the use-only surface has **no** create / export / addPasskey /
@@ -32,7 +32,7 @@ pnpm --filter @avok-demo/react-shared-origin dev
 - **EVM**: Arc testnet, chain id `5042002` (Circle's stablechain; native gas is USDC).
 - **Solana**: `devnet` cluster.
 - **Shared-origin**: `VITE_AUTH_ORIGIN` (required — the operator origin) and `VITE_MANAGEMENT_URL`
-  (the operator's own-origin app). Fronted sends ("fronted") and subname resolve are opt-in via
+  (the operator's own-origin app). Sponsored sends ("sponsored") and subname resolve are opt-in via
   the relevant `VITE_*` vars.
 
 ## Per-feature snippets
@@ -69,7 +69,7 @@ const connection = await createSharedOriginConnection({
 const client = createAvokClient({ connection, /* chain/fee/subname config */ managementUrl: config.managementUrl });
 ```
 
-### EVM send — self-pay + fronted — `src/screens/Send.tsx`
+### EVM send — self-pay + sponsored — `src/screens/Send.tsx`
 
 The Send screen is identical to react-own-origin's — the send hooks work the same on the use-only
 client; signatures just route through the shared-origin channel.
@@ -89,13 +89,13 @@ const call = {
 // Fee tokens are chain-specific — read the supported ones for THIS chain from the registry and let
 // the user pick. `useFeeTokens().feeTokens(chainId)` mirrors `useSolanaFeeTokens` for the EVM side.
 const { feeTokens } = useFeeTokens();
-const selectedFeeToken = effectiveFeeMode === "fronted" ? (feeTokens(chain.id)[feeTokenIdx]?.address ?? null) : null;
+const selectedFeeToken = effectiveFeeMode === "sponsored" ? (feeTokens(chain.id)[feeTokenIdx]?.address ?? null) : null;
 const sim = await evmSimulate([call], { chainId: chain.id, feeToken: selectedFeeToken }); // null = self-pay
 const receipt = await evmSend(sim, { chainId: chain.id, feeToken: selectedFeeToken });
 ```
 
 `feeToken: null` pays gas from the account's own balance (self-pay); passing a fee-token **address
-supported on that chain** (with `VITE_PAYMASTER_URL` set) fronts the send (fronted). The address is
+supported on that chain** (with `VITE_PAYMASTER_URL` set) sponsors the send (sponsored). The address is
 chain-specific, so it comes from `client.evm.feeTokens(chainId)`, never from a global env var.
 
 ### Solana send — `src/screens/Send.tsx`
@@ -116,7 +116,7 @@ const ix = [
 ];
 // Same pattern on Solana: the fee MINT is cluster-specific — read it from the registry and pick.
 const { feeTokens: solanaFeeTokens } = useSolanaFeeTokens();
-const selectedFeeMint = effectiveFeeMode === "fronted" ? (solanaFeeTokens(config.solanaCluster)[feeTokenIdx]?.mint ?? null) : null;
+const selectedFeeMint = effectiveFeeMode === "sponsored" ? (solanaFeeTokens(config.solanaCluster)[feeTokenIdx]?.mint ?? null) : null;
 const sim = await solSimulate(ix, { cluster: config.solanaCluster, feeToken: selectedFeeMint });
 const receipt = await solSend(sim, { cluster: config.solanaCluster, feeToken: selectedFeeMint });
 ```

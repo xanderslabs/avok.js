@@ -2,7 +2,7 @@ export type SendErrorKind =
   | "rejected"
   | "insufficient-funds"
   | "wrong-chain"
-  | "fronted-unavailable"
+  | "sponsored-unavailable"
   | "unknown";
 
 function messageOf(err: unknown): string {
@@ -26,7 +26,7 @@ const FRIENDLY: Record<SendErrorKind, string> = {
   rejected: "Passkey prompt cancelled or timed out.",
   "insufficient-funds": "Not enough balance to cover the amount plus fees.",
   "wrong-chain": "This chain isn't configured for the wallet.",
-  "fronted-unavailable": "Fronted (fronted) is unavailable — check the paymaster/relayer + fee-token config.",
+  "sponsored-unavailable": "Sponsored gas is unavailable — check the paymaster/relayer + fee-token config.",
   unknown: "Something went wrong.",
 };
 
@@ -81,8 +81,8 @@ export function classifySendError(err: unknown): { kind: SendErrorKind; message:
     kind = "insufficient-funds";
   } else if (raw.includes("unsupported chain") || raw.includes("not configured") || raw.includes("wrong chain")) {
     kind = "wrong-chain";
-  } else if (raw.includes("paymaster") || raw.includes("relayer") || raw.includes("fronted") || raw.includes("fee token")) {
-    kind = "fronted-unavailable";
+  } else if (raw.includes("paymaster") || raw.includes("relayer") || raw.includes("sponsored") || raw.includes("fronted") || raw.includes("fee token")) {
+    kind = "sponsored-unavailable";
   }
 
   const detail = messageOf(err);
@@ -91,7 +91,7 @@ export function classifySendError(err: unknown): { kind: SendErrorKind; message:
   // recognise is still shown verbatim: an unknown reason is far more useful than no reason.
   const reason = relayerReason(detail);
   if (reason) {
-    return { kind: "fronted-unavailable", message: RELAYER_REASON[reason] ?? `The relayer refused this transaction: ${reason}.` };
+    return { kind: "sponsored-unavailable", message: RELAYER_REASON[reason] ?? `The relayer refused this transaction: ${reason}.` };
   }
 
   const message = kind === "unknown" ? `${FRIENDLY.unknown} (${detail})` : FRIENDLY[kind];

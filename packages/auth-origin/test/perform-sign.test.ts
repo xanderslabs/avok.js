@@ -157,7 +157,7 @@ describe("composite ops — two signatures, one gesture", () => {
     expect(raw.startsWith("0x02")).toBe(true); // type-2, no delegation
   });
 
-  it("signFronted returns the batch signature AND the signed authorization", async () => {
+  it("signSponsored returns the batch signature AND the signed authorization", async () => {
     const solana = fakeSolana();
     const keys = { evm, solana: solana.signer } as unknown as SignKeys;
     const typedData = {
@@ -167,7 +167,7 @@ describe("composite ops — two signatures, one gesture", () => {
       message: { x: 1n },
     };
 
-    const out = (await performSign({ op: "signFronted", typedData, authorization: AUTH }, keys, state, "acme.test")) as {
+    const out = (await performSign({ op: "signSponsored", typedData, authorization: AUTH }, keys, state, "acme.test")) as {
       signature: `0x${string}`;
       authorization?: { address: string; nonce: number };
     };
@@ -178,7 +178,7 @@ describe("composite ops — two signatures, one gesture", () => {
     expect(out.authorization?.nonce).toBe(AUTH.nonce);
   });
 
-  // signUserOp — the 4337 fronted money path. The origin recomputes the v0.8 userOpHash from the
+  // signUserOp — the 4337 sponsored money path. The origin recomputes the v0.8 userOpHash from the
   // supplied fields (never trusts a caller-supplied hash) and signs it RAW (ecrecover-style — the
   // contract's validateUserOp checks `ecrecover(userOpHash, sig) == address(this)`).
   const USEROP = {

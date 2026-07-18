@@ -28,11 +28,11 @@ test("self-pay: receipt with no txHash is returned unchanged", async () => {
   expect(out.status).toBe("submitted");
 });
 
-// Fronted (4337) receipts are tracked through the bundler (eth_getUserOperationReceipt) in the SDK's
-// wait(), NOT here — so getReceiptStatus leaves a fronted receipt untouched.
-test("fronted: returned unchanged (tracked via the bundler, not this poller)", async () => {
+// Sponsored (4337) receipts are tracked through the bundler (eth_getUserOperationReceipt) in the SDK's
+// wait(), NOT here — so getReceiptStatus leaves a sponsored receipt untouched.
+test("sponsored: returned unchanged (tracked via the bundler, not this poller)", async () => {
   const rpc = new FakeRpcClient();
-  const receipt = { id: "0xuserophash", rail: "fronted" as const, status: "pending" as const, chainId: 10 };
+  const receipt = { id: "0xuserophash", rail: "sponsored" as const, status: "pending" as const, chainId: 10 };
   const out = await getReceiptStatus(receipt, { rpc });
   expect(out).toBe(receipt);
 });

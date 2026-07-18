@@ -19,9 +19,9 @@ describe("classifySendError", () => {
   it("classifies wrong chain", () => {
     expect(classifySendError(new Error("chain 1 not configured / unsupported chain")).kind).toBe("wrong-chain");
   });
-  it("classifies fronted unavailable", () => {
-    expect(classifySendError(new Error("paymaster URL not set")).kind).toBe("fronted-unavailable");
-    expect(classifySendError(new Error("relayer unavailable")).kind).toBe("fronted-unavailable");
+  it("classifies sponsored unavailable", () => {
+    expect(classifySendError(new Error("paymaster URL not set")).kind).toBe("sponsored-unavailable");
+    expect(classifySendError(new Error("relayer unavailable")).kind).toBe("sponsored-unavailable");
   });
   it("falls back to unknown with the original message", () => {
     const r = classifySendError(new Error("boom"));
@@ -34,7 +34,7 @@ describe("a relayer refusal is explained, not buried", () => {
   it("surfaces the relayer's reason instead of the generic 'check the config'", () => {
     const err = new Error("Paymaster refused the transaction: fee_too_low (HTTP 400)");
     const { kind, message } = classifySendError(err);
-    expect(kind).toBe("fronted-unavailable");
+    expect(kind).toBe("sponsored-unavailable");
     expect(message).toMatch(/fee you signed is below/i);
     expect(message).not.toMatch(/check the paymaster/i); // ← the old, useless line
   });

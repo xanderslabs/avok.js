@@ -9,15 +9,15 @@ import { makeFakeRpc } from "./fakes.js";
  *
  * `send()` returns when the transaction is HANDED OFF, not when it lands:
  *   - self-pay → status "submitted", with a REAL txHash (broadcast, not yet mined)
- *   - fronted  → status "pending",  and `id` is the UserOp HASH — NOT a transaction hash. The mined tx
+ *   - sponsored  → status "pending",  and `id` is the UserOp HASH — NOT a transaction hash. The mined tx
  *     hash only exists once the bundler's `getUserOperationReceipt` returns.
  *
  * The demos treated both as done: they fired "mined" unless the status was literally "failed", and
- * linked `receipt.txHash ?? receipt.id` — so a FRONTED transaction that had not even been submitted
+ * linked `receipt.txHash ?? receipt.id` — so a SPONSORED transaction that had not even been submitted
  * was displayed as CONFIRMED, with an explorer link to a userOpHash that does not exist on chain.
  *
  * `wait()` is the only thing allowed to produce "confirmed", and only when the chain (self-pay) or the
- * bundler (fronted) says so.
+ * bundler (sponsored) says so.
  */
 const WALLET = "0x1111111111111111111111111111111111111111" as const;
 
@@ -41,12 +41,12 @@ function clientWith(receiptSequence: (null | { success: boolean; transactionHash
   });
 }
 
-const frontedReceipt = { id: "0xuserophash", rail: "fronted" as const, status: "pending" as const, chainId: 10 };
+const sponsoredReceipt = { id: "0xuserophash", rail: "sponsored" as const, status: "pending" as const, chainId: 10 };
 
 describe("a handed-off transaction is not a confirmed one", () => {
   it("wait() does NOT report confirmed while the bundler still has no receipt", async () => {
     const client = clientWith([null]);
-    const out = await client.wait(frontedReceipt, { timeoutMs: 30, intervalMs: 5 });
+    const out = await client.wait(sponsoredReceipt, { timeoutMs: 30, intervalMs: 5 });
     expect(out.status).not.toBe("confirmed"); // ← the bug: this used to be shown as confirmed
     expect(out.txHash).toBeUndefined(); // ← and this used to be linked as a tx hash
   });
@@ -54,22 +54,22 @@ describe("a handed-off transaction is not a confirmed one", () => {
   it("wait() reports confirmed ONLY when the bundler produces a real txHash", async () => {
     const hash = "0xabc0000000000000000000000000000000000000000000000000000000000001" as Hex;
     const client = clientWith([null, { success: true, transactionHash: hash }]);
-    const out = await client.wait(frontedReceipt, { timeoutMs: 5_000, intervalMs: 5 });
+    const out = await client.wait(sponsoredReceipt, { timeoutMs: 5_000, intervalMs: 5 });
     expect(out.status).toBe("confirmed");
     expect(out.txHash).toBe(hash); // ← a REAL hash, not the userOpHash
-    expect(out.txHash).not.toBe(frontedReceipt.id);
+    expect(out.txHash).not.toBe(sponsoredReceipt.id);
   });
 
   it("a reverted UserOp is 'failed', never confirmed", async () => {
     const hash = "0xdead000000000000000000000000000000000000000000000000000000000001" as Hex;
     const client = clientWith([{ success: false, transactionHash: hash }]);
-    const out = await client.wait(frontedReceipt, { timeoutMs: 5_000, intervalMs: 5 });
+    const out = await client.wait(sponsoredReceipt, { timeoutMs: 5_000, intervalMs: 5 });
     expect(out.status).toBe("failed");
   });
 
   it("a timeout stays unconfirmed — it is never rounded up to success", async () => {
     const client = clientWith([null]);
-    const out = await client.wait(frontedReceipt, { timeoutMs: 20, intervalMs: 5 });
+    const out = await client.wait(sponsoredReceipt, { timeoutMs: 20, intervalMs: 5 });
     expect(out.status).toBe("pending");
   });
 });

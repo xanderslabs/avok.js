@@ -6,7 +6,7 @@ for building a real product on Avok (e.g. Qudi's beta): copy the directory, swap
 tokens, edit config, and go.
 
 Screens: Onboard (create / continue / set up this device) → Home → Send (EVM + Solana, self-pay or
-fronted) → Account (sign, export) → Subname (register / resolve) → Device
+sponsored) → Account (sign, export) → Subname (register / resolve) → Device
 (add a passkey, SAS pairing).
 
 ## Quickstart
@@ -21,7 +21,7 @@ pnpm --filter @avok-demo/react-own-origin dev
 
 - **EVM**: Arc testnet, chain id `5042002` (Circle's stablechain; native gas is USDC).
 - **Solana**: `devnet` cluster.
-- Fronted sends ("fronted"), Subname (ENS registrar/parent) are opt-in — set the
+- Sponsored sends ("sponsored"), Subname (ENS registrar/parent) are opt-in — set the
   relevant `VITE_*` vars in `.env` to enable them.
 
 ## Per-feature snippets
@@ -44,7 +44,7 @@ await continueAccount(); // existing passkey on this device
 There is no import: the wallet key is derived from a WebAuthn PRF evaluation, not a seed you can
 type in, so there's nothing to import from.
 
-### EVM send — self-pay + fronted — `src/screens/Send.tsx`
+### EVM send — self-pay + sponsored — `src/screens/Send.tsx`
 
 ```tsx
 import { useSimulate, useSend } from "@avokjs/react";
@@ -61,13 +61,13 @@ const call = {
 // Fee tokens are chain-specific — read the supported ones for THIS chain from the registry and let
 // the user pick. `useFeeTokens().feeTokens(chainId)` mirrors `useSolanaFeeTokens` for the EVM side.
 const { feeTokens } = useFeeTokens();
-const selectedFeeToken = effectiveFeeMode === "fronted" ? (feeTokens(chain.id)[feeTokenIdx]?.address ?? null) : null;
+const selectedFeeToken = effectiveFeeMode === "sponsored" ? (feeTokens(chain.id)[feeTokenIdx]?.address ?? null) : null;
 const sim = await evmSimulate([call], { chainId: chain.id, feeToken: selectedFeeToken }); // null = self-pay
 const receipt = await evmSend(sim, { chainId: chain.id, feeToken: selectedFeeToken });
 ```
 
 `feeToken: null` pays gas from the account's own balance (self-pay); passing a fee-token **address
-supported on that chain** (with `VITE_PAYMASTER_URL` set) fronts the send (fronted). The address is
+supported on that chain** (with `VITE_PAYMASTER_URL` set) sponsors the send (sponsored). The address is
 chain-specific, so it comes from `client.evm.feeTokens(chainId)`, never from a global env var.
 
 ### Solana send — `src/screens/Send.tsx`
@@ -88,7 +88,7 @@ const ix = [
 ];
 // Same pattern on Solana: the fee MINT is cluster-specific — read it from the registry and pick.
 const { feeTokens: solanaFeeTokens } = useSolanaFeeTokens();
-const selectedFeeMint = effectiveFeeMode === "fronted" ? (solanaFeeTokens(config.solanaCluster)[feeTokenIdx]?.mint ?? null) : null;
+const selectedFeeMint = effectiveFeeMode === "sponsored" ? (solanaFeeTokens(config.solanaCluster)[feeTokenIdx]?.mint ?? null) : null;
 const sim = await solSimulate(ix, { cluster: config.solanaCluster, feeToken: selectedFeeMint });
 const receipt = await solSend(sim, { cluster: config.solanaCluster, feeToken: selectedFeeMint });
 ```

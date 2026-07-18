@@ -44,7 +44,7 @@ export interface AccessCtx {
    *
    * It simulates a representative access-slot write (which resolves the EIP-7702 authorization for an
    * undelegated wallet, exactly as the real send does) and compares the cost, plus a buffer, against
-   * the balance that will actually pay: native gas in self-pay, the fee token in fronted mode. The
+   * the balance that will actually pay: native gas in self-pay, the fee token in sponsored mode. The
    * buffer means the threshold is deliberately ABOVE the true cost — it is a gate, not a quote.
    */
   assertCanAffordAccessSlot(chainId: number): Promise<void>;
@@ -116,14 +116,14 @@ export interface Connection extends Signer {
    */
   signSend(args: { tx: TransactionSerializable; authorization?: AuthorizationTriple }): Promise<Hex>;
 
-  /** ONE GESTURE. The fronted batch signature and, if undelegated, its EIP-7702 authorization. */
-  signFronted(args: {
+  /** ONE GESTURE. The sponsored batch signature and, if undelegated, its EIP-7702 authorization. */
+  signSponsored(args: {
     typedData: TypedDataDefinition;
     authorization?: AuthorizationTriple;
   }): Promise<{ signature: Hex; authorization?: SignedAuthorizationLike }>;
 
   /**
-   * ONE GESTURE — the 4337 fronted send. Sign an (unsigned) v0.8 UserOperation's `userOpHash` (the raw
+   * ONE GESTURE — the 4337 sponsored send. Sign an (unsigned) v0.8 UserOperation's `userOpHash` (the raw
    * ecrecover signature the contract's `validateUserOp` checks) and, if the wallet is still
    * undelegated, the EIP-7702 authorization the same first send installs. The connection derives the
    * hash from `userOp` + `chainId` itself, so the signed digest always matches the fields the consent
@@ -297,14 +297,14 @@ export interface ClientConfig<C extends Connection = Connection> {
   managementUrl?: string;
 
   /**
-   * Optional URL of the ERC-7677 paymaster that sponsors fronted (4337) sends. Fronted requires BOTH
+   * Optional URL of the ERC-7677 paymaster that sponsors sponsored (4337) sends. Sponsored requires BOTH
    * `paymasterUrl` and `bundlerUrl`; a chain missing either falls back to self-pay.
    */
   paymasterUrl?: string;
 
   /**
-   * Optional URL of the ERC-4337 bundler that submits fronted UserOperations (bring-your-own; may equal
-   * `paymasterUrl` for providers like Pimlico/Alchemy). Without it, fronted falls back to self-pay.
+   * Optional URL of the ERC-4337 bundler that submits sponsored UserOperations (bring-your-own; may equal
+   * `paymasterUrl` for providers like Pimlico/Alchemy). Without it, sponsored falls back to self-pay.
    */
   bundlerUrl?: string;
 
@@ -344,12 +344,12 @@ export interface ClientConfig<C extends Connection = Connection> {
   nonceAllocator?: NonceAllocator;
 
   /**
-   * Deadline window for fronted batch signatures (seconds). Defaults to 3600 (one hour).
+   * Deadline window for sponsored batch signatures (seconds). Defaults to 3600 (one hour).
    */
   defaultDeadlineSeconds?: number;
 
   /**
-   * Optional URL of the Kora node that fronts Solana sends (bring-your-own). Kora is BOTH the fee payer
+   * Optional URL of the Kora node that sponsors Solana sends (bring-your-own). Kora is BOTH the fee payer
    * and the submitter, so this single endpoint is the Solana analogue of `paymasterUrl` + `bundlerUrl`
    * together. Without it, Solana sends fall back to self-pay.
    *
@@ -363,15 +363,15 @@ export interface ClientConfig<C extends Connection = Connection> {
     rpc?: RpcClient;
     vaultReader?: VaultReader;
     fetch?: FetchLike;
-    /** Override the 4337 bundler client (fronted). */
+    /** Override the 4337 bundler client (sponsored). */
     bundler?: import("@avokjs/evm-txengine").Bundler;
-    /** Override the ERC-7677 paymaster client (fronted). */
+    /** Override the ERC-7677 paymaster client (sponsored). */
     paymaster?: import("@avokjs/evm-txengine").Paymaster7677;
     /** Override the chain profile (e.g., to set a non-zero canonicalImplementation in tests). */
     chain?: EvmChainProfile;
     /** Override the Solana RPC client (e.g., to inject a fake in tests). */
     solanaRpc?: import("@avokjs/solana-txengine").SolanaRpcClient;
-    /** Override the Kora client (Solana fronted). */
+    /** Override the Kora client (Solana sponsored). */
     kora?: import("@avokjs/solana-txengine").KoraClient;
   };
 }

@@ -27,9 +27,9 @@ export interface LeanResolveArgs {
  * Scoping rule: NO resolveBlob, NO passkey, NO access-slot call.
  * Covers: delegation authorization + userCalls (+ self-pay native-fee estimate).
  *
- * The 4337 FRONTED rail commits NO fee call: the ERC-7677 paymaster fronts the gas and charges the
+ * The 4337 SPONSORED rail commits NO fee call: the ERC-7677 paymaster sponsors the gas and charges the
  * user, so there is nothing to price or sign here. The bounded fee is derived at send/simulate time
- * from the bundler's gas estimate × maxFeePerGas + the paymaster's charge (see the SDK fronted path).
+ * from the bundler's gas estimate × maxFeePerGas + the paymaster's charge (see the SDK sponsored path).
  */
 export async function leanResolve(args: LeanResolveArgs): Promise<ResolvedBatch> {
   let nativeFee: NativeFeeEstimate | undefined;
@@ -68,7 +68,7 @@ export async function leanResolve(args: LeanResolveArgs): Promise<ResolvedBatch>
     disclosures.push({ kind: "delegation", implementation: chain.canonicalImplementation });
   }
 
-  // 2. Fee. FRONTED (4337) commits no fee call — the paymaster charges the user, so there is nothing to
+  // 2. Fee. SPONSORED (4337) commits no fee call — the paymaster charges the user, so there is nothing to
   //    price here. SELF-PAY signs no fee either, but the user still gets a native-cost ESTIMATE.
   if (rail === "self-pay") {
     nativeFee = await estimateNativeFee({
@@ -90,8 +90,8 @@ export async function leanResolve(args: LeanResolveArgs): Promise<ResolvedBatch>
     nonce,
     deadline,
     disclosures,
-    // FRONTED: remember the paymaster context token so a re-sent SimulationResult sponsors identically.
-    ...(rail === "fronted" ? { feeToken: ctx.feeToken ?? null } : {}),
+    // SPONSORED: remember the paymaster context token so a re-sent SimulationResult sponsors identically.
+    ...(rail === "sponsored" ? { feeToken: ctx.feeToken ?? null } : {}),
     ...(nativeFee ? { nativeFee } : {}),
   };
 }

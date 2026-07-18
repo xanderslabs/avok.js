@@ -38,9 +38,9 @@ describe("types", () => {
     expect(keys.length).toBe(5);
   });
 
-  // Solana fronting is bring-your-own Kora (sub-project #5). Kora is BOTH the fee payer and the
+  // Solana sponsoring is bring-your-own Kora (sub-project #5). Kora is BOTH the fee payer and the
   // submitter, so this ONE endpoint is the Solana analogue of `paymasterUrl` + `bundlerUrl` together.
-  it("ClientConfig carries koraUrl for Solana fronting", () => {
+  it("ClientConfig carries koraUrl for Solana sponsoring", () => {
     const cfg: Pick<ClientConfig, "koraUrl"> = { koraUrl: "https://kora.test" };
     expect(cfg.koraUrl).toBe("https://kora.test");
   });

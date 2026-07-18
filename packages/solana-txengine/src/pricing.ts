@@ -3,10 +3,10 @@ import type { SolanaRpcClient } from "./rpc.js";
 import type { SolanaNativeFeeEstimate } from "./types.js";
 
 /**
- * SELF-PAY pricing only. There is deliberately no fronted pricer here.
+ * SELF-PAY pricing only. There is deliberately no sponsored pricer here.
  *
  * There used to be `priceSolanaFee`: an oracle-based converter (lamports × SOL/USD ÷ token/USD × margin)
- * that quoted what the fronted rail should charge. It is gone with the bespoke relayer (#5). Kora prices
+ * that quoted what the sponsored rail should charge. It is gone with the bespoke relayer (#5). Kora prices
  * its own fee — it simulates the transaction it is being asked to pay for and answers with the total —
  * and a second number derived in parallel here could only ever disagree with it. That disagreement WAS
  * the bug: the relayer re-priced authoritatively, found the client's quote short, and refused
@@ -61,7 +61,7 @@ export async function estimateSolanaNativeFee(args: {
  * recovered from the instruction's own accounts by MATCHING a registry mint rather than trusting a
  * positional index.
  *
- * Self-pay only now: it is the user who funds a new account, and this is what tells them so. (Fronted
+ * Self-pay only now: it is the user who funds a new account, and this is what tells them so. (Sponsored
  * rent is Kora's problem — it pays it and prices it into its own quote.)
  */
 export async function rentForCreateAtas(args: {

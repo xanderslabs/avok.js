@@ -88,13 +88,13 @@ export function createSharedOriginConnection(opts: {
       return getRemoteSigner().signSiwe(params);
     },
 
-    // Composite ops — one popup, one gesture. See Signer.signSend / Signer.signFronted.
+    // Composite ops — one popup, one gesture. See Signer.signSend / Signer.signSponsored.
     async signSend(args) {
       return getRemoteSigner().signSend(args);
     },
 
-    async signFronted(args) {
-      return getRemoteSigner().signFronted(args);
+    async signSponsored(args) {
+      return getRemoteSigner().signSponsored(args);
     },
 
     async signUserOp(args) {

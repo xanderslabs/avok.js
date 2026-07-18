@@ -21,7 +21,7 @@ export type SolanaCluster = "mainnet" | "devnet";
  * This rail does NOT front the dapp's transaction. Kora is designed to be integrated at BUILD time —
  * its documented flow sets the fee payer to Kora's signer from step one, because a fee payer cannot be
  * bolted onto a finished transaction. Rewriting a transaction a dapp already built and simulated, to
- * insert a fee payment and swap its fee payer, would be working against that design. Fronting therefore
+ * insert a fee payment and swap its fee payer, would be working against that design. Sponsoring therefore
  * lives on the own-origin `client.solana` rail, where Avok composes the instructions itself and can set
  * Kora as the fee payer from the start.
  *

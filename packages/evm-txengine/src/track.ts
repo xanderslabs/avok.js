@@ -6,7 +6,7 @@ export interface TrackDeps {
 }
 
 /**
- * Self-pay receipt tracking: poll the chain for the transaction receipt. Fronted (4337) receipts are
+ * Self-pay receipt tracking: poll the chain for the transaction receipt. Sponsored (4337) receipts are
  * tracked through the bundler (`eth_getUserOperationReceipt`) in the SDK's `wait()`, not here — this
  * only ever advances a self-pay receipt from `submitted` to `confirmed`/`failed`.
  */

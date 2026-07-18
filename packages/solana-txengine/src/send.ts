@@ -8,12 +8,12 @@ import type { KoraClient } from "./kora.js";
 import type { Receipt } from "./types.js";
 
 export async function sendSolana(args: {
-  rail: "self-pay" | "fronted";
+  rail: "self-pay" | "sponsored";
   message: unknown;
   lastValidBlockHeight: bigint;
   cluster: "mainnet" | "devnet";
   rpc?: SolanaRpcClient;   // self-pay
-  kora?: KoraClient;       // fronted — Kora is BOTH the fee payer and the submitter
+  kora?: KoraClient;       // sponsored — Kora is BOTH the fee payer and the submitter
 }): Promise<Receipt> {
   if (args.rail === "self-pay") {
     if (!args.rpc) throw new Error("self-pay requires an rpc");
@@ -31,8 +31,8 @@ export async function sendSolana(args: {
     };
   }
 
-  // fronted
-  if (!args.kora) throw new Error("fronted requires a kora client");
+  // sponsored
+  if (!args.kora) throw new Error("sponsored requires a kora client");
   // ONE gesture: user authority slot only; Kora's fee-payer slot is left empty (null) and Kora fills it
   // on the far side. The fee-payment instruction is already inside these bytes (see kora-fee.ts), so
   // what the user consented to is exactly what Kora gets paid.
@@ -43,7 +43,7 @@ export async function sendSolana(args: {
   const { signature } = await args.kora.signAndSendTransaction(base64);
   return {
     id: signature,
-    rail: "fronted",
+    rail: "sponsored",
     status: "pending",
     signature,
     cluster: args.cluster,

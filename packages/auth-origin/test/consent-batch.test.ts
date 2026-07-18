@@ -154,7 +154,7 @@ describe("self-pay discloses the fee ceiling the signature commits to", () => {
 });
 
 /**
- * A 4337 fronted UserOp carries the SAME `execute(MODE_BATCH, calls)` in its callData, so its consent
+ * A 4337 sponsored UserOp carries the SAME `execute(MODE_BATCH, calls)` in its callData, so its consent
  * must unwrap it exactly like a self-pay send — the paymaster paying the gas does not exempt the user
  * from seeing what they send. And when the wallet is still undelegated the UserOp installs the 7702
  * delegate, which this one approval also grants: it must be on screen.

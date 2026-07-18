@@ -187,7 +187,7 @@ describe("self-pay fee ceiling", () => {
     expect(text).toMatch(/only what the transaction actually uses/i);
   });
 
-  it("shows the committed fee INSTEAD of a ceiling when one is fronted (never both)", () => {
+  it("shows the committed fee INSTEAD of a ceiling when one is sponsored (never both)", () => {
     const fee: ConsentLine = {
       to: TOKEN, valueWei: "0", kind: "erc20-transfer", raw: "0x",
       token: { symbol: "USDC", decimals: 6, amount: "0.004104", baseUnits: "4104", counterparty: ADDR },
@@ -195,6 +195,6 @@ describe("self-pay fee ceiling", () => {
     const lines = formatConsentDisplay({ op: "signSend", chainId: 5042002, calls: [], fee } as never);
     const text = lines.join("\n");
     expect(text).toContain("0.004104 USDC");
-    expect(text).not.toMatch(/at most/i); // a fronted fee is exact and signed — no ceiling language
+    expect(text).not.toMatch(/at most/i); // a sponsored fee is exact and signed — no ceiling language
   });
 });

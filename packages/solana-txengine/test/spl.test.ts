@@ -182,7 +182,7 @@ describe("buildSplTransfer – Token-2022 emits transferChecked on Token-2022 pr
   });
 });
 
-describe("buildSplTransfer – fronted composition (authority must be a signer)", () => {
+describe("buildSplTransfer – sponsored composition (authority must be a signer)", () => {
   it("user authority slot signed, relayer fee-payer slot null when authority is a TransactionSigner", async () => {
     const passkey = new FakePasskeyAdapter();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

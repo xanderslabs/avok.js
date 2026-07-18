@@ -16,7 +16,7 @@ function fakeConfig(): ClientConfig {
 }
 
 function fakeEngine(defaultFeeTokens: { symbol: string; address: string; decimals: number }[] = []) {
-  const send = vi.fn().mockResolvedValue({ id: "0xuserophash", rail: "fronted", status: "pending", chainId: 8453 });
+  const send = vi.fn().mockResolvedValue({ id: "0xuserophash", rail: "sponsored", status: "pending", chainId: 8453 });
   return {
     send,
     status: vi.fn(),
@@ -24,7 +24,7 @@ function fakeEngine(defaultFeeTokens: { symbol: string; address: string; decimal
   } as unknown as SendEngine & { send: ReturnType<typeof vi.fn>; capabilities: ReturnType<typeof vi.fn> };
 }
 
-test("wallet_sendCalls with a paymasterService context token routes fronted with that token", async () => {
+test("wallet_sendCalls with a paymasterService context token routes sponsored with that token", async () => {
   const engine = fakeEngine();
   const p = createEip1193Provider(fakeConfig(), { defaultChainId: 8453, engine });
 

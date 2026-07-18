@@ -50,9 +50,9 @@ export function createRemoteSigner({
       return sign<Hex>({ op: "signSend", tx: args.tx, authorization: args.authorization });
     },
 
-    async signFronted(args): Promise<{ signature: Hex; authorization?: SignedAuthorizationLike }> {
+    async signSponsored(args): Promise<{ signature: Hex; authorization?: SignedAuthorizationLike }> {
       return sign<{ signature: Hex; authorization?: SignedAuthorizationLike }>({
-        op: "signFronted",
+        op: "signSponsored",
         typedData: args.typedData,
         authorization: args.authorization,
       });

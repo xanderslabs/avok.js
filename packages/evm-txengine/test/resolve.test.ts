@@ -29,7 +29,7 @@ test("self-pay, delegated, blob on anchor → no feeCall, no auth, no disclosure
   expect(batch.disclosures).toEqual([]);
 });
 
-test("fronted (4337), undelegated → authorization + delegation disclosure, NO feeCall (paymaster charges the fee)", async () => {
+test("sponsored (4337), undelegated → authorization + delegation disclosure, NO feeCall (paymaster charges the fee)", async () => {
   const rpc = new FakeRpcClient({
     // account undelegated (absent → "0x"); the canonical impl IS deployed on this chain.
     code: { [IMPL.toLowerCase()]: "0x6080604052" as `0x${string}` },
@@ -39,9 +39,9 @@ test("fronted (4337), undelegated → authorization + delegation disclosure, NO 
     rpc, chain, address: ADDR, credentialId: "cred", userCalls: [USER_CALL],
     ctx: { chainId: 10, feeToken: USDC }, nonce: 1n, deadline: 99n,
   });
-  expect(batch.rail).toBe("fronted");
+  expect(batch.rail).toBe("sponsored");
   expect(batch.authorization).toEqual({ chainId: 10, address: IMPL, nonce: 7 });
-  // The 4337 paymaster fronts the gas and charges the user — no fee call is priced here.
+  // The 4337 paymaster sponsors the gas and charges the user — no fee call is priced here.
   expect(batch.feeCalls).toEqual([]);
   expect(batch.feeToken?.toLowerCase()).toBe(USDC.toLowerCase());
   expect(batch.disclosures.map((d) => d.kind)).toEqual(["delegation"]);

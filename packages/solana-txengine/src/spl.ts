@@ -38,7 +38,7 @@ export async function buildSplTransfer(args: {
   amount: bigint;
   payer: string;
   /** The user's kit TransactionSigner. Must be a signer (not a bare address) so that
-   *  partiallySignTransactionMessageWithSigners fills the authority slot in fronted. */
+   *  partiallySignTransactionMessageWithSigners fills the authority slot in sponsored. */
   authority: TransactionSigner;
   /**
    * The SPL token program that owns this mint (base58).
@@ -82,7 +82,7 @@ export async function buildSplTransfer(args: {
   //
   // Without this check the transfer still goes out, and the token program rejects it with
   // `InstructionError: [3, "InvalidAccountData"]` — an index into a transaction the user never
-  // assembled (it counts two compute-budget instructions and, on the fronted rail, a fee transfer
+  // assembled (it counts two compute-budget instructions and, on the sponsored rail, a fee transfer
   // prepended for them) and a message that names neither the token nor the actual problem. The real
   // problem is nearly always the plainest one: this wallet does not hold that token on this cluster.
   if (!(await ataExists(args.rpc, sourceAta))) {
@@ -104,7 +104,7 @@ export async function buildSplTransfer(args: {
         mint: address(args.mint),
         destination: address(destAta),
         // Pass the signer directly so partiallySignTransactionMessageWithSigners
-        // can fill the authority slot (critical for fronted where the user is not the fee payer).
+        // can fill the authority slot (critical for sponsored where the user is not the fee payer).
         authority: args.authority,
         amount: args.amount,
         decimals: args.decimals,

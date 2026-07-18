@@ -55,7 +55,7 @@
   background: color-mix(in srgb, var(--danger) 92%, var(--bg));
 }
 
-/* ---- Segmented control (Self-pay/Fronted, ENS/SNS) ------------------------- */
+/* ---- Segmented control (Self-pay/Sponsored, ENS/SNS) ------------------------- */
 /* The one place --accent signals selection. */
 .segmented {
   display: flex;

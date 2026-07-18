@@ -153,7 +153,7 @@ export function makeFakeRpc(opts: {
     // exercise the "top up first" path override it with a poor balance.
     getBalance: async () => opts.balance ?? 10n ** 18n, // 1 native unit
     readContract: async <T>(args: ReadArgs): Promise<T> => {
-      // The 4337 fronted path reads the EntryPoint's 2D nonce (getNonce(sender, key)); everything else
+      // The 4337 sponsored path reads the EntryPoint's 2D nonce (getNonce(sender, key)); everything else
       // here is the Chainlink oracle's latestRoundData.
       if ((args as { functionName?: string }).functionName === "getNonce") return BigInt(txNonce) as unknown as T;
       // Chainlink latestRoundData: [roundId, answer, startedAt, updatedAt, answeredInRound]
