@@ -105,7 +105,7 @@ const evmSig = await signEvm({ message });
 const { signature: solSig } = await signSolana(message);
 ```
 
-### Send to a name anywhere — `@avokjs/helpers`
+### Send to a name anywhere — `@avokjs/core/helpers`
 
 Every address field (Send recipient, subname lookup) accepts a raw address **or** any
 ENS/SNS name. The reusable `resolveRecipient(resolver, input, rail)` helper resolves a name
@@ -156,7 +156,7 @@ const account = await pairing.importToDevice.complete({ qr: grantQr, sasConfirme
 > testing, see [`examples/TESTING.md`](../TESTING.md) and `pnpm demos:domain prepare`.
 
 This app depends only on **published** packages — the `@avokjs/react` facade and
-`@avokjs/helpers` (balances, chain metadata + names, recipient resolution, explorers) — plus the public third-party libs `viem`,
+`@avokjs/core/helpers` (balances, chain metadata + names, recipient resolution, explorers) — plus the public third-party libs `viem`,
 `@solana/kit`, `@solana-program/system`, and its own local `src/`. No `@avok-demo/*` and no
 private/workspace-only packages. To reuse it as the base for a real product:
 

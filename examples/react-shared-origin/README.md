@@ -15,8 +15,9 @@ own wallet app (`VITE_MANAGEMENT_URL`).
 
 ## Quickstart
 
-This app needs an operator **auth origin** to sign against — the static `@avokjs/auth-origin`
-pages, built with the operator's config and hosted anywhere. Nothing runs: they are two HTML files.
+This app needs an operator **auth origin** to sign against — one static, CSP-safe page built from the
+`@avokjs/core/auth-popup` mountable (`mountAuthPopup()` / `<AuthPopup>`) with the operator's config via
+`pnpm emit:auth-page`, and hosted anywhere. Nothing runs: it is a single inlined `index.html`.
 (The old `examples/_nodes` harness was deleted in #4 along with the relayers.)
 
 ```bash
@@ -54,7 +55,7 @@ await continueAccount(); // opens the operator popup; returns a session, keys st
 ```
 
 The shared-origin client itself is built asynchronously (it dynamically imports
-`@avokjs/shared-origin`), so `useSharedOriginClient()` exposes loading/error while the auth-origin
+`@avokjs/core/channel`), so `useSharedOriginClient()` exposes loading/error while the auth-origin
 channel wires up — see `src/useSharedOriginClient.ts`:
 
 ```ts
@@ -144,7 +145,7 @@ const client = useAvok();
 const hit = await resolver.resolveForward("alice.eth"); // → { evm?, solana? } | null
 ```
 
-### Send to a name anywhere — `@avokjs/helpers`
+### Send to a name anywhere — `@avokjs/core/helpers`
 
 Every address field (Send recipient, name lookup) accepts a raw address **or** any ENS/SNS
 name. The reusable `resolveRecipient(resolver, input, rail)` helper resolves a name to the
@@ -169,7 +170,7 @@ window.open(config.managementUrl, "_blank", "noopener");
 > For `.test`-domain testing, see [`examples/TESTING.md`](../TESTING.md) and `pnpm demos:domain prepare`.
 
 This app depends only on **published** packages — the `@avokjs/react` facade and
-`@avokjs/helpers` (balances, chain metadata + names, recipient resolution, explorers) — plus the public third-party libs `viem`,
+`@avokjs/core/helpers` (balances, chain metadata + names, recipient resolution, explorers) — plus the public third-party libs `viem`,
 `@solana/kit`, `@solana-program/system`, and its own local `src/`. No `@avok-demo/*` and no
 private/workspace-only packages. To reuse it as a shared-origin (use-only) base for a real product:
 

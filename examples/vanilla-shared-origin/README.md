@@ -1,6 +1,6 @@
 # @avok-demo/vanilla-shared-origin
 
-The **framework-free shared-origin (use-only)** showcase for `@avokjs/vanilla`. The wallet's
+The **framework-free shared-origin (use-only)** showcase for `@avokjs/core`. The wallet's
 keys live at an **operator's auth origin**; this app never holds key material — it signs in over
 the operator's popup and only receives signatures. Same framework-free stack as
 [`vanilla-own-origin`](../vanilla-own-origin) (a tiny `el()` DOM helper + a ~30-line reactive store),
@@ -13,7 +13,7 @@ are the operator's (Own-origin) actions.
 
 ## Quickstart
 
-Shared-origin needs an operator **auth origin** — the static `@avokjs/auth-origin` pages, hosted anywhere. Nothing runs.
+Shared-origin needs an operator **auth origin** — one static, CSP-safe page built from the `@avokjs/core/auth-popup` mountable (`pnpm emit:auth-page`) and hosted anywhere. Nothing runs.
 
 ```bash
 pnpm install
@@ -33,7 +33,7 @@ pnpm --filter @avok-demo/vanilla-shared-origin dev
 - `src/core/app.ts` — the use-only shell: `Ctx.client` is a `UseOnlyAvokClient`, nav is
   Home · Send · Account, and the Connect screen gates the app until there's a session.
 - `src/main.ts` — an **async** bootstrap: `createSharedOriginConnection` (which dynamically imports
-  `@avokjs/shared-origin` for bundle purity) → `createAvokClient`, with a Connecting / error state.
+  `@avokjs/core/channel` for bundle purity) → `createAvokClient`, with a Connecting / error state.
 - `src/screens/{Home,Send}.ts` are copied verbatim from `vanilla-own-origin` — they only use the
   use-only verbs (`evm.send` / `solana.send` / `account`). `Connect` and `Account` are shared-origin.
 
@@ -44,7 +44,7 @@ Trimmed excerpts of the real screens (`src/screens/*.ts`).
 ### Shared-origin sign-in + async client — `src/main.ts`, `src/screens/Connect.ts`
 
 ```ts
-import { createAvokClient, createSharedOriginConnection } from "@avokjs/vanilla";
+import { createAvokClient, createSharedOriginConnection } from "@avokjs/core";
 
 const connection = await createSharedOriginConnection({
   authOrigin: config.authOrigin,     // operator origin — keys live here
@@ -83,7 +83,7 @@ const { signature: solSig } = await client.solana.signMessage(message);
 const hit = await resolver.resolveForward("alice.eth"); // → { evm?, solana? } | null
 ```
 
-### Send to a name anywhere — `@avokjs/helpers`
+### Send to a name anywhere — `@avokjs/core/helpers`
 
 Every address field (Send recipient, name lookup) accepts a raw address **or** any ENS/SNS
 name. The reusable `resolveRecipient(resolver, input, rail)` helper resolves a name to the
@@ -107,7 +107,7 @@ await client.logout();                                   // disconnect this sess
 > Needs an operator origin (`VITE_AUTH_ORIGIN`) — run `_nodes` locally or point at a deployed URL.
 > For `.test`-domain testing, see [`examples/TESTING.md`](../TESTING.md) and `pnpm demos:domain prepare`.
 
-Depends only on **published** packages — `@avokjs/vanilla` + `@avokjs/contracts` —
+Depends only on **published** packages — `@avokjs/core` + `@avokjs/contracts` —
 plus public `viem` / `@solana/kit` / `@solana-program/system` and its own local `src/`. No
 `@avok-demo/*`, no React, no private/workspace-only packages. No dev chrome to delete. To reuse:
 
@@ -116,4 +116,4 @@ plus public `viem` / `@solana/kit` / `@solana-program/system` and its own local 
    to your operator, plus the shared chain / fee / subname vars.
 3. **Reskin** — swap the brand values in `src/theme/tokens.css` and `src/ui/ui.css`, then delete
    `src/features.ts` (the parity-harness manifest — no runtime purpose).
-4. **Install** — `pnpm install` pulls the published `@avokjs/vanilla` + `@avokjs/contracts`.
+4. **Install** — `pnpm install` pulls the published `@avokjs/core` + `@avokjs/contracts`.

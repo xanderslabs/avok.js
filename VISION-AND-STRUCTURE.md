@@ -64,31 +64,34 @@ the signing path.
 
 Avok exposes two distinct developer surfaces for two different jobs:
 
-- **Surface 1 — send / sign: `@avokjs/provider`.** EIP-1193 (+ EIP-6963 announce) for EVM and
+- **Surface 1 — send / sign: `@avokjs/core/provider`.** EIP-1193 (+ EIP-6963 announce) for EVM and
   the Solana Wallet Standard. The dev plugs it into **stock wagmi / viem / ethers /
   @solana/wallet-adapter** and transacts — nothing Avok-specific in how they send. This is all a
   **shared-origin dapp** needs. **Sending and signing are NEVER framework hooks**; they go through
   this provider.
-- **Surface 2 — wallet lifecycle: the framework facades (`@avokjs/react` / `react-native` /
-  `vanilla`).** `create` a passkey wallet, `login`, `logout`, account state, access-key enrollment,
-  key export. These are Avok-specific operations **no standard covers** — there is no wagmi hook for
-  "create a passkey smart wallet" or "add an access key." Only **own-origin** apps that own the
-  wallet UX need this.
+- **Surface 2 — wallet lifecycle: `@avokjs/core` (plain-JS) and the framework facades
+  (`@avokjs/react` / `@avokjs/react-native`).** `create` a passkey wallet, `login`, `logout`, account
+  state, access-key enrollment, key export. These are Avok-specific operations **no standard covers**
+  — there is no wagmi hook for "create a passkey smart wallet" or "add an access key." Only
+  **own-origin** apps that own the wallet UX need this.
 
 A shared-origin dapp uses **Surface 1 only**. An own-origin app uses **Surface 2** (lifecycle) plus
 **Surface 1** (transacting). This is the two signing paths of §2 seen from the API side.
 
 ### How the shared-origin popup works
 
-The SDK **opens and drives** the popup; it does not host the page. `@avokjs/shared-origin`'s
-`createWebChannel({ authOrigin })` calls `window.open("${authOrigin}/sign")`, `postMessage`s the
-request in, and accepts a reply only when `event.origin === authOrigin` **and** `event.source` is
+The SDK **opens and drives** the popup; it does not host the page. `@avokjs/core/channel`'s
+`createWebChannel({ authOrigin })` calls `window.open(authOrigin)` (the auth origin root), `postMessage`s
+the request in, and accepts a reply only when `event.origin === authOrigin` **and** `event.source` is
 the exact popup it opened (5-minute timeout; rejects if blocked). The **page** is provisioned by the
-**operator**, once, ahead of time: `@avokjs/auth-origin` is two fully-inlined, CSP-safe static HTML
-files (`authorize.html`, `sign.html`) the operator hosts at their `authOrigin` — no server. Inside
-the popup the passkey ceremony runs, the wallet **signs in the popup** under the PRF, and only the
-result (account on connect, signature on sign) `postMessage`s back — the key never leaves. This is
-what keeps "no Avok backend" true: the only thing hosted is the operator's own static files.
+**operator**, once, ahead of time: it is one fully-inlined, CSP-safe static HTML file (`index.html` —
+the "wallet-sandbox popup") the operator hosts at their `authOrigin`, built from the
+`@avokjs/core/auth-popup` mountable (`mountAuthPopup()` / `<AuthPopup>`) by the hardened-page emitter
+(`pnpm emit:auth-page`) — no server. The one page services both requests, dispatching on the request
+kind (authorize | sign). Inside the popup the passkey ceremony runs, the wallet **signs in the popup**
+under the PRF, and only the result (account on connect, signature on sign) `postMessage`s back — the
+key never leaves. This is what keeps "no Avok backend" true: the only thing hosted is the operator's
+own static file.
 
 ## 5. Contracts
 
@@ -120,7 +123,7 @@ see §6.
 - Tx build / simulate / sign / send / track on both rails.
 - 4337 **only** as the minimal dual-mode `validateUserOp` path over a BYO paymaster.
 - The contract deploy + TS export surface (`contracts/`, `contracts/src-ts/`).
-- Framework facades over the above (react / react-native / vanilla).
+- The plain-JS SDK (`@avokjs/core`) and framework facades (react / react-native) over the above.
 
 **OUT of scope — flag any drift toward these as churn**
 - ❌ Any **Avok-operated backend / relayer / bundler / KMS**. Client + contracts only;
@@ -135,7 +138,7 @@ see §6.
   `AvokSubnameRegistrar`, the `@avokjs/subnames` package (which had also drifted into an
   out-of-scope voucher **server**), and the SNS registrar code.
 - ✅ **Name RESOLUTION stays IN** — resolving `alice.eth` / `alice.sol` → address when *sending*
-  is read-only, needs no Avok contract or backend, and lives in `@avokjs/helpers`.
+  is read-only, needs no Avok contract or backend, and lives in `@avokjs/core/helpers`.
 
 ## 7. Vocabulary & package naming (decisions)
 
@@ -146,37 +149,39 @@ Package names must match the vocabulary a dev already holds from the config.
 | `rpId` | Own-origin config key → in-code signing (§4). |
 | `authOrigin` | Shared-origin config key → popup ceremony (§4). |
 | access key | A per-origin passkey bound to one underlying wallet (§3). |
-| `@avokjs/auth-origin` | **Keep.** The deployable popup page a `rpId` owner hosts. Mirrors the `authOrigin` config key 1:1 — that mirror outweighs the OIDC/"auth" baggage. |
-| `@avokjs/provider` | **Keep.** EIP-1193 (+6963) / Solana Wallet Standard surface. Idiomatic. Note: distinct from React's `<AvokProvider>` — do not conflate. |
-| `@avokjs/shared-origin` | **Rename from `@avokjs/network`.** The client half of the shared-origin channel — the browser counterpart that talks to the `auth-origin` popup. "network" wrongly reads as chain/RPC config; this name pairs cleanly with `auth-origin`. |
+| `@avokjs/core/auth-popup` | The mountable (`mountAuthPopup()` / `<AuthPopup>`) + hardened-page emitter behind the popup page a `rpId` owner hosts. The subpath name keeps mirroring the `authOrigin` config key (it was the `@avokjs/auth-origin` package before the restructure). |
+| `@avokjs/core/provider` | EIP-1193 (+6963) / Solana Wallet Standard surface. Idiomatic. Note: distinct from React's `<AvokProvider>` — do not conflate. (Was `@avokjs/provider`.) |
+| `@avokjs/core/channel` | The client half of the shared-origin channel — the browser counterpart that drives the `auth-popup` page. (Was `@avokjs/shared-origin`, itself renamed from `@avokjs/network`; "network" wrongly reads as chain/RPC config.) |
 
 ## 8. Package map (intended single purpose)
 
-Each package must have one clear purpose; anything that duplicates another, or serves an
-out-of-scope item, is churn.
+**Three published packages** — the shape of a lean industry SDK: one framework-agnostic core plus two
+thin framework facades. Each has one clear purpose; anything that duplicates another, or serves an
+out-of-scope item, is churn. (This replaces the earlier 11-package layout — 6 of them private and
+bundled into `@avokjs/vanilla` — which paid the cost of multi-package for none of the distribution
+benefit; the restructure collapsed the private engines into `@avokjs/core` domain folders and made
+core public. See `docs/PACKAGE-RESTRUCTURE.md`.)
 
-**Publishing & bundling model (load-bearing — read before "fixing" a facade dependency).**
-`sdk-core` and the engines (`wallet-core`, `evm-txengine`, `solana-txengine`, `provider`) are
-**private — never published standalone.** The published web artifact is **`@avokjs/vanilla`**, which
-**bundles** that engine graph (tsup `noExternal`) into one self-contained package whose `.d.ts`
-inlines their types. Consequently published packages (`react`, `helpers`) source their **types from
-`@avokjs/vanilla`**, not from private `sdk-core` — pointing them at `sdk-core` would ship a published
-package that imports an unpublished one. `react` is a thin lifecycle-hooks layer **over the published
-`vanilla` bundle** (not a sibling that re-bundles `sdk-core`, which would duplicate the engines in
-every facade). So `react → vanilla` and `helpers → vanilla` are **correct**, not layering inversions.
+**Publishing model (load-bearing).** `@avokjs/core` is **public** and *is* the plain-JS/browser SDK.
+There are **no private engine packages and no bundling dance** — everything the SDK does lives inside
+`core` as domain folders (`src/{wallet,evm,solana,client,provider,channel,...}`) exposed via subpaths.
+The old "published packages must source types from `@avokjs/vanilla`, not `sdk-core`" inversion is
+**gone**: the facades depend on `@avokjs/core` (react) and `@avokjs/core/engine` (react-native), both
+public. `@avokjs/contracts` is published for the addresses / ABIs / EIP-712 types the SDK consumes.
 
 | Package | Single purpose |
 |---|---|
-| `wallet-core` | Local passkey primitives: WebAuthn create, PRF encryption, signing, 7702 delegation checks. |
-| `auth-origin` | Static clone-and-own popup page for the shared-origin ceremony. |
-| `shared-origin` *(was `network`)* | Browser client that drives the `auth-origin` popup. |
-| `provider` | EIP-1193/6963 + Solana Wallet Standard surface over a connection. |
-| `evm-txengine` *(was `txengine`)* | EVM 7702 tx: simulate / send / track over self-pay and sponsored rails. |
-| `solana-txengine` | Solana tx: build / simulate / sign / submit / track. |
-| `helpers` | Read-only name **resolution** (`.eth` / `.sol` → address) + shared utilities. No registration. |
-| `sdk-core` | Platform-agnostic facades + utilities the framework facades build on. |
-| `react` / `react-native` / `vanilla` | Framework front doors over the core. |
-| `@avokjs/design` *(top-level `design/`)* | Workspace-only design tokens + CSP-safe CSS/icons for popups + facades. Not published. |
+| **`@avokjs/core`** | **Public.** The framework-agnostic SDK **and** the plain-JS/browser SDK. Engine, client, provider (Surface 1), shared-origin channel, name resolution, and the auth-popup mountable. Plain-JS devs use it directly. Subpaths: `/engine` (platform-agnostic, no browser globals — the RN base), `/wallet`, `/evm`, `/solana`, `/channel`, `/provider`, `/helpers` (name resolution + utils), `/qr` (browser QR transport), `/auth-popup` (`mountAuthPopup` + hardened-page emitter), `/decode`. |
+| **`@avokjs/react`** | React lifecycle hooks + components over `@avokjs/core`: `AvokProvider` + account/lifecycle hooks, `<AuthPopup>`, `<SharedOrigin>` / `useAvokConnect()`, `usePairingCeremony()` / `<PairDevice>`. |
+| **`@avokjs/react-native`** | RN lifecycle hooks + native platform adapter (native passkey + SecureStore) over `@avokjs/core/engine`. Pairing: `usePairingCeremony()` + `createExpoCameraTransport()` (camera injected). Never statically imports `react-native`/`expo-*`. Native shared-origin channel is a follow-on, not shipped. |
+| `contracts` *(`@avokjs/contracts`)* | Published addresses + ABIs + EIP-712 types the SDK consumes (`contracts/src-ts/`). Not the Solidity. |
+
+The three facades are **independent** — none imports another. The browser platform (default web passkey
++ storage) lives in `@avokjs/core` main; RN swaps it via `@avokjs/core/engine` + its native adapter.
+
+Avok's visual identity (tokens, popup styling rules, icon language) is a **reference doc** at `design/`
+— not a package. The auth-popup styles its DOM programmatically so nothing external loads; facades and
+examples carry their own token CSS.
 
 ## History
 

@@ -1,67 +1,38 @@
-# @avokjs/design
+# Avok design reference
 
-Single source of truth for Avok's visual identity: design tokens, CSP-safe CSS
-generators, and inline Lucide icons. Precision-minimal / trust-tech — near
-monochrome, one accent, nothing decorative.
+**A reference spec, not a package.** Avok's visual identity — tokens, the CSP-safe
+styling rules for the popups, and the icon language. There is no `@avokjs/design`
+package: it was a workspace package nothing imported (the popups always styled
+themselves inline, the facades and examples carry their own token CSS, and the docs
+hand-sync a few values). It was deleted in the package restructure; this doc is the
+surviving source of truth for the values below.
 
-The security ceremony popups are the hardest-working surface, so every choice
-optimizes for legibility and trust there first.
+Precision-minimal / trust-tech — near monochrome, one accent, nothing decorative. The
+security ceremony popup is the hardest-working surface, so every choice optimizes for
+legibility and trust there first.
 
-## Three consumption paths
+## Where these values live now
 
-1. **Typed token object** — `palette` (light + dark `Scheme`), `radius`, `space`,
-   `font`, `type`. Platform-neutral JS values. App **facades** (react /
-   react-native / vanilla) import these directly; React Native needs JS style
-   objects, not CSS, so the JS object is authoritative and everything else
-   derives from it.
-
-2. **`tokensCss()` + `primitivesCss()`** — CSS strings the origin **popups**
-   concatenate into their inline `<style>`. `tokensCss()` emits `:root { --… }`
-   (light) plus an `@media (prefers-color-scheme: dark)` override; `primitivesCss()`
-   emits the shared `.avok-*` chrome. No external load of any kind, so they satisfy
-   the popups' locked CSP.
-
-3. **Docs values** — Mintlify `docs.json` uses `palette.light.accent` /
-   `palette.dark.accent` for its theme colors and `font.sans` for its typeface.
-   Mintlify config is static JSON, so these are hand-synced, but they are derived
-   from this package — not independently invented.
-
-## Usage — a popup renderer
-
-```ts
-import { tokensCss, primitivesCss, renderIcon } from "@avokjs/design";
-
-export function renderSomePage(): string {
-  return `<!DOCTYPE html><html><head><style>
-${tokensCss()}
-${primitivesCss()}
-  </style></head>
-  <body class="avok-body">
-    <div class="avok-pop">
-      <div class="avok-pop-h">
-        ${renderIcon("shield-check")}
-        <span class="avok-wm">Avok</span>
-      </div>
-      <div class="avok-pop-b"> … </div>
-    </div>
-  </body></html>`;
-}
-```
+- **The auth-popup** (`@avokjs/core/auth-popup`) styles its DOM **programmatically**
+  (`view-dom.ts` sets `element.style.*`), so nothing external loads and the page stays
+  hash-locked under its CSP. Match the tokens below when adjusting it.
+- **Facades / examples** carry their own token CSS (see each example's
+  `src/theme/tokens.css`) — self-contained so a clone needs no shared dependency.
+- **Docs** (Mintlify `docs.json`) hand-sync `accent` + the sans typeface from the
+  tables below.
 
 ## Rules
 
-- **Hybrid fonts.** `tokensCss()` emits the **system** font stack — popups are
-  CSP-locked and cannot load a webfont, and a native stack reads as "the OS" on a
-  key-reveal screen. The Geist brand stack lives in `font.sans` / `font.mono` for
-  facades and docs, which self-host it.
 - **Never load external assets in a popup.** No CDN, no `@import`, no remote
-  `src`/`href`. Icons are inlined SVG via `renderIcon()`, not the `lucide` npm
-  package. This package has zero runtime dependencies — keep it that way.
+  `src`/`href`. The auth-popup is CSP-locked (`default-src 'none'`,
+  `connect-src 'none'`, hash-pinned inline script/style); any external reference is a
+  wallet-drain regression. Icons are inlined SVG, never an icon-font or npm package.
+- **System font on the popup.** A CSP-locked page cannot load a webfont, and a native
+  stack reads as "the OS" on a key-reveal screen. The Geist brand stack is for facades
+  and docs, which self-host it.
 - **One icon language:** Lucide, everywhere.
-- **Brand mark:** the favicon is a theme-aware node/diamond (`faviconSvg()` /
-  `faviconLinkTag()`), not the wordmark. Popups inline it as a `data:` URI;
-  `docs-site/favicon.svg` is generated from `faviconSvg()`. Header icons are tinted
-  `--color-text`, matching the wordmark — accent stays for links + focus only.
+- **Brand mark:** a theme-aware node/diamond, not the wordmark. Header icons are tinted
+  `--color-text`; accent stays for links + focus only.
 
 ## Tokens
 

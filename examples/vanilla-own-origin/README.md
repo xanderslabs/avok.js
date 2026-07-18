@@ -1,7 +1,7 @@
 # @avok-demo/vanilla-own-origin
 
 The hosted **marketing bird**: a **framework-free** (no React/Vue/etc.) **Own-origin**
-(self-custody) showcase for `@avokjs/vanilla` — WebAuthn passkeys held in-browser, no
+(self-custody) showcase for `@avokjs/core` — WebAuthn passkeys held in-browser, no
 custodian, no server-side account. Clean, simple, and cloneable: just TypeScript + the
 published SDK + a small CSS-variable design kit. One family with the React demos, a distinct
 vanilla expression.
@@ -35,21 +35,21 @@ pnpm --filter @avok-demo/vanilla-own-origin dev
   function that owns its own local state via a closure `set()` re-render.
 - `src/ui/*` — a CSS-class UI kit (`ui.css` + factory functions) reading design tokens from
   `src/theme/tokens.css` (CSS custom properties; dark mode via `prefers-color-scheme`).
-- `@avokjs/helpers` — the shared logic this demo imports rather than owning: balances,
+- `@avokjs/core/helpers` — the shared logic this demo imports rather than owning: balances,
   chain metadata + display names, recipient resolution, explorer builders, amount formatting, the
   tx-status state machine, error classification, and the device-pairing ceremony driver. The QR
-  pairing transport comes from `@avokjs/helpers/qr`.
+  pairing transport comes from `@avokjs/core/qr`.
 - `src/pairing/*` — the SAS-gated pairing controllers + the el() QR ceremony UI over that driver.
 
 ## Per-feature snippets
 
 Trimmed excerpts of the real screens (`src/screens/*.ts`) — see those files for the full flow.
-Unlike the React demos, this app calls the raw `@avokjs/vanilla` client verbs directly.
+Unlike the React demos, this app calls the raw `@avokjs/core` client verbs directly.
 
 ### Client init — `src/main.ts`
 
 ```ts
-import { createAvokClient, createOwnOriginConnection } from "@avokjs/vanilla";
+import { createAvokClient, createOwnOriginConnection } from "@avokjs/core";
 import { config } from "./config.js";
 
 const connection = createOwnOriginConnection({ rpId: config.rpId });
@@ -91,7 +91,7 @@ const receipt = await client.evm.send([call], { chainId: chain.id, feeToken: sel
 `feeToken: null` pays gas from the account's own balance (self-pay); passing a fee-token **address
 supported on that chain** (with `VITE_PAYMASTER_URL` set) sponsors the send (sponsored). The address is
 chain-specific, so it comes from `client.evm.feeTokens(chainId)`, never from a global env var. The
-demo drives a `pending → confirmed | failed` status (`@avokjs/helpers`) and links the receipt to
+demo drives a `pending → confirmed | failed` status (`@avokjs/core/helpers`) and links the receipt to
 the chain's explorer.
 
 ### Solana send — `src/screens/Send.ts`
@@ -130,7 +130,7 @@ so it has nothing to back up. `backupStatus()` reports whether a *secondary* dev
 enrolled (via `client.addPasskey()`, on the Device screen) — not whether this wallet is safe.
 `export()` never returns a recovery phrase; it returns the two raw private keys directly.
 
-### Send to a name anywhere — `@avokjs/helpers`
+### Send to a name anywhere — `@avokjs/core/helpers`
 
 Every address field (Send recipient, name lookup) accepts a raw address **or** any ENS/SNS
 name. The reusable `resolveRecipient(resolver, input, rail)` helper resolves a name to the
@@ -173,8 +173,8 @@ const account = await client.pairing.importToDevice.complete({ qr: grantCode, sa
 > Runs **standalone** — no operator needed (passkey in-browser). For `.test`-domain / HTTPS
 > testing, see [`examples/TESTING.md`](../TESTING.md) and `pnpm demos:domain prepare`.
 
-This app depends only on **published** packages — the `@avokjs/vanilla` facade and
-`@avokjs/helpers` (balances, chain metadata + names, recipient resolution, explorers) — plus the public third-party libs `viem`,
+This app depends only on **published** packages — the `@avokjs/core` facade and
+`@avokjs/core/helpers` (balances, chain metadata + names, recipient resolution, explorers) — plus the public third-party libs `viem`,
 `@solana/kit`, `@solana-program/system`, and its own local `src/`. No `@avok-demo/*`, no React,
 no private/workspace-only packages. There is **no dev chrome to delete** — it's clean to begin
 with. To reuse it:
@@ -186,6 +186,6 @@ with. To reuse it:
 3. **Reskin** — swap the brand values in `src/theme/tokens.css` (the `--*` custom properties)
    and `src/ui/ui.css`, then **delete `src/features.ts`** — it's the parity-harness manifest
    used only by this monorepo's `@avok-demo/coverage` package and has no runtime purpose.
-4. **Install** — `pnpm install` in your app; it pulls the published `@avokjs/vanilla` and
+4. **Install** — `pnpm install` in your app; it pulls the published `@avokjs/core` and
    `@avokjs/contracts` packages (plus `viem`, `@solana/kit`, `@solana-program/system`) —
    not `workspace:*` links.
