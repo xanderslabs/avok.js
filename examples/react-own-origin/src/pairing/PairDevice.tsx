@@ -6,8 +6,8 @@ import {
   type PairingTransport,
   type ImportStep,
   type ExportStep,
-} from "@avokjs/helpers";
-import { createBrowserQrTransport, CameraUnavailableError } from "@avokjs/helpers/qr";
+} from "@avokjs/core/helpers";
+import { createBrowserQrTransport, CameraUnavailableError } from "@avokjs/core/qr";
 import { Button, Card, Text } from "../ui/index.js";
 import { createAuthorizeController, createSetupController } from "./controller.js";
 
@@ -16,7 +16,7 @@ import { createAuthorizeController, createSetupController } from "./controller.j
  * QR, the other scans it, and vice-versa, across three rounds — with the 6-digit SAS confirmed on
  * both devices between rounds 2 and 3. QR-only, no paste fallback (camera required); a scan pane
  * shows a "camera blocked → retry" state if the camera is denied/absent. The transport + ceremony
- * driver live in @avokjs/helpers; this component is just the UI over them.
+ * driver live in @avokjs/core/helpers; this component is just the UI over them.
  */
 type Role = "import" | "export";
 type Phase = "loading" | "show" | "prompt-scan" | "scanning" | "working" | "camera-error" | "sas" | "done" | "rejected";

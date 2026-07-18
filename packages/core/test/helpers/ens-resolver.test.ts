@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { getAddress } from "viem";
-import { createEnsResolver } from "../src/ens-resolver.js";
+import { createEnsResolver } from "../../src/helpers/ens-resolver.js";
 
 // #6: these cases came from avokname's ens-service.test.ts. Resolution moved to helpers, so the
 // tests moved with it — the ENS read path must stay proven with the subnames add-on uninstalled.

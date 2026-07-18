@@ -37,7 +37,7 @@ vi.mock("@solana/kit", async (orig) => {
   };
 });
 
-import { readSolanaBalances } from "../src/balances.js";
+import { readSolanaBalances } from "../../src/helpers/balances.js";
 
 describe("readSolanaBalances against a hanging RPC", () => {
   it("time-boxes every read, so a hang cannot freeze the balances", async () => {

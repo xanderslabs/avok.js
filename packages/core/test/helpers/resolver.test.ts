@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createNameResolver } from "../src/resolver.js";
-import type { NameResolverService } from "../src/name-port.js";
+import { createNameResolver } from "../../src/helpers/resolver.js";
+import type { NameResolverService } from "../../src/helpers/name-port.js";
 
 const EVM = "0x1111111111111111111111111111111111111111";
 const OTHER = "0x2222222222222222222222222222222222222222";

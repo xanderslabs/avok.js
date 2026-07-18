@@ -1,5 +1,5 @@
 import { el } from "../core/el.js";
-import type { SendErrorKind } from "@avokjs/helpers";
+import type { SendErrorKind } from "@avokjs/core/helpers";
 
 export function ErrorNote({
   kind,

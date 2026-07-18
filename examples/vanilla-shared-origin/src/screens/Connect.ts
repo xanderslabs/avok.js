@@ -7,7 +7,7 @@
  */
 import { el } from "../core/el.js";
 import type { Ctx } from "../core/app.js";
-import { classifySendError, type SendErrorKind } from "@avokjs/helpers";
+import { classifySendError, type SendErrorKind } from "@avokjs/core/helpers";
 import { BrandMark, Button, ErrorNote, Icon } from "../ui/index.js";
 
 /** Operator name = the auth origin's host — never a hardcoded operator brand. */

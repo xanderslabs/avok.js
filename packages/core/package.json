@@ -62,6 +62,14 @@
     "./provider": {
       "types": "./dist/provider/index.d.ts",
       "import": "./dist/provider/index.js"
+    },
+    "./helpers": {
+      "types": "./dist/helpers/index.d.ts",
+      "import": "./dist/helpers/index.js"
+    },
+    "./qr": {
+      "types": "./dist/helpers/qr.d.ts",
+      "import": "./dist/helpers/qr.js"
     }
   },
   "scripts": {
@@ -78,18 +86,22 @@
     "@noble/hashes": "^2.2.0",
     "@scure/base": "^2.2.0",
     "@scure/bip39": "^2.2.0",
+    "@solana-name-service/sns-sdk-kit": "0.10.0",
     "@solana-program/compute-budget": "^0.16.0",
     "@solana-program/system": "^0.12.2",
     "@solana-program/token": "^0.13.0",
     "@solana/kit": "^6.10.0",
     "@wallet-standard/base": "^1.1.0",
     "@wallet-standard/wallet": "^1.1.0",
+    "jsqr": "^1.4.0",
     "micro-key-producer": "^0.9.0",
+    "qrcode": "^1.5.4",
     "viem": "^2.54.6"
   },
   "devDependencies": {
     "@solana/kora": "^0.2.1",
     "@types/node": "^26.1.0",
+    "@types/qrcode": "^1.5.0",
     "@wallet-standard/app": "^1.1.0",
     "jsdom": "^29.1.1",
     "tsup": "^8.5.1",

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { runImportCeremony, runExportCeremony, type PairingTransport } from "../src/pairing.js";
+import { runImportCeremony, runExportCeremony, type PairingTransport } from "../../src/helpers/pairing.js";
 
 function fakeTransport(scans: string[]): PairingTransport & { shown: string[] } {
   const shown: string[] = [];

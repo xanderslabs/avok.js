@@ -17,7 +17,7 @@
 import { el } from "../core/el.js";
 import type { Ctx } from "../core/app.js";
 import { Button, Card, ErrorNote, Screen } from "../ui/index.js";
-import { classifySendError, type SendErrorKind } from "@avokjs/helpers";
+import { classifySendError, type SendErrorKind } from "@avokjs/core/helpers";
 import type { FullAvokClient } from "@avokjs/vanilla";
 
 /** Derived from the SDK so this screen cannot drift from the real roster shape. */

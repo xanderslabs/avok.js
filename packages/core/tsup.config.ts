@@ -14,6 +14,8 @@ export default defineConfig({
     "src/solana/index.ts",
     "src/channel/index.ts",
     "src/provider/index.ts",
+    "src/helpers/index.ts",
+    "src/helpers/qr.ts",
   ],
   format: ["esm"],
   platform: "neutral",

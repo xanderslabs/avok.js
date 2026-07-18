@@ -24,7 +24,7 @@
 import { el } from "../core/el.js";
 import type { Ctx } from "../core/app.js";
 import { BrandMark, Button, Card, ErrorNote, Icon, Screen } from "../ui/index.js";
-import { classifySendError, type SendErrorKind } from "@avokjs/helpers";
+import { classifySendError, type SendErrorKind } from "@avokjs/core/helpers";
 import { Ceremony } from "../pairing/ceremony.js";
 import { isReturning, markReturning } from "../returning.js";
 

@@ -1,4 +1,4 @@
-import type { Account, FullAvokClient } from "@avokjs/vanilla";
+import type { Account, FullAvokClient } from "../index.js";
 
 /** Transport that moves the opaque pairing codes between devices. The browser implementation is in
  *  `@avokjs/helpers/qr`; a React-Native app implements the same interface over its native
@@ -102,5 +102,5 @@ export async function runExportCeremony(ctl: ExportCtl, t: PairingTransport, h: 
 }
 
 // Re-export the client's pairing verb type so apps/RN can build controllers against the same shapes.
-export type { Account } from "@avokjs/vanilla";
+export type { Account } from "../index.js";
 export type PairingVerbs = FullAvokClient["enrollAccessSlot"]["viaPairing"];

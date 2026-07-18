@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveRecipient } from "../src/resolve-recipient.js";
+import { resolveRecipient } from "../../src/helpers/resolve-recipient.js";
 
 const EVM = "0x1111111111111111111111111111111111111111";
 const SOL = "So11111111111111111111111111111111111111112"; // wrapped-SOL mint (valid base58 pubkey)

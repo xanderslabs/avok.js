@@ -14,13 +14,13 @@ void full.enrollAccessSlot.viaPairing;
 void full.create;
 
 // Name registration is out of scope for Avok — NEITHER client has it. Only resolution
-// remains (in @avokjs/helpers), so these registration verbs must be absent even on the
+// remains (in @avokjs/core/helpers), so these registration verbs must be absent even on the
 // FULL own-origin client.
 // @ts-expect-error registration is out of scope; the core client never exposes it
 void full.registerSubname;
 // @ts-expect-error registration is out of scope; the core client never exposes it
 void full.registerSolanaName;
-// @ts-expect-error resolution lives in @avokjs/helpers, not the core client
+// @ts-expect-error resolution lives in @avokjs/core/helpers, not the core client
 void full.subname;
 
 // Use-only (shared-origin) client must NOT have management verbs:
@@ -32,7 +32,7 @@ void useOnly.enrollAccessSlot;
 void useOnly.create;
 // @ts-expect-error shared-origin client has no registerSubname
 void useOnly.registerSubname;
-// @ts-expect-error resolution lives in @avokjs/helpers, not the core client
+// @ts-expect-error resolution lives in @avokjs/core/helpers, not the core client
 void useOnly.subname;
 
 // Both share the use-only surface:

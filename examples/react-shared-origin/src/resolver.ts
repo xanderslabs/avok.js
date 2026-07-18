@@ -12,7 +12,7 @@ import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 import { createSolanaRpc } from "@solana/kit";
 import { evmRpcUrl, solanaRpcUrl } from "@avokjs/contracts";
-import { createNameResolver, createEnsResolver, createSnsResolver, type EnsClient } from "@avokjs/helpers";
+import { createNameResolver, createEnsResolver, createSnsResolver, type EnsClient } from "@avokjs/core/helpers";
 import { config } from "./config.js";
 
 const ENS_CHAIN_ID = 1;

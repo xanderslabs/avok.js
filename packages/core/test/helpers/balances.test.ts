@@ -29,7 +29,7 @@ vi.mock("@solana/kit", async (orig) => {
   };
 });
 
-import { readSolanaBalances } from "../src/balances.js";
+import { readSolanaBalances } from "../../src/helpers/balances.js";
 
 describe("readSolanaBalances", () => {
   it("returns native SOL first, then SPL tokens with summed balances", async () => {

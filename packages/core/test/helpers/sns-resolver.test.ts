@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 
 const resolveDomain = vi.fn();
 const getPrimaryDomain = vi.fn();
-vi.mock("../src/sns-sdk.js", () => ({ resolveDomain, getPrimaryDomain }));
+vi.mock("../../src/helpers/sns-sdk.js", () => ({ resolveDomain, getPrimaryDomain }));
 
-const { createSnsResolver } = await import("../src/sns-resolver.js");
+const { createSnsResolver } = await import("../../src/helpers/sns-resolver.js");
 
 const SOL = "So11111111111111111111111111111111111111112";
 

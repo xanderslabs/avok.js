@@ -1,6 +1,6 @@
 import { describe, expect, test, it } from "vitest";
 import { namehash } from "viem";
-import { normalizeSubname, subnameNamehash, fullName, subnameNode } from "../src/name.js";
+import { normalizeSubname, subnameNamehash, fullName, subnameNode } from "../../src/helpers/name.js";
 
 describe("subname name helpers", () => {
   test("normalizeSubname lowercases/normalizes per ENS", () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evmExplorerTxUrl, solanaExplorerTxUrl } from "../src/explorers.js";
+import { evmExplorerTxUrl, solanaExplorerTxUrl } from "../../src/helpers/explorers.js";
 
 describe("explorers", () => {
   it("builds Base Sepolia tx url", () => {

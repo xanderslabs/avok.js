@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatAmount } from "../src/amount.js";
+import { formatAmount } from "../../src/helpers/amount.js";
 
 describe("formatAmount", () => {
   it("formats whole USDC (6dp)", () => {

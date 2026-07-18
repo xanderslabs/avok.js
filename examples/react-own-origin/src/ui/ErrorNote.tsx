@@ -1,4 +1,4 @@
-import type { SendErrorKind } from "@avokjs/helpers";
+import type { SendErrorKind } from "@avokjs/core/helpers";
 import { Text } from "./Text.js";
 
 export function ErrorNote({ kind, message }: { kind: SendErrorKind; message: string }) {

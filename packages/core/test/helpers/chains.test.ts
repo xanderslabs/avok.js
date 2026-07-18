@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evmChains, getChain, chainName, solanaTokens } from "../src/chains.js";
+import { evmChains, getChain, chainName, solanaTokens } from "../../src/helpers/chains.js";
 
 describe("chains", () => {
   it("includes testnets (Arc 5042002 present)", () => {

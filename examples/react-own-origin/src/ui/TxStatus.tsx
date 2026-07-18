@@ -1,4 +1,4 @@
-import type { TxState } from "@avokjs/helpers";
+import type { TxState } from "@avokjs/core/helpers";
 import { Text } from "./Text.js";
 
 export function TxStatus({ state, explorerUrl }: { state: TxState; explorerUrl?: string }) {

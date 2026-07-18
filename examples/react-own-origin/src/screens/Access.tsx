@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSelfCustody } from "@avokjs/react";
-import { classifySendError, type SendErrorKind } from "@avokjs/helpers";
+import { classifySendError, type SendErrorKind } from "@avokjs/core/helpers";
 import { Screen, Card, Button, ErrorNote, Text } from "../ui/index.js";
 
 /**

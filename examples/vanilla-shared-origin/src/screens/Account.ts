@@ -7,7 +7,7 @@
  */
 import { el } from "../core/el.js";
 import type { Ctx } from "../core/app.js";
-import { classifySendError, type SendErrorKind } from "@avokjs/helpers";
+import { classifySendError, type SendErrorKind } from "@avokjs/core/helpers";
 import { resolver } from "../resolver.js";
 import { Screen, Card, Field, Button, AddressText, ErrorNote } from "../ui/index.js";
 

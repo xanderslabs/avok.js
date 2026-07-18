@@ -1,14 +1,14 @@
 /**
  * Home — identity header, chain switcher, and app-side balances (framework-free
  * port of react-own-origin's Home.tsx). The SDK is headless on balances, so the demo
- * reads them via @avokjs/helpers (viem for EVM, @solana/kit for Solana).
+ * reads them via @avokjs/core/helpers (viem for EVM, @solana/kit for Solana).
  * The EVM home-base defaults to the first selectable chain (shared-origin apps have
  * no anchor); the Solana card has a devnet/mainnet cluster toggle (both reachable).
  */
 import { el } from "../core/el.js";
 import type { Ctx } from "../core/app.js";
-import { selectableChains, chainName } from "@avokjs/helpers";
-import { readBalances, readSolanaBalances, type TokenBalance } from "@avokjs/helpers";
+import { selectableChains, chainName } from "@avokjs/core/helpers";
+import { readBalances, readSolanaBalances, type TokenBalance } from "@avokjs/core/helpers";
 import { config, type SolanaCluster } from "../config.js";
 import { Card, ChainSwitcher, TokenRow, AddressText, EmptyState, Button, Icon } from "../ui/index.js";
 

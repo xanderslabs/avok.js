@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { useAccount, useAvok } from "@avokjs/react";
 import { encodeFunctionData, erc20Abi, numberToHex, parseUnits, type Address, type Hex } from "viem";
 import { getTransferSolInstruction } from "@solana-program/system";
-import { getChain, chainName, solanaTokens, selectableChains } from "@avokjs/helpers";
-import { solanaExplorerTxUrl } from "@avokjs/helpers";
-import { formatAmount } from "@avokjs/helpers";
-import { txReduce, type TxState } from "@avokjs/helpers";
-import { classifySendError, type SendErrorKind } from "@avokjs/helpers";
-import { resolveRecipient } from "@avokjs/helpers";
+import { getChain, chainName, solanaTokens, selectableChains } from "@avokjs/core/helpers";
+import { solanaExplorerTxUrl } from "@avokjs/core/helpers";
+import { formatAmount } from "@avokjs/core/helpers";
+import { txReduce, type TxState } from "@avokjs/core/helpers";
+import { classifySendError, type SendErrorKind } from "@avokjs/core/helpers";
+import { resolveRecipient } from "@avokjs/core/helpers";
 import { resolver } from "../resolver.js";
 import { hasEvmSponsored, hasSolanaSponsored, config, type SolanaCluster } from "../config.js";
 import {

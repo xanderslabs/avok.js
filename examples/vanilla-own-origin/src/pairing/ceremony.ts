@@ -3,11 +3,11 @@
  * The handshake codes travel as QR: this device shows a QR, the other scans it, and vice-versa,
  * across three rounds, with the 6-digit SAS confirmed on both between rounds 2 and 3. QR-only (no
  * paste); a scan pane swaps to a "camera blocked → retry" state when the camera is denied/absent.
- * The transport + ceremony driver live in @avokjs/helpers; this is only the UI over them.
+ * The transport + ceremony driver live in @avokjs/core/helpers; this is only the UI over them.
  */
 import { el } from "../core/el.js";
-import { runImportCeremony, runExportCeremony, type PairingTransport, type ImportStep, type ExportStep } from "@avokjs/helpers";
-import { createBrowserQrTransport, CameraUnavailableError } from "@avokjs/helpers/qr";
+import { runImportCeremony, runExportCeremony, type PairingTransport, type ImportStep, type ExportStep } from "@avokjs/core/helpers";
+import { createBrowserQrTransport, CameraUnavailableError } from "@avokjs/core/qr";
 import { Button, Card } from "../ui/index.js";
 import { createSetupController, createAuthorizeController } from "./controller.js";
 import type { Account } from "@avokjs/vanilla";

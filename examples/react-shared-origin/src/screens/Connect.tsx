@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAvok } from "@avokjs/react";
-import { classifySendError } from "@avokjs/helpers";
+import { classifySendError } from "@avokjs/core/helpers";
 import { config } from "../config.js";
 import { BrandMark, Button, ErrorNote, Icon, Stack, Text } from "../ui/index.js";
 

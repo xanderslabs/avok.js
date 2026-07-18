@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { txReduce, type TxState } from "../src/tx-status.js";
+import { txReduce, type TxState } from "../../src/helpers/tx-status.js";
 
 describe("txReduce", () => {
   it("drives the happy path idle→signing→pending→confirmed", () => {

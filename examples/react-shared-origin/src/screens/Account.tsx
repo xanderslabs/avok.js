@@ -3,7 +3,7 @@ import { useAccount, useAvok, useLogout } from "@avokjs/react";
 import { getWallets } from "@wallet-standard/app";
 import type { Wallet, WalletAccount } from "@wallet-standard/base";
 import { config } from "../config.js";
-import { classifySendError, type SendErrorKind } from "@avokjs/helpers";
+import { classifySendError, type SendErrorKind } from "@avokjs/core/helpers";
 import { resolver } from "../resolver.js";
 import { Screen, Card, Field, Button, AddressText, ErrorNote } from "../ui/index.js";
 

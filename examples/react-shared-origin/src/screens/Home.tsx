@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAccount } from "@avokjs/react";
-import { selectableChains, chainName } from "@avokjs/helpers";
-import { readBalances, readSolanaBalances, type TokenBalance } from "@avokjs/helpers";
+import { selectableChains, chainName } from "@avokjs/core/helpers";
+import { readBalances, readSolanaBalances, type TokenBalance } from "@avokjs/core/helpers";
 import { config, type SolanaCluster } from "../config.js";
 import { Card, ChainSwitcher, TokenRow, AddressText, EmptyState, Button, Icon, Text } from "../ui/index.js";
 

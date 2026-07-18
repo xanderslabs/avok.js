@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useCreate, useLogin } from "@avokjs/react";
 import { BrandMark, Button, Card, ErrorNote, Icon, Screen, Stack, Text } from "../ui/index.js";
-import { classifySendError } from "@avokjs/helpers";
+import { classifySendError } from "@avokjs/core/helpers";
 import { SetupFlow } from "../pairing/PairDevice.js";
 import { isReturning, markReturning } from "../returning.js";
 

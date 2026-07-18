@@ -1,5 +1,5 @@
 import { el } from "../core/el.js";
-import type { TxState } from "@avokjs/helpers";
+import type { TxState } from "@avokjs/core/helpers";
 
 export function TxStatus({
   state,

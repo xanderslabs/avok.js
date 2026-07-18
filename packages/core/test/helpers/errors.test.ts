@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifySendError } from "../src/errors.js";
+import { classifySendError } from "../../src/helpers/errors.js";
 
 describe("classifySendError", () => {
   it("classifies user rejection", () => {

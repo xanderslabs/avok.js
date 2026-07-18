@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { getAddress, namehash, zeroAddress } from "viem";
-import { createEnsReader } from "../src/ens-reader.js";
+import { createEnsReader } from "../../src/helpers/ens-reader.js";
 
 const OWNED = namehash("alice.qudiid.eth");
 
