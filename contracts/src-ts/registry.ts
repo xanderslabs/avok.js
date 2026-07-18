@@ -76,9 +76,6 @@ export interface SolanaChainProfile {
 
 export type ChainProfile = EvmChainProfile | SolanaChainProfile;
 
-// Placeholder until the mainnet-deploy gate; update per chain after `forge script Deploy`.
-const PENDING: Address = "0x0000000000000000000000000000000000000000";
-
 export interface EnsDeployment {
   registry: Address;
   reverseRegistrar: Address;

@@ -4,7 +4,6 @@ import { useAccount, useSelfCustody } from "@avokjs/react";
 // Own-origin IS the wallet: it signs messages in-page via the SDK's `evm`/`solana` namespaces (same as
 // the vanilla-own demo). #3 removed the `useSign`/`useSolanaSign` hooks; reach the namespaces directly.
 type SignNS = { evm: { signMessage(a: { message: string }): Promise<string> }; solana: { signMessage(m: string): Promise<{ signature: string }> } };
-import { config } from "../config.js";
 import { classifySendError, type SendErrorKind } from "@avokjs/helpers";
 import { Screen, Card, Field, Button, AddressText, ListRow, ErrorNote, Stack, Text } from "../ui/index.js";
 

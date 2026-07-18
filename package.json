@@ -15,6 +15,9 @@
   },
   "packageManager": "pnpm@10.32.1",
   "scripts": {
+    "lint": "biome lint",
+    "format": "biome format --write",
+    "format:check": "biome format",
     "build": "pnpm -r --filter './packages/*' --filter './contracts' --filter './design' build",
     "test": "pnpm check:wiring && pnpm build && pnpm typecheck && pnpm demos:typecheck && pnpm -r --filter './packages/*' --filter './contracts' --filter './design' test && pnpm demos:test",
     "typecheck": "pnpm -r --filter './packages/*' --filter './contracts' --filter './design' typecheck",
@@ -29,6 +32,7 @@
     "check:wiring": "node scripts/check-test-wiring.mjs"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
     "@changesets/cli": "^2.31.0",
     "@types/node": "^26.1.0",
     "@types/react": "^19.2.17",
