@@ -1,6 +1,10 @@
 // ─── Provider ────────────────────────────────────────────────────────────────
 export { AvokProvider } from "./provider.js";
 
+// ─── Auth-popup (the wallet-sandbox popup the dev hosts at their auth origin) ──
+export { AuthPopup } from "./auth-popup.js";
+export type { AuthPopupConfig } from "@avokjs/core/auth-popup";
+
 // ─── Hooks ───────────────────────────────────────────────────────────────────
 export {
   useAvok,
@@ -10,6 +14,15 @@ export {
   useLogin,
   useLogout,
 } from "./hooks.js";
+
+// ─── Shared-origin connect (the WalletConnect-style trigger) ──────────────────
+export { SharedOrigin } from "./shared-origin.js";
+export { useAvokConnect, operatorNameFromOrigin } from "./connect.js";
+
+// ─── Device pairing (QR ceremony) ─────────────────────────────────────────────
+export { usePairingCeremony } from "./pairing.js";
+export type { PairPhase, PairingCeremony } from "./pairing.js";
+export { PairDevice } from "./pair-device.js";
 
 // ─── Vanilla conveniences (re-exported for single-import DX) ─────────────────
 export {

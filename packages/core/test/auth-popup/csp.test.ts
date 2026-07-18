@@ -56,7 +56,7 @@ describe.skipIf(!built)("the static popup's CSP is no weaker than the server's (
   it("the emitted hash matches the bundle actually shipped", () => {
     // WHY: a stale hash is a page that silently does not run — the worst failure available here,
     // because it looks like a deploy problem rather than a build bug. Recompute from the real HTML.
-    for (const entry of ["authorize", "sign"]) {
+    for (const entry of ["index"]) {
       const html = readFileSync(resolve(OUT, `${entry}.html`), "utf8");
       const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]!);
       expect(inline.length).toBeGreaterThan(0);
@@ -70,7 +70,7 @@ describe.skipIf(!built)("the static popup's CSP is no weaker than the server's (
   it("bakes the operator's PINNED rpId into the page", () => {
     // WHY: K = HKDF(PRF(credential, rpId)). The config used to be injected per request by a server
     // that fails loud on a missing rpId; that guarantee must survive the move to build time.
-    for (const entry of ["authorize", "sign"]) {
+    for (const entry of ["index"]) {
       const html = readFileSync(resolve(OUT, `${entry}.html`), "utf8");
       expect(html).toMatch(/window\.__AVOK_CONFIG__=/);
       expect(html).toMatch(/"rpId":/);
@@ -78,7 +78,7 @@ describe.skipIf(!built)("the static popup's CSP is no weaker than the server's (
   });
 
   it("escapes `<` in the baked config so it cannot close the script early", () => {
-    for (const entry of ["authorize", "sign"]) {
+    for (const entry of ["index"]) {
       const html = readFileSync(resolve(OUT, `${entry}.html`), "utf8");
       const cfg = html.match(/window\.__AVOK_CONFIG__=(\{.*?\})<\/script>/s)?.[1] ?? "";
       expect(cfg).not.toContain("<");

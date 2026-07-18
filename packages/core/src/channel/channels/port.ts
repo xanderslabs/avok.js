@@ -11,7 +11,9 @@ export type ChannelRequest =
   // the user is asked to pick a passkey on EVERY signature. The app holds it (connect() returned
   // it) and sends it here.
   | { kind: "sign"; request: SignRequest; credentialId?: string }
-  | { kind: "authorize"; url: string };
+  // Both kinds open the SAME page (the wallet-sandbox popup at the auth origin root), so authorize
+  // carries no URL: the channel knows the single page to open, and the popup reads nothing from it.
+  | { kind: "authorize" };
 
 export type ChannelResult =
   | { kind: "sign"; result: SignResult }

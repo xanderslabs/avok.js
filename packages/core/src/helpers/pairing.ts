@@ -1,8 +1,19 @@
 import type { Account, FullAvokClient } from "../index.js";
 
+/** Thrown by a transport when the camera can't be acquired (permission denied or no camera). The app
+ *  renders a retry state; the ceremony hook narrows on it to offer "camera blocked → retry". Defined
+ *  here, with the transport contract (DOM-free), so BOTH the browser transport (`@avokjs/core/qr`) and
+ *  a React-Native transport throw the SAME class the hook checks with `instanceof`. */
+export class CameraUnavailableError extends Error {
+  constructor() {
+    super("Camera unavailable or permission denied");
+    this.name = "CameraUnavailableError";
+  }
+}
+
 /** Transport that moves the opaque pairing codes between devices. The browser implementation is in
- *  `@avokjs/helpers/qr`; a React-Native app implements the same interface over its native
- *  camera. The driver below is transport-agnostic — it knows nothing about QR, DOM, or cameras. */
+ *  `@avokjs/core/qr`; a React-Native app implements the same interface over its native camera. The
+ *  driver below is transport-agnostic — it knows nothing about QR, DOM, or cameras. */
 export interface PairingTransport {
   /** Present a code to the other device (e.g. render a QR). */
   showCode(code: string): void;

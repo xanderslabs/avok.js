@@ -66,7 +66,7 @@ export function createSharedOriginConnection(opts: {
 
   return {
     async connect(): Promise<SharedAccount> {
-      const result = await channel.open({ kind: "authorize", url: `${opts.authOrigin}/authorize` });
+      const result = await channel.open({ kind: "authorize" });
       if (result.kind !== "authorize") {
         throw new Error(`Unexpected channel result kind: expected "authorize", got "${result.kind}"`);
       }

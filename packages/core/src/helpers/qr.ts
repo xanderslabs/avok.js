@@ -11,14 +11,11 @@ const jsQR = jsQRImport as unknown as (
   height: number,
 ) => { data: string } | null;
 
-/** Thrown by the browser transport when the camera can't be acquired (permission denied or no
- *  camera). The app renders a retry state — there is no paste fallback. */
-export class CameraUnavailableError extends Error {
-  constructor() {
-    super("Camera unavailable or permission denied");
-    this.name = "CameraUnavailableError";
-  }
-}
+// The camera-unavailable signal lives with the platform-agnostic PairingTransport contract (pairing.ts,
+// DOM-free) so a React-Native transport can throw the SAME class the ceremony hook narrows on. Re-exported
+// here for the browser transport + web consumers that import it from `@avokjs/core/qr`.
+export { CameraUnavailableError } from "./pairing.js";
+import { CameraUnavailableError } from "./pairing.js";
 
 /**
  * Browser `PairingTransport`: render pairing codes as QRs into `qrContainer`, and scan the other

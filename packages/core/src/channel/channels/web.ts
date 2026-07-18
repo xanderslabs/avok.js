@@ -2,7 +2,7 @@
  * Web popup signing channel.
  *
  * Protocol summary:
- *   1. window.open(url) — opens a popup to ${authOrigin}/sign (sign) or req.url (authorize).
+ *   1. window.open(url) — opens a popup to the auth origin root (one page for both authorize + sign).
  *   2. popup.postMessage(req, expectedOrigin) — sends the ChannelRequest to the popup.
  *      The popup buffers this if it arrives before the page has set up its listener;
  *      real popup pages should handle early-arrival messages or signal readiness first.
@@ -43,12 +43,12 @@ export function createWebChannel({ authOrigin }: { authOrigin: string }): Signin
 
   return {
     open(req: ChannelRequest): Promise<ChannelResult> {
-      // NOTE: sessionId is intentionally NOT appended to the URL here — consistent
-      // with how /sign already works on web. The web channel relies on postMessage
-      // channel binding (event.source === popup) for request/reply correlation, so
-      // the session does not need to travel in the redirect URL (unlike native, where
-      // the redirect URL is the only communication channel back to the opener).
-      const url = req.kind === "sign" ? `${authOrigin}/sign` : req.url;
+      // Both kinds open the SAME page — the wallet-sandbox popup at the auth origin root. The page
+      // posts `ready`, then dispatches on the request kind (authorize | sign). (Was /sign vs /authorize;
+      // the split was vestigial from the pre-#8 OIDC era, when /authorize read its params from the URL.
+      // Nothing travels in the URL now — the web channel correlates request/reply by postMessage channel
+      // binding, event.source === popup.)
+      const url = `${expectedOrigin}/`;
 
       // DEVICE/BROWSER-GATED: requires a real browser.
       const popup = window.open(url, "_blank", "popup,width=480,height=640");
@@ -88,11 +88,10 @@ export function createWebChannel({ authOrigin }: { authOrigin: string }): Signin
           // READY HANDSHAKE. The eager postMessage below fires in the same task as window.open(),
           // when the popup is still an empty about:blank document — postMessage is NOT queued for a
           // document that hasn't loaded, so that first request was delivered into the void and lost.
-          // The /sign popup, whose only source of the request IS this message, then sat on "Loading…"
-          // forever and shared-origin signing could never complete. So the popup announces itself once
-          // its listener is attached, and we re-send. (Idempotent: the popup ignores a duplicate
-          // request once one is pending, and /authorize never sends `ready` — it reads its params
-          // from the URL — so it is unaffected by any of this.)
+          // The popup, whose only source of the request IS this message, then sat on "Loading…"
+          // forever and shared-origin could never complete. So the popup announces itself once its
+          // listener is attached, and we re-send. (Idempotent: the popup ignores a duplicate request
+          // once one is pending. Both kinds now send `ready` — the popup reads nothing from its URL.)
           if (kind === "ready") {
             popup!.postMessage(req, expectedOrigin);
             return;

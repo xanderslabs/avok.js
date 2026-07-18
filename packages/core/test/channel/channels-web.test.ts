@@ -244,7 +244,7 @@ describe("createWebChannel", () => {
     });
   });
 
-  it("opens the popup to authOrigin/sign for a sign request", async () => {
+  it("opens the popup to the auth origin ROOT for a sign request (one page for both kinds)", async () => {
     const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
 
     const promise = channel.open(makeSignRequest());
@@ -253,20 +253,20 @@ describe("createWebChannel", () => {
 
     const openSpy = (window as unknown as { open: ReturnType<typeof vi.fn> }).open;
     const openedUrl: string = openSpy.mock.calls[0][0];
-    expect(openedUrl).toContain(`${AUTH_ORIGIN}/sign`);
+    expect(openedUrl).toBe(`${AUTH_ORIGIN}/`);
   });
 
-  it("opens the popup to req.url for an authorize request", async () => {
+  it("opens the popup to the SAME auth origin ROOT for an authorize request (no per-kind URL)", async () => {
     const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
-    const authorizeUrl = `${AUTH_ORIGIN}/authorize?response_type=code&state=abc`;
 
-    const promise = channel.open({ kind: "authorize", url: authorizeUrl });
-    fireMessage({ kind: "authorize", code: "auth-code", state: "abc" }, AUTH_ORIGIN);
+    const promise = channel.open({ kind: "authorize" });
+    // The popup replies with the account (ChannelResult authorize shape); kind is what resolves it.
+    fireMessage({ kind: "authorize", account: { evmAddress: "0xabc", solanaAddress: "sol" } }, AUTH_ORIGIN);
     await promise;
 
     const openSpy = (window as unknown as { open: ReturnType<typeof vi.fn> }).open;
     const openedUrl: string = openSpy.mock.calls[0][0];
-    expect(openedUrl).toBe(authorizeUrl);
+    expect(openedUrl).toBe(`${AUTH_ORIGIN}/`);
   });
 
   // -------------------------------------------------------------------------

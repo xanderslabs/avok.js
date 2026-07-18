@@ -11,6 +11,8 @@ Covers:
 - `secureStoreStorage` localStorage fallback in jsdom environment.
 - `AvokProvider` + `useAccount` reactivity with a fake `AvokClient`.
 - `useSend` + `useCreate` pending/error state with a fake client.
+- `usePairingCeremony` phase machine (SAS gate, camera-error retry, reject) over a fake transport.
+- `createExpoCameraTransport` permission + barcode→promise bridge over a fake injected camera module.
 
 ## Device-gated checks (require a real iOS/Android device with Expo)
 
@@ -51,3 +53,13 @@ In a React Native (Metro) or Expo (hermes) build, verify that:
 - Calling only `createOwnOriginConnection` does NOT pull `@avokjs/shared-origin` into
   the bundle (check Metro bundle output / source-map explorer).
 - Calling `createSharedOriginConnection` DOES add the network chunk.
+
+### 4. Real camera QR pairing (`createExpoCameraTransport`)
+
+Unit tests exercise the transport's permission + barcode→promise bridge with a fake camera. On a
+physical device with `expo-camera`, verify the full ceremony over a real camera:
+- `usePairingCeremony({ role, transport: createExpoCameraTransport(Camera) })`, rendering a QR of
+  `transport.currentCode` and a `<CameraView onBarcodeScanned={e => transport.feedBarcode(e.data)} />`
+  while `transport.isScanning`.
+- Camera-permission denial surfaces the `camera-error` phase; granting + retry resumes the scan.
+- A full import↔export pairing between two devices writes the new device's access slot on chain.

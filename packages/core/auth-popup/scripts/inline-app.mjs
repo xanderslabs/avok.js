@@ -20,7 +20,7 @@ import { join } from "node:path";
 const ROOT = new URL("../", import.meta.url).pathname;
 const DIST = join(ROOT, "app-dist");
 const OUT = join(ROOT, "app-inlined");
-const ENTRIES = ["authorize", "sign"];
+const ENTRIES = ["index"];
 const MODULE_OPEN = '<script type="module">';
 
 // ── The operator's config ────────────────────────────────────────────────────────────────────

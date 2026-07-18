@@ -14,3 +14,14 @@ export { materializeWalletState } from "./sign/wallet-state.js";
 export { performSign } from "./sign/perform-sign.js";
 export { decodeSignConsent, type SignConsentRequest } from "./sign/consent.js";
 export { formatConsentDisplay } from "./sign/consent-display.js";
+
+// The mountable: the wallet-sandbox popup as a plain-JS component the dev drops into their hosted auth
+// page. `runAuthPopup` + `authPopupDeps` are the framework-free driver the React <AuthPopup> reuses.
+export { mountAuthPopup, authPopupDeps } from "./mount.js";
+export { runAuthPopup } from "./ceremony.js";
+export type {
+  AuthPopupConfig,
+  AuthPopupView,
+  AuthPopupAccount,
+  AuthPopupCeremonyDeps,
+} from "./ceremony.js";

@@ -42,6 +42,12 @@ export {
   useLogout,
 } from "./hooks.js";
 
+// ─── Device pairing (QR ceremony — headless; transport injected) ──────────────
+export { usePairingCeremony } from "./pairing.js";
+export type { PairPhase, PairingCeremony } from "./pairing.js";
+export { createExpoCameraTransport } from "./pairing-transport.js";
+export type { ExpoCameraLike, ExpoCameraTransport } from "./pairing-transport.js";
+
 // ─── createOwnOriginConnection ───────────────────────────────────────────────────
 
 /**
