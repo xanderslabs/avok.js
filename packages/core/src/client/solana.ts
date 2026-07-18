@@ -101,13 +101,6 @@ function feeTokenProgram(cluster: "mainnet" | "devnet", mint: string): string {
   return p.tokenProgram;
 }
 
-/** Bytes this fee token's ATA occupies — measured per mint (a Token-2022 account is not 165). */
-function feeTokenAtaSize(cluster: "mainnet" | "devnet", mint: string): number {
-  const p = getSolanaTokenProfile(cluster, mint);
-  if (!p) throw new Error(`Unsupported fee token ${mint} on solana:${cluster}`);
-  return p.ataSize;
-}
-
 function feeTokenDecimals(cluster: "mainnet" | "devnet", mint: string): number {
   const p = getSolanaTokenProfile(cluster, mint);
   if (!p) throw new Error(`Unsupported fee token ${mint} on solana:${cluster}`);

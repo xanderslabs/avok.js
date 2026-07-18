@@ -81,7 +81,8 @@ export function getChain(chainId: number): ChainInfo | undefined {
  * configured token; an honest, self-updating predicate (no hardcoded chain id) that happens to
  * exclude Sepolia today.
  */
-export function isUsableChain(chain: ChainInfo): boolean {
+// Module-private: nothing outside this module consumes it (only `selectableChains` below).
+function isUsableChain(chain: ChainInfo): boolean {
   return chain.tokens.length > 0;
 }
 
