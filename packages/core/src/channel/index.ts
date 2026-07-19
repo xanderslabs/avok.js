@@ -1,5 +1,3 @@
-export const VERSION = "0.0.1";
-
 export type {
   Signer,
   SignRequest,
@@ -12,14 +10,11 @@ export type {
 
 export type { StorageAdapter } from "./storage.js";
 
-export {
-  memoryStorage,
-  saveAccount,
-  loadAccount,
-  clearAccount,
-} from "./storage.js";
+// The account persistence helpers (saveAccount/loadAccount/clearAccount) stay module-private — the
+// connection owns persistence; consumers pass a StorageAdapter, they don't call these directly.
+export { memoryStorage } from "./storage.js";
 export { createSharedOriginConnection } from "./connection.js";
-export { UserRejectedError, throwIfSignError } from "./sign-errors.js";
+export { UserRejectedError } from "./sign-errors.js";
 export type { SharedOriginConnection } from "./connection.js";
 
 export { createWebChannel } from "./channels/web.js";
