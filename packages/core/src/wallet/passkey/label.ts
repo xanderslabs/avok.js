@@ -4,14 +4,56 @@ import { base64UrlToBytes } from "../encoding.js";
 // Friendly-nickname word lists. The label is display-only (never verified or stored in the blob),
 // so a small deterministic set is fine — collisions are cosmetic. Chain-neutral by construction.
 const NICK_ADJECTIVES = [
-  "Amber", "Brave", "Calm", "Cobalt", "Crimson", "Dawn", "Ember", "Fern",
-  "Golden", "Hazel", "Indigo", "Jade", "Lunar", "Mellow", "Noble", "Onyx",
-  "Pearl", "Quartz", "Ruby", "Sage", "Teal", "Umber", "Velvet", "Wren",
+  "Amber",
+  "Brave",
+  "Calm",
+  "Cobalt",
+  "Crimson",
+  "Dawn",
+  "Ember",
+  "Fern",
+  "Golden",
+  "Hazel",
+  "Indigo",
+  "Jade",
+  "Lunar",
+  "Mellow",
+  "Noble",
+  "Onyx",
+  "Pearl",
+  "Quartz",
+  "Ruby",
+  "Sage",
+  "Teal",
+  "Umber",
+  "Velvet",
+  "Wren",
 ] as const;
 const NICK_NOUNS = [
-  "Otter", "Falcon", "Cedar", "Lynx", "Heron", "Maple", "Bison", "Coral",
-  "Finch", "Willow", "Marten", "Osprey", "Birch", "Sparrow", "Alder", "Raven",
-  "Fox", "Crane", "Elm", "Badger", "Kestrel", "Aspen", "Marlin", "Robin",
+  "Otter",
+  "Falcon",
+  "Cedar",
+  "Lynx",
+  "Heron",
+  "Maple",
+  "Bison",
+  "Coral",
+  "Finch",
+  "Willow",
+  "Marten",
+  "Osprey",
+  "Birch",
+  "Sparrow",
+  "Alder",
+  "Raven",
+  "Fox",
+  "Crane",
+  "Elm",
+  "Badger",
+  "Kestrel",
+  "Aspen",
+  "Marlin",
+  "Robin",
 ] as const;
 
 /**
@@ -37,9 +79,7 @@ const KIND_FOUNDING = 0x01;
 const KIND_ACCESS = 0x02;
 
 /** What a credential's user.id tells us at login, before any key material is derived. */
-export type UserHandle =
-  | { kind: "primary" }
-  | { kind: "secondary"; evm: Address; anchorChain: number };
+export type UserHandle = { kind: "primary" } | { kind: "secondary"; evm: Address; anchorChain: number };
 
 /**
  * A primary's user.id: [0x01][32 random bytes] = 33 bytes.

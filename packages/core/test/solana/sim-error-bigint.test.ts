@@ -55,8 +55,8 @@ describe("a failing instruction is named, not numbered", () => {
   const ORDER = [
     "ComputeBudget111111111111111111111111111111",
     "ComputeBudget111111111111111111111111111111",
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",  // 2: the sponsored FEE transfer
-    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",  // 3: the user's own Token-2022 transfer
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // 2: the sponsored FEE transfer
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", // 3: the user's own Token-2022 transfer
   ];
 
   it("maps the instruction index onto the program that actually failed", async () => {

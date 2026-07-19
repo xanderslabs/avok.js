@@ -3,19 +3,16 @@ import { useAccount, useSelfCustody } from "@avokjs/react";
 
 // Own-origin IS the wallet: it signs messages in-page via the SDK's `evm`/`solana` namespaces (same as
 // the vanilla-own demo). #3 removed the `useSign`/`useSolanaSign` hooks; reach the namespaces directly.
-type SignNS = { evm: { signMessage(a: { message: string }): Promise<string> }; solana: { signMessage(m: string): Promise<{ signature: string }> } };
+type SignNS = {
+  evm: { signMessage(a: { message: string }): Promise<string> };
+  solana: { signMessage(m: string): Promise<{ signature: string }> };
+};
 import { classifySendError, type SendErrorKind } from "@avokjs/core/helpers";
 import { Screen, Card, Field, Button, AddressText, ListRow, ErrorNote, Stack, Text } from "../ui/index.js";
 
 type ExportStep = "idle" | "confirm" | "done";
 
-export function Account({
-  onOpenDevice,
-  onOpenAccess,
-}: {
-  onOpenDevice: () => void;
-  onOpenAccess: () => void;
-}) {
+export function Account({ onOpenDevice, onOpenAccess }: { onOpenDevice: () => void; onOpenAccess: () => void }) {
   const { account } = useAccount();
   // Export / passkey-count are custody-management verbs — only on the FullAvokClient
   // (self-custody). react-own-origin is always self-custody.
@@ -123,11 +120,7 @@ export function Account({
         <div className="section-label">Security</div>
         <ListRow
           title="Ways into this wallet"
-          desc={
-            accessSlotCount === null
-              ? "Checking…"
-              : `${accessSlotCount} — every one can reach your wallet key.`
-          }
+          desc={accessSlotCount === null ? "Checking…" : `${accessSlotCount} — every one can reach your wallet key.`}
           chevron={false}
         />
         <div style={{ marginTop: 10 }}>
@@ -177,8 +170,7 @@ export function Account({
         {exportStep === "done" && exported ? (
           <>
             <Text variant="label" tone="danger" as="p" style={{ marginBottom: 10 }}>
-              Anyone holding these keys controls the wallet. Store them securely and never share
-              them.
+              Anyone holding these keys controls the wallet. Store them securely and never share them.
             </Text>
             <div className="addr-row" style={{ marginBottom: 6 }}>
               <span className="addr-rail">EVM</span>
@@ -192,8 +184,8 @@ export function Account({
         ) : exportStep === "confirm" ? (
           <>
             <Text variant="label" tone="subtle" as="p" style={{ marginBottom: 10 }}>
-              This reveals your full recovery material to this app. Anyone with it controls the wallet.
-              Make sure no one is watching your screen.
+              This reveals your full recovery material to this app. Anyone with it controls the wallet. Make sure no one
+              is watching your screen.
             </Text>
             <Stack direction="row" gap="sm">
               <Button variant="ghost" onClick={() => setExportStep("idle")}>

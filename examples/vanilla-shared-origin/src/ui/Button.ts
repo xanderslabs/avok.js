@@ -13,10 +13,5 @@ export function Button({
   onClick?: () => void;
   disabled?: boolean;
 }): HTMLButtonElement {
-  return el(
-    "button",
-    { class: `btn btn-${variant}`, type: "button", onclick: onClick, disabled },
-    icon,
-    label,
-  );
+  return el("button", { class: `btn btn-${variant}`, type: "button", onclick: onClick, disabled }, icon, label);
 }

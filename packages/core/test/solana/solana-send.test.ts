@@ -18,7 +18,10 @@ function fakeSolanaConnection(): Connection & { signSolanaCallCount: number } {
     status: () => true,
     async signSolanaTransaction(_messageBytes: Uint8Array) {
       state.signSolanaCallCount += 1;
-      return { signature: "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111", consent: undefined };
+      return {
+        signature: "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+        consent: undefined,
+      };
     },
     get signSolanaCallCount() {
       return state.signSolanaCallCount;
@@ -112,7 +115,13 @@ describe("client.send", () => {
     const connection = fakeSolanaConnection();
     const client = createSolanaNamespace({
       connection,
-      deps: { solanaRpc: fakeSolanaRpc({ onGetLatestBlockhash: () => { blockhashCalls += 1; } }) },
+      deps: {
+        solanaRpc: fakeSolanaRpc({
+          onGetLatestBlockhash: () => {
+            blockhashCalls += 1;
+          },
+        }),
+      },
     });
     const sim = await client.simulate([fakeIx], { cluster: "devnet" });
     const callsAfterSimulate = blockhashCalls;

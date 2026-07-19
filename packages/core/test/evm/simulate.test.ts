@@ -26,10 +26,10 @@ function batch(over: Partial<ResolvedBatch> = {}): ResolvedBatch {
 
 test("delegated + simulateV1 cap → eth_simulateV1, exact confidence, surfaces disclosures", async () => {
   const rpc = new FakeRpcClient({ simResults: [{ status: "success", gasUsed: 70_000n, returnData: "0x" }] });
-  const res = await simulateResolved(
-    batch({ disclosures: [{ kind: "delegation", implementation: IMPL }] }),
-    { rpc, chain },
-  );
+  const res = await simulateResolved(batch({ disclosures: [{ kind: "delegation", implementation: IMPL }] }), {
+    rpc,
+    chain,
+  });
   expect(res.method).toBe("eth_simulateV1");
   expect(res.confidence).toBe("exact");
   expect(res.success).toBe(true);
@@ -38,10 +38,10 @@ test("delegated + simulateV1 cap → eth_simulateV1, exact confidence, surfaces 
 
 test("undelegated (authorization present) → state-override method, exact", async () => {
   const rpc = new FakeRpcClient({ simResults: [{ status: "success", gasUsed: 120_000n, returnData: "0x" }] });
-  const res = await simulateResolved(
-    batch({ authorization: { chainId: 10, address: IMPL, nonce: 0 } }),
-    { rpc, chain },
-  );
+  const res = await simulateResolved(batch({ authorization: { chainId: 10, address: IMPL, nonce: 0 } }), {
+    rpc,
+    chain,
+  });
   expect(res.method).toBe("state-override");
   expect(res.confidence).toBe("exact");
 });
@@ -88,7 +88,8 @@ test("sponsored: result.fee is the fee the batch COMMITTED TO — simulate never
 test("sponsored with no priced fee on the batch: simulate invents nothing", async () => {
   const rpc = new FakeRpcClient({ simResults: [{ status: "success", gasUsed: 70_000n, returnData: "0x" }] });
   const res = await simulateResolved(batch({ rail: "sponsored" }), {
-    rpc, chain,
+    rpc,
+    chain,
   });
   // No committed fee → nothing to show. Better to show nothing than a number nobody will sign.
   expect(res.fee).toBeUndefined();
@@ -103,10 +104,10 @@ test("self-pay: result.fee is undefined — a self-pay batch commits to no fee t
 test("chain with neither simulateV1 nor stateOverride → fail loud", async () => {
   const rpc = new FakeRpcClient({ callReturn: "0x", estimateGas: 50_000n });
   await expect(
-    simulateResolved(
-      batch(),
-      { rpc, chain: { ...chain, capabilities: { ...chain.capabilities, simulateV1: false, stateOverride: false } } },
-    ),
+    simulateResolved(batch(), {
+      rpc,
+      chain: { ...chain, capabilities: { ...chain.capabilities, simulateV1: false, stateOverride: false } },
+    }),
   ).rejects.toThrow(/lacks eth_simulateV1/i);
 });
 

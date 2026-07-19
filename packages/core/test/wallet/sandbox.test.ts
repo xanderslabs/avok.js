@@ -16,10 +16,25 @@ async function seed(pk: FakePasskeyAdapter): Promise<{ state: WalletState; priva
   const solanaAddress = solanaAddressFromSecret(produceSolanaKey(container));
   const reg = await pk.create("x", encodeAccessHandle(address, 10));
   const blob = await encryptKeyBlob({
-    container, address, credentialId: reg.credentialId, prfOutput: reg.prfOutput,
+    container,
+    address,
+    credentialId: reg.credentialId,
+    prfOutput: reg.prfOutput,
   });
   return {
-    state: { evmAddress: address, solanaAddress, slots: [{ credentialId: reg.credentialId, rpId: reg.rpId, transports: reg.transports, createdAt: "2026-01-01T00:00:00.000Z" }], blobs: [{ credentialId: reg.credentialId, blob }] },
+    state: {
+      evmAddress: address,
+      solanaAddress,
+      slots: [
+        {
+          credentialId: reg.credentialId,
+          rpId: reg.rpId,
+          transports: reg.transports,
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      blobs: [{ credentialId: reg.credentialId, blob }],
+    },
     privateKey,
   };
 }

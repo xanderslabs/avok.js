@@ -36,10 +36,7 @@ export const DEFAULT_PRIORITY_FEE_PERCENTILE = 75;
  * `reduce` taking the maximum, where nothing could reach it — a fee policy nobody can write a test
  * against is a fee policy nobody is checking.
  */
-export function selectPriorityFee(
-  recentFees: readonly bigint[],
-  policy: PriorityFeePolicy = {},
-): bigint {
+export function selectPriorityFee(recentFees: readonly bigint[], policy: PriorityFeePolicy = {}): bigint {
   const floor = policy.floorMicroLamports ?? 0n;
   if (recentFees.length === 0) return floor; // no data is not evidence of congestion
 

@@ -29,13 +29,18 @@ function keysWith(solana: ReturnType<typeof fakeSolana>["signer"]): SignKeys {
   return { evm, solana } as unknown as SignKeys;
 }
 
-const STATE = { evmAddress: evm.address, solanaAddress: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin" } as unknown as WalletState;
+const STATE = {
+  evmAddress: evm.address,
+  solanaAddress: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
+} as unknown as WalletState;
 const RP_ID = "qudi.fi";
 
 describe("performSign — the shared-origin money path (browser-side, one gesture)", () => {
   it("signMessage → { signature } recoverable to the wallet's own address", async () => {
     const s = fakeSolana();
-    const out = (await performSign({ op: "signMessage", message: "hello" }, keysWith(s.signer), STATE, RP_ID)) as { signature: `0x${string}` };
+    const out = (await performSign({ op: "signMessage", message: "hello" }, keysWith(s.signer), STATE, RP_ID)) as {
+      signature: `0x${string}`;
+    };
     expect(out.signature).toMatch(/^0x[0-9a-f]+$/i);
     const { verifyMessage } = await import("viem");
     expect(await verifyMessage({ address: evm.address, message: "hello", signature: out.signature })).toBe(true);
@@ -44,7 +49,10 @@ describe("performSign — the shared-origin money path (browser-side, one gestur
   it("signSiwe builds the message from the WALLET's address (not a caller-supplied one) and signs it", async () => {
     const s = fakeSolana();
     const params = { domain: "qudi.fi", uri: "https://qudi.fi", version: "1", chainId: 1, nonce: "abc123def" } as const;
-    const out = (await performSign({ op: "signSiwe", params }, keysWith(s.signer), STATE, RP_ID)) as { message: string; signature: `0x${string}` };
+    const out = (await performSign({ op: "signSiwe", params }, keysWith(s.signer), STATE, RP_ID)) as {
+      message: string;
+      signature: `0x${string}`;
+    };
     const parsed = parseSiweMessage(out.message);
     expect(parsed.address?.toLowerCase()).toBe(evm.address.toLowerCase());
     const { verifyMessage } = await import("viem");
@@ -92,7 +100,9 @@ describe("performSign — the shared-origin money path (browser-side, one gestur
   it("signSolanaMessage domain-separates: it must NOT sign the bare message bytes", async () => {
     const s = fakeSolana();
     const message = "hello from avok";
-    const out = (await performSign({ op: "signSolanaMessage", message }, keysWith(s.signer), STATE, RP_ID)) as { signature: string };
+    const out = (await performSign({ op: "signSolanaMessage", message }, keysWith(s.signer), STATE, RP_ID)) as {
+      signature: string;
+    };
     const bare = new TextEncoder().encode(message);
     // The signed payload is the offchain-message envelope, NOT the raw string — a signature over
     // attacker-chosen raw bytes could otherwise be replayed as a transaction.
@@ -109,7 +119,9 @@ describe("performSign — the shared-origin money path (browser-side, one gestur
       primaryType: "Msg",
       message: { content: "hi" },
     } as const;
-    const out = (await performSign({ op: "signTypedData", typedData }, keysWith(s.signer), STATE, RP_ID)) as { signature: string };
+    const out = (await performSign({ op: "signTypedData", typedData }, keysWith(s.signer), STATE, RP_ID)) as {
+      signature: string;
+    };
     expect(out.signature).toMatch(/^0x[0-9a-f]+$/i);
   });
 });
@@ -132,7 +144,11 @@ describe("composite ops — two signatures, one gesture", () => {
     const keys = { evm, solana: solana.signer } as unknown as SignKeys;
 
     const raw = (await performSign(
-      { op: "signSend", tx: { chainId: 10, to: evm.address, value: 0n, data: "0x", nonce: 1, gas: 21000n }, authorization: AUTH },
+      {
+        op: "signSend",
+        tx: { chainId: 10, to: evm.address, value: 0n, data: "0x", nonce: 1, gas: 21000n },
+        authorization: AUTH,
+      },
       keys,
       state,
       "acme.test",
@@ -148,7 +164,10 @@ describe("composite ops — two signatures, one gesture", () => {
     const keys = { evm, solana: solana.signer } as unknown as SignKeys;
 
     const raw = (await performSign(
-      { op: "signSend", tx: { chainId: 10, to: evm.address, value: 0n, data: "0x", nonce: 1, gas: 21000n, type: "eip1559" } },
+      {
+        op: "signSend",
+        tx: { chainId: 10, to: evm.address, value: 0n, data: "0x", nonce: 1, gas: 21000n, type: "eip1559" },
+      },
       keys,
       state,
       "acme.test",
@@ -167,7 +186,12 @@ describe("composite ops — two signatures, one gesture", () => {
       message: { x: 1n },
     };
 
-    const out = (await performSign({ op: "signSponsored", typedData, authorization: AUTH }, keys, state, "acme.test")) as {
+    const out = (await performSign(
+      { op: "signSponsored", typedData, authorization: AUTH },
+      keys,
+      state,
+      "acme.test",
+    )) as {
       signature: `0x${string}`;
       authorization?: { address: string; nonce: number };
     };
@@ -196,7 +220,12 @@ describe("composite ops — two signatures, one gesture", () => {
   it("signUserOp signs the RECOMPUTED userOpHash (recoverable to the wallet key) + returns the authorization", async () => {
     const keys = { evm, solana: fakeSolana().signer } as unknown as SignKeys;
 
-    const out = (await performSign({ op: "signUserOp", userOp: USEROP as never, chainId: 10, authorization: AUTH }, keys, state, "acme.test")) as {
+    const out = (await performSign(
+      { op: "signUserOp", userOp: USEROP as never, chainId: 10, authorization: AUTH },
+      keys,
+      state,
+      "acme.test",
+    )) as {
       signature: `0x${string}`;
       authorization?: { address: string; nonce: number };
     };
@@ -217,7 +246,12 @@ describe("composite ops — two signatures, one gesture", () => {
   it("signUserOp for a delegated wallet omits the authorization", async () => {
     const keys = { evm, solana: fakeSolana().signer } as unknown as SignKeys;
 
-    const out = (await performSign({ op: "signUserOp", userOp: USEROP as never, chainId: 10 }, keys, state, "acme.test")) as {
+    const out = (await performSign(
+      { op: "signUserOp", userOp: USEROP as never, chainId: 10 },
+      keys,
+      state,
+      "acme.test",
+    )) as {
       signature: `0x${string}`;
       authorization?: unknown;
     };

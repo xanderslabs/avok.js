@@ -9,14 +9,20 @@ import type { PasskeyAdapter, PasskeyRegistration, PasskeySlot } from "./passkey
 import { withDecryptedContainer, type WalletState } from "./sandbox.js";
 
 /** One identity, two chains. EVM is the anchor; both addresses are public. */
-export interface AvokAccount { evm: Address; solana: string }
+export interface AvokAccount {
+  evm: Address;
+  solana: string;
+}
 
 function slotFrom(reg: PasskeyRegistration, createdAt: string): PasskeySlot {
   return { credentialId: reg.credentialId, rpId: reg.rpId, transports: reg.transports, createdAt };
 }
 
 /** Birth result. There is no `largeBlobBackedUp`: a primary stores nothing, so nothing can fail to store. */
-export interface BirthResult { account: AvokAccount; state: WalletState }
+export interface BirthResult {
+  account: AvokAccount;
+  state: WalletState;
+}
 
 /**
  * Create a wallet. The primary passkey IS the wallet: K = HKDF(PRF), derived fresh on every login.
@@ -82,14 +88,17 @@ export async function addPasskey(args: {
   // The access slot's metadata: the enrolling rp-id, encrypted under a K-derived key and bound to this
   // access slot's id. Computed HERE because it needs K, and K must not leave wallet-core — the caller
   // gets ciphertext and writes it beside the blob.
-  const encryptedMeta = await encryptSlotMeta(args.container.key, deriveSlotId(args.address, reg.credentialId), reg.rpId);
+  const encryptedMeta = await encryptSlotMeta(
+    args.container.key,
+    deriveSlotId(args.address, reg.credentialId),
+    reg.rpId,
+  );
   return { slot: slotFrom(reg, (args.now ?? new Date()).toISOString()), blob, encryptedMeta };
 }
 
 // Removing an access slot is aimed via buildRemoveAccessSlotCall (vault.ts) and listAccessSlots (roster.ts),
 // not from here. It frees the slot; it is NOT a security control — see the note on
 // buildRemoveAccessSlotCall.
-
 
 /** Raw key material. Usable in MetaMask / Phantom. Deliberately NOT a 24-word phrase: no standard
  *  derivation path reproduces our HKDF chain, so a phrase would look restorable and restore nothing. */

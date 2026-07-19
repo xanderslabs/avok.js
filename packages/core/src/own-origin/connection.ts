@@ -54,7 +54,14 @@ import { base58 } from "@scure/base";
 import { encodeOffchainMessage } from "../solana/index.js";
 import { getAvokUserOpHash, type AvokUserOperation } from "../evm/index.js";
 import { resolveAnchorChain, getChainProfile, DEFAULT_ANCHOR_CHAIN_ID, type ChainId } from "@avokjs/contracts";
-import { bytesToHex, type Address, type Hex, type TypedDataDefinition, type TransactionSerializable, type PrivateKeyAccount } from "viem";
+import {
+  bytesToHex,
+  type Address,
+  type Hex,
+  type TypedDataDefinition,
+  type TransactionSerializable,
+  type PrivateKeyAccount,
+} from "viem";
 import type { SiweParams, SignedAuthorizationLike, AuthorizationTriple } from "../channel/index.js";
 import type { SelfCustodyConnection, Account, AccessCtx, ScopedSigner } from "../types.js";
 import type { StorageAdapter } from "../storage.js";
@@ -212,9 +219,8 @@ export function createOwnOriginConnection(opts: {
   // Per-session ephemeral pairing state. Wiped on completion/abort; never persisted.
   // Per-session ephemeral enrolment state. Wiped on completion/abort; never persisted. `offer` is the
   // holder's wallet+chain, learned by the enroller from the ack, and needed before it can mint.
-  let pairing:
-    | { role: "A" | "B"; eph: PairEphemeral; nonce: string; key?: CryptoKey; offer?: AccessSlotOffer }
-    | null = null;
+  let pairing: { role: "A" | "B"; eph: PairEphemeral; nonce: string; key?: CryptoKey; offer?: AccessSlotOffer } | null =
+    null;
 
   /**
    * PREFLIGHT. Every orphan is born the same way: a credential minted into a write that was never going
@@ -361,9 +367,15 @@ export function createOwnOriginConnection(opts: {
       return wcSignSiwe({ state: requireState(), passkey: opts.passkey, params });
     },
 
-    async signAuthorization(auth: { chainId: number; address: `0x${string}`; nonce: number }): Promise<SignedAuthorizationLike> {
+    async signAuthorization(auth: {
+      chainId: number;
+      address: `0x${string}`;
+      nonce: number;
+    }): Promise<SignedAuthorizationLike> {
       // Cast is safe: viem returns { ...fields, v } (legacy field); SignedAuthorizationLike omits v, which callers never read.
-      return withWalletKey({ state: requireState(), passkey: opts.passkey }, (acct) => acct.signAuthorization(auth)) as Promise<SignedAuthorizationLike>;
+      return withWalletKey({ state: requireState(), passkey: opts.passkey }, (acct) =>
+        acct.signAuthorization(auth),
+      ) as Promise<SignedAuthorizationLike>;
     },
 
     async signTransaction(tx: TransactionSerializable): Promise<Hex> {
@@ -430,9 +442,8 @@ export function createOwnOriginConnection(opts: {
     },
 
     async signSolanaMessage(message: string) {
-      const sig = await withSolanaKey(
-        { state: requireState(), passkey: opts.passkey },
-        (s) => s.sign(encodeOffchainMessage({ message, rpId: opts.rpId })),
+      const sig = await withSolanaKey({ state: requireState(), passkey: opts.passkey }, (s) =>
+        s.sign(encodeOffchainMessage({ message, rpId: opts.rpId })),
       );
       return { signature: base58.encode(sig) };
     },
@@ -491,13 +502,19 @@ export function createOwnOriginConnection(opts: {
           return { qr: encodePayload(ack), sas };
         },
 
-        async complete(args: { qr: string; sasConfirmed: true; ctx: AccessCtx }): Promise<{ slotId: Hex; txId: string }> {
+        async complete(args: {
+          qr: string;
+          sasConfirmed: true;
+          ctx: AccessCtx;
+        }): Promise<{ slotId: Hex; txId: string }> {
           const st = requireState();
-          if (!pairing || pairing.role !== "A" || !pairing.key) throw new Error("no enrolment session — call authorize() first");
+          if (!pairing || pairing.role !== "A" || !pairing.key)
+            throw new Error("no enrolment session — call authorize() first");
           // SAS interlock. This is the payload that matters: a MITM who substituted its OWN wrapping
           // key would have us seal K under it — handing that attacker a passkey into the wallet. The 6
           // digits the user compared are what rule that out.
-          if (args.sasConfirmed !== true) throw new Error("pairing.holder.complete requires sasConfirmed: true (user must confirm the SAS matches)");
+          if (args.sasConfirmed !== true)
+            throw new Error("pairing.holder.complete requires sasConfirmed: true (user must confirm the SAS matches)");
           const wrap = await openWrap(pairing.key, decodePayload<AccessSlotWrap>(args.qr, "wrap"));
           pairing = null;
 
@@ -574,7 +591,8 @@ export function createOwnOriginConnection(opts: {
           }
           // SAS interlock: W goes out on this channel next, and W plus the public blob yields K. An
           // unconfirmed channel here is a stolen wallet — the same stake the old K-shipping flow had.
-          if (args.sasConfirmed !== true) throw new Error("pairing.enroller.enroll requires sasConfirmed: true (user must confirm the SAS matches)");
+          if (args.sasConfirmed !== true)
+            throw new Error("pairing.enroller.enroll requires sasConfirmed: true (user must confirm the SAS matches)");
           const credential = await createPasskeyCredential({
             passkey: opts.passkey,
             networkName: opts.operatorName ?? opts.rpId,
@@ -603,7 +621,8 @@ export function createOwnOriginConnection(opts: {
           if (!pairing || pairing.role !== "B" || !pairing.key || !pairing.offer) {
             throw new Error("no enrolment session — call receiveAck() first");
           }
-          if (args.sasConfirmed !== true) throw new Error("pairing.enroller.repair requires sasConfirmed: true (user must confirm the SAS matches)");
+          if (args.sasConfirmed !== true)
+            throw new Error("pairing.enroller.repair requires sasConfirmed: true (user must confirm the SAS matches)");
           // The orphan proves it holds the credential by authenticating it — and that same ceremony is
           // how it gets the PRF that reproduces its wrapping key.
           const discovered = await opts.passkey.discover();
@@ -702,9 +721,7 @@ export function createOwnOriginConnection(opts: {
       const st = requireState();
       const accessSlots = await enumerateAccessSlots();
       return withDecryptedContainer({ state: st, passkey: opts.passkey }, async (container) =>
-        Promise.all(
-          accessSlots.map(async (d) => ({ ...d, rpId: await readAccessSlotRpId(container.key, d) })),
-        ),
+        Promise.all(accessSlots.map(async (d) => ({ ...d, rpId: await readAccessSlotRpId(container.key, d) }))),
       );
     },
 

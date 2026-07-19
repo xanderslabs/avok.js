@@ -87,7 +87,15 @@ function StepDots({ index }: { index: number }) {
   return (
     <div style={{ display: "flex", gap: 4, justifyContent: "center", marginBottom: 12 }}>
       {[0, 1, 2].map((i) => (
-        <span key={i} style={{ width: 18, height: 3, borderRadius: 2, background: i <= index ? "var(--accent, #4ea)" : "var(--border, #444)" }} />
+        <span
+          key={i}
+          style={{
+            width: 18,
+            height: 3,
+            borderRadius: 2,
+            background: i <= index ? "var(--accent, #4ea)" : "var(--border, #444)",
+          }}
+        />
       ))}
     </div>
   );
@@ -108,9 +116,13 @@ function Sas({ sas, onYes, onNo }: { sas: string; onYes: () => void; onNo: () =>
       <Text variant="display" mono as="div" style={{ letterSpacing: 6, marginBottom: 14 }}>
         {sas}
       </Text>
-      <Button variant="primary" onClick={onYes}>Codes match — continue</Button>
+      <Button variant="primary" onClick={onYes}>
+        Codes match — continue
+      </Button>
       <div style={{ height: 8 }} />
-      <Button variant="danger" onClick={onNo}>Codes don’t match — cancel</Button>
+      <Button variant="danger" onClick={onNo}>
+        Codes don’t match — cancel
+      </Button>
     </div>
   );
 }
@@ -154,7 +166,14 @@ function Ceremony({ role, onDone, done }: { role: Role; onDone: () => void; done
     // Gate each scan behind a user tap (a device can't detect the other scanned its QR), and turn a
     // CameraUnavailableError into a retryable camera-blocked pane.
     const transport: PairingTransport = {
-      showCode: (code) => { base.showCode(code); shownRef.current = true; if (!cancelled) { setShowingQr(true); setPhase("show"); } },
+      showCode: (code) => {
+        base.showCode(code);
+        shownRef.current = true;
+        if (!cancelled) {
+          setShowingQr(true);
+          setPhase("show");
+        }
+      },
       scanCode: async () => {
         // Gate on a tap (a device cannot detect that the other one scanned its QR).
         //
@@ -167,7 +186,10 @@ function Ceremony({ role, onDone, done }: { role: Role; onDone: () => void; done
         const keepQrUp = stepRef.current === "scan-ack";
         await new Promise<void>((r) => {
           scanTap.current = r;
-          if (!cancelled) { setScanTapReady(true); setPhase(shownRef.current && keepQrUp ? "show" : "prompt-scan"); }
+          if (!cancelled) {
+            setScanTapReady(true);
+            setPhase(shownRef.current && keepQrUp ? "show" : "prompt-scan");
+          }
         });
         setScanTapReady(false);
         for (;;) {
@@ -178,11 +200,17 @@ function Ceremony({ role, onDone, done }: { role: Role; onDone: () => void; done
             // The driver now does real work with this code — for the holder's final scan that means a
             // passkey prompt AND an on-chain write, several seconds. Leaving the UI on the scanning
             // pane made the device look frozen. Show a busy state until the driver's next step.
-            if (!cancelled) { setShowingQr(false); setPhase("working"); }
+            if (!cancelled) {
+              setShowingQr(false);
+              setPhase("working");
+            }
             return code;
           } catch (e) {
             if (e instanceof CameraUnavailableError) {
-              await new Promise<void>((r) => { retry.current = r; if (!cancelled) setPhase("camera-error"); });
+              await new Promise<void>((r) => {
+                retry.current = r;
+                if (!cancelled) setPhase("camera-error");
+              });
               continue;
             }
             throw e;
@@ -201,12 +229,20 @@ function Ceremony({ role, onDone, done }: { role: Role; onDone: () => void; done
         // on a visible code (its Done button runs continue()), so it must NOT be dismissed by this.
         if (s === "done" && role === "export") setPhase("done");
       },
-      confirmSas: (s: string) => new Promise<boolean>((r) => { sasResolve.current = r; if (!cancelled) { setSas(s); setPhase("sas"); } }),
+      confirmSas: (s: string) =>
+        new Promise<boolean>((r) => {
+          sasResolve.current = r;
+          if (!cancelled) {
+            setSas(s);
+            setPhase("sas");
+          }
+        }),
     };
 
-    const runner = role === "import"
-      ? runImportCeremony(createSetupController(pairing), transport, handlers)
-      : runExportCeremony(createAuthorizeController(pairing), transport, handlers);
+    const runner =
+      role === "import"
+        ? runImportCeremony(createSetupController(pairing), transport, handlers)
+        : runExportCeremony(createAuthorizeController(pairing), transport, handlers);
     // BOTH roles now end with something on screen and a Done button (handled in render):
     //  - the enroller ends on show-wrap: its wrapping key stays up for the holder to scan. It is NOT
     //    logged in — it was handed no key — so Done runs continue() to log in against the access slot the
@@ -219,7 +255,10 @@ function Ceremony({ role, onDone, done }: { role: Role; onDone: () => void; done
       else setError(String(e));
     });
 
-    return () => { cancelled = true; base.stop(); };
+    return () => {
+      cancelled = true;
+      base.stop();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -239,17 +278,32 @@ function Ceremony({ role, onDone, done }: { role: Role; onDone: () => void; done
       {/* QR display — visible while showing a code (incl. during A's SAS step, where the ack QR stays up). */}
       <div
         ref={qrRef}
-        style={{ display: showingQr && (phase === "show" || phase === "sas") ? "flex" : "none", justifyContent: "center", margin: "4px 0 12px" }}
+        style={{
+          display: showingQr && (phase === "show" || phase === "sas") ? "flex" : "none",
+          justifyContent: "center",
+          margin: "4px 0 12px",
+        }}
       />
       {/* Camera — visible only while scanning. */}
       <video
         ref={videoRef}
         playsInline
         muted
-        style={{ display: phase === "scanning" ? "block" : "none", width: "100%", maxHeight: 260, borderRadius: 12, background: "#000", marginBottom: 12 }}
+        style={{
+          display: phase === "scanning" ? "block" : "none",
+          width: "100%",
+          maxHeight: 260,
+          borderRadius: 12,
+          background: "#000",
+          marginBottom: 12,
+        }}
       />
 
-      {phase === "loading" && <Text variant="body" tone="subtle" as="p">Preparing…</Text>}
+      {phase === "loading" && (
+        <Text variant="body" tone="subtle" as="p">
+          Preparing…
+        </Text>
+      )}
 
       {/* The holder's final scan hands off to an on-chain write that takes seconds and asks for the
           passkey. Without this the device sat on the scanning pane and looked hung. */}
@@ -263,7 +317,9 @@ function Ceremony({ role, onDone, done }: { role: Role; onDone: () => void; done
 
       {phase === "show" && (
         <>
-          <Text variant="label" tone="subtle" as="p" style={{ margin: "0 0 12px", textAlign: "center" }}>{caption}</Text>
+          <Text variant="label" tone="subtle" as="p" style={{ margin: "0 0 12px", textAlign: "center" }}>
+            {caption}
+          </Text>
           {isGrantShow ? (
             <Button
               variant="primary"
@@ -281,15 +337,21 @@ function Ceremony({ role, onDone, done }: { role: Role; onDone: () => void; done
               Done
             </Button>
           ) : scanTapReady ? (
-            <Button variant="primary" onClick={() => scanTap.current()}>Scan their reply ›</Button>
+            <Button variant="primary" onClick={() => scanTap.current()}>
+              Scan their reply ›
+            </Button>
           ) : null}
         </>
       )}
 
       {phase === "prompt-scan" && (
         <>
-          <Text variant="label" tone="subtle" as="p" style={{ margin: "0 0 12px", textAlign: "center" }}>{caption}</Text>
-          <Button variant="primary" onClick={() => scanTap.current()}>Open camera ›</Button>
+          <Text variant="label" tone="subtle" as="p" style={{ margin: "0 0 12px", textAlign: "center" }}>
+            {caption}
+          </Text>
+          <Button variant="primary" onClick={() => scanTap.current()}>
+            Open camera ›
+          </Button>
         </>
       )}
 
@@ -304,13 +366,21 @@ function Ceremony({ role, onDone, done }: { role: Role; onDone: () => void; done
           <Text variant="label" tone="danger" as="p" style={{ margin: "0 0 10px" }}>
             Camera blocked. Pairing needs the camera — allow camera access for this site, then retry.
           </Text>
-          <Button variant="primary" onClick={() => retry.current()}>Retry</Button>
+          <Button variant="primary" onClick={() => retry.current()}>
+            Retry
+          </Button>
         </Card>
       )}
 
-      {phase === "sas" && <Sas sas={sas} onYes={() => sasResolve.current(true)} onNo={() => sasResolve.current(false)} />}
+      {phase === "sas" && (
+        <Sas sas={sas} onYes={() => sasResolve.current(true)} onNo={() => sasResolve.current(false)} />
+      )}
 
-      {error && <Text variant="label" tone="danger" as="p" style={{ marginTop: 10 }}>{error}</Text>}
+      {error && (
+        <Text variant="label" tone="danger" as="p" style={{ marginTop: 10 }}>
+          {error}
+        </Text>
+      )}
     </div>
   );
 }
@@ -334,8 +404,8 @@ export function SetupFlow({ onDone }: { onDone: () => void }) {
       onDone={onDone}
       done={
         <Text variant="value" tone="muted" as="p">
-          This device is set up. Its own passkey is enrolled and an encrypted copy of your key was written
-          on chain during setup — that on-chain copy is what lets this device log back in after a reload.
+          This device is set up. Its own passkey is enrolled and an encrypted copy of your key was written on chain
+          during setup — that on-chain copy is what lets this device log back in after a reload.
         </Text>
       }
     />
@@ -350,5 +420,15 @@ export function SetupFlow({ onDone }: { onDone: () => void }) {
  *  The wallet key NEVER travels. A seals K under a wrapping key B derived from its own PRF; B gets a
  *  access slot, not the key on the wire. */
 export function AuthorizeFlow() {
-  return <Ceremony role="export" onDone={() => {}} done={<Text variant="value" tone="muted" as="p">Done — the new device has your wallet.</Text>} />;
+  return (
+    <Ceremony
+      role="export"
+      onDone={() => {}}
+      done={
+        <Text variant="value" tone="muted" as="p">
+          Done — the new device has your wallet.
+        </Text>
+      }
+    />
+  );
 }

@@ -12,7 +12,9 @@ async function makeBlob() {
   const container = { key: hexToBytes(key) };
   const credentialId = "Y3JlZC1hYWE";
   const blob = await encryptKeyBlob({
-    container, address, credentialId,
+    container,
+    address,
+    credentialId,
     prfOutput: new Uint8Array(32).buffer,
   });
   return { address, credentialId, blob };
@@ -43,7 +45,12 @@ describe("secondary blob resolution (anchor → tx-chain)", () => {
 
   test("returns null when the tx-chain vault is also empty", async () => {
     const { address, credentialId } = await makeBlob();
-    const res = await resolveBlob({ address, credentialId, anchorVault: new FakeVaultReader(), txChainVault: new FakeVaultReader() });
+    const res = await resolveBlob({
+      address,
+      credentialId,
+      anchorVault: new FakeVaultReader(),
+      txChainVault: new FakeVaultReader(),
+    });
     expect(res).toBeNull();
   });
 });

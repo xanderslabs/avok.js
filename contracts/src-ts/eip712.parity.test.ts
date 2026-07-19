@@ -10,8 +10,12 @@ const EXPECTED_EXECUTE = "0x165f68a685fac273e4fd50a93146c9546ce6c035866731864e63
 
 describe("EIP-712 parity", () => {
   it("ExecuteBatch digest", () => {
-    const d = hashTypedData({ domain, types: EXECUTE_BATCH_TYPES, primaryType: "ExecuteBatch",
-      message: { calls: userCalls, nonce: 1n, deadline: 1000000n } });
+    const d = hashTypedData({
+      domain,
+      types: EXECUTE_BATCH_TYPES,
+      primaryType: "ExecuteBatch",
+      message: { calls: userCalls, nonce: 1n, deadline: 1000000n },
+    });
     expect(d).toBe(EXPECTED_EXECUTE);
   });
 });

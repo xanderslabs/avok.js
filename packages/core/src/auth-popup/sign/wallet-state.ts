@@ -37,7 +37,9 @@ export class SlotUnreachableError extends Error {
  */
 export class OrphanedCredentialError extends Error {
   constructor() {
-    super("This passkey was never finished enrolling, so it cannot open this wallet. Repair it from a device that still works.");
+    super(
+      "This passkey was never finished enrolling, so it cannot open this wallet. Repair it from a device that still works.",
+    );
     this.name = "OrphanedCredentialError";
   }
 }

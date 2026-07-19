@@ -24,7 +24,12 @@ import {
   type ViemLike,
 } from "../evm/index.js";
 import { leanResolve } from "./resolve.js";
-import { prepareSponsoredUserOp, boundedSponsoredFee, type SponsoredInfra, type PreparedSponsoredUserOp } from "./sponsored-userop.js";
+import {
+  prepareSponsoredUserOp,
+  boundedSponsoredFee,
+  type SponsoredInfra,
+  type PreparedSponsoredUserOp,
+} from "./sponsored-userop.js";
 import { randomNonceAllocator } from "../nonce.js";
 import { UnsupportedFeeTokenError } from "./fee-token-error.js";
 import type { ClientConfig, ScopedSigner } from "../types.js";
@@ -224,10 +229,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
       const rpc = resolveRpc(config, id);
       const batch = await buildBatch(probe, chain, rpc, resolveFeeToken(id));
       const txNonce = await rpc.getTransactionCount(batch.walletAddress);
-      const [suggestedTip, baseFee] = await Promise.all([
-        rpc.getMaxPriorityFeePerGas(),
-        rpc.getBaseFeePerGas(),
-      ]);
+      const [suggestedTip, baseFee] = await Promise.all([rpc.getMaxPriorityFeePerGas(), rpc.getBaseFeePerGas()]);
       return { rpc, batch, txNonce, suggestedTip, baseFee };
     },
 
@@ -333,9 +335,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
       // feeToken) discloses no amount here.
       if (batch.rail === "sponsored" && canSponsor()) {
         const preparedUserOp = await prepareSponsored(rpc, batch);
-        const fee = batch.feeToken
-          ? boundedSponsoredFee(preparedUserOp.op, batch.feeToken)
-          : undefined;
+        const fee = batch.feeToken ? boundedSponsoredFee(preparedUserOp.op, batch.feeToken) : undefined;
         return { ...sim, ...(fee ? { fee } : {}), preparedUserOp };
       }
       return sim;
@@ -386,10 +386,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
 
       // self-pay: the wallet EOA is both authority AND tx sender.
       const txNonce = await rpc.getTransactionCount(batch.walletAddress);
-      const [suggestedTip, baseFee] = await Promise.all([
-        rpc.getMaxPriorityFeePerGas(),
-        rpc.getBaseFeePerGas(),
-      ]);
+      const [suggestedTip, baseFee] = await Promise.all([rpc.getMaxPriorityFeePerGas(), rpc.getBaseFeePerGas()]);
 
       // Gas limit from the estimate the batch was resolved with, doubled for headroom.
       //

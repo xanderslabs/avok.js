@@ -62,14 +62,16 @@ function toCallsStatus(r: Receipt): unknown {
     status: mined ? 200 : 100, // 5792: 100 pending, 200 included (success OR revert)
     atomic: false,
     receipts: mined
-      ? [{
-          status: r.status === "confirmed" ? "0x1" : "0x0",
-          transactionHash: r.txHash ?? r.id,
-          blockHash: ZERO_HASH,
-          blockNumber: "0x0",
-          gasUsed: "0x0",
-          logs: [],
-        }]
+      ? [
+          {
+            status: r.status === "confirmed" ? "0x1" : "0x0",
+            transactionHash: r.txHash ?? r.id,
+            blockHash: ZERO_HASH,
+            blockNumber: "0x0",
+            gasUsed: "0x0",
+            logs: [],
+          },
+        ]
       : [],
   };
 }
@@ -101,11 +103,7 @@ function requireActiveAddress(rt: ProviderRuntime, claimed: unknown): void {
  * Dispatch one EIP-1193 request. Read + connect handlers live here; sign (Task 3) and send (Task 4)
  * extend this switch. Unknown methods reject with 4200, per EIP-1193.
  */
-export async function dispatch(
-  rt: ProviderRuntime,
-  method: string,
-  _params: unknown[],
-): Promise<unknown> {
+export async function dispatch(rt: ProviderRuntime, method: string, _params: unknown[]): Promise<unknown> {
   switch (method) {
     case "eth_requestAccounts": {
       // The dapp↔wallet connect. Own-origin apps are already logged in (the facade did it); an
@@ -143,11 +141,13 @@ export async function dispatch(
       // the config's paymaster/bundler) routes this send SPONSORED; the per-send fee token rides in its
       // `context`. A single-token paymaster (e.g. Circle USDC) omits the token, so fall back to the
       // chain's default registry fee token. No `paymasterService` ⇒ self-pay (no fee token passed).
-      const [req] = _params as [{
-        chainId?: string;
-        calls?: Eip5792Call[];
-        capabilities?: { paymasterService?: { url?: string; context?: { token?: string } } };
-      }];
+      const [req] = _params as [
+        {
+          chainId?: string;
+          calls?: Eip5792Call[];
+          capabilities?: { paymasterService?: { url?: string; context?: { token?: string } } };
+        },
+      ];
       const chainId = req.chainId ? hexToNumber(req.chainId as Hex) : rt.getChainId();
       const pm = req.capabilities?.paymasterService;
       const opts: { chainId: number; feeToken?: Address | null } = { chainId };

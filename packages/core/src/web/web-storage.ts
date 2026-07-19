@@ -16,8 +16,7 @@ export function webStorage(): StorageAdapter {
   // types catches that case without triggering any side-effects.
   let ls: Storage | null = null;
   try {
-    const candidate =
-      typeof window !== "undefined" ? window.localStorage : null;
+    const candidate = typeof window !== "undefined" ? window.localStorage : null;
     if (
       candidate != null &&
       typeof candidate.getItem === "function" &&

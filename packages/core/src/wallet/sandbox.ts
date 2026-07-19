@@ -106,7 +106,12 @@ const ADDRESS_MISMATCH = "Decrypted wallet did not match the stored wallet addre
  * was verified byte-for-byte across message/typed-data/transaction/authorization signing. The
  * produced signature is public — only the key is secret, and the key is bytes wiped by the funnel. */
 function signDigest(hash: Hex, keyBytes: Uint8Array): { r: Hex; s: Hex; v: bigint; yParity: number } {
-  const recovered = secp256k1.sign(hexToBytes(hash), keyBytes, { lowS: true, extraEntropy: false, prehash: false, format: "recovered" });
+  const recovered = secp256k1.sign(hexToBytes(hash), keyBytes, {
+    lowS: true,
+    extraEntropy: false,
+    prehash: false,
+    format: "recovered",
+  });
   const sig = secp256k1.Signature.fromBytes(recovered, "recovered");
   // `format: "recovered"` guarantees a recovery bit; the type widens it to optional, so pin it.
   const yParity = sig.recovery ?? 0;
@@ -143,7 +148,10 @@ function evmAccountFrom(container: SecretContainer, expectedAddress: Address): P
     async signAuthorization(authorization) {
       const auth = authorization as { address?: Address; contractAddress?: Address; chainId: number; nonce: number };
       const address2 = (auth.contractAddress ?? auth.address) as Address;
-      const sig = signDigest(hashAuthorization({ address: address2, chainId: auth.chainId, nonce: auth.nonce }), keyBytes);
+      const sig = signDigest(
+        hashAuthorization({ address: address2, chainId: auth.chainId, nonce: auth.nonce }),
+        keyBytes,
+      );
       return { address: address2, chainId: auth.chainId, nonce: auth.nonce, ...sig };
     },
   });
@@ -237,7 +245,8 @@ async function withDiscoveredContainer<T>(
       // Secondary: the handle carries the wallet's addresses AND the anchor chain its blob was written
       // to. Resolve the vault from THAT marker chain — never a single app-configured anchor — so a
       // reader whose own app anchor differs still reads the chain that actually holds the ciphertext.
-      if (!args.vaultForChain) throw new Error("A secondary credential needs a vault resolver to reach its access-slot blob");
+      if (!args.vaultForChain)
+        throw new Error("A secondary credential needs a vault resolver to reach its access-slot blob");
       const anchorVault = args.vaultForChain(handle.anchorChain);
       const result = await resolveBlob({ address: handle.evm, credentialId, anchorVault });
       if (!result) throw new Error("Encrypted blob for passkey slot was not found");

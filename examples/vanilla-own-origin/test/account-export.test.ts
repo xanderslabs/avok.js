@@ -34,7 +34,6 @@ function makeCtx(exported: { evm: string; solana: string }): Ctx {
       // Account renders the CHAIN-VERIFIED access-slot count ("ways into this wallet"), never
       // passkeyCount(). accessSlotCount() is keyless, so the screen calls it on mount.
       accessSlotCount: vi.fn().mockResolvedValue(1),
-
     },
     config: { anchorChainNumeric: 10 },
     go: vi.fn(),

@@ -18,7 +18,6 @@ const testChain = { ...baseChain, canonicalImplementation: NON_ZERO_IMPL };
 const WALLET = "0x1111111111111111111111111111111111111111" as const;
 const USER_CALL = { to: "0x2222222222222222222222222222222222222222" as const, value: 0n, data: "0x" as const };
 
-
 describe("leanResolve", () => {
   it("sponsored (4337): undelegated wallet gets an authorization and NO fee call — the paymaster charges the fee", async () => {
     const rpc = makeFakeRpc({ delegated: false, nonce: 3n });
@@ -109,7 +108,10 @@ describe("leanResolve", () => {
 
   it("throws when canonicalImplementation is zero for an undelegated wallet", async () => {
     const rpc = makeFakeRpc({ delegated: false, nonce: 0n });
-    const zeroChain = { ...baseChain, canonicalImplementation: "0x0000000000000000000000000000000000000000" as Address };
+    const zeroChain = {
+      ...baseChain,
+      canonicalImplementation: "0x0000000000000000000000000000000000000000" as Address,
+    };
     await expect(
       leanResolve({
         rpc,

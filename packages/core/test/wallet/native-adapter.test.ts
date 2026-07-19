@@ -11,7 +11,8 @@ const prfB64 = bytesToBase64Url(new Uint8Array(32).fill(5));
 describe("createReactNativePasskeyAdapter", () => {
   test("create packs the base64url user handle and reads PRF", async () => {
     const create = vi.fn().mockResolvedValue({
-      id: "cred-1", response: { transports: ["internal"] },
+      id: "cred-1",
+      response: { transports: ["internal"] },
       clientExtensionResults: { prf: { results: { first: prfB64 } } },
     });
     const mod: ReactNativePasskeyLike = { create, get: vi.fn() };
@@ -25,11 +26,13 @@ describe("createReactNativePasskeyAdapter", () => {
   test("create falls back to a get ceremony when PRF is absent at creation", async () => {
     const fallbackPrf = bytesToBase64Url(new Uint8Array(32).fill(4));
     const create = vi.fn().mockResolvedValue({
-      id: "cred-1", response: { transports: ["internal"] },
+      id: "cred-1",
+      response: { transports: ["internal"] },
       clientExtensionResults: {},
     });
     const get = vi.fn().mockResolvedValue({
-      id: "cred-1", clientExtensionResults: { prf: { results: { first: fallbackPrf } } },
+      id: "cred-1",
+      clientExtensionResults: { prf: { results: { first: fallbackPrf } } },
     });
     const pk = createReactNativePasskeyAdapter({ create, get }, { rpId: "qudi.fi" });
     const reg = await pk.create("x", HANDLE);
@@ -39,7 +42,8 @@ describe("createReactNativePasskeyAdapter", () => {
 
   test("discover returns the opaque user handle for decoding", async () => {
     const get = vi.fn().mockResolvedValue({
-      id: "cred-1", response: { userHandle: bytesToBase64Url(HANDLE) },
+      id: "cred-1",
+      response: { userHandle: bytesToBase64Url(HANDLE) },
       clientExtensionResults: { prf: { results: { first: prfB64 } } },
     });
     const pk = createReactNativePasskeyAdapter({ create: vi.fn(), get }, { rpId: "qudi.fi" });
@@ -49,7 +53,8 @@ describe("createReactNativePasskeyAdapter", () => {
 
   test("rejects a cross-platform (roaming) authenticator on the get paths", async () => {
     const get = vi.fn().mockResolvedValue({
-      id: "cred-1", authenticatorAttachment: "cross-platform",
+      id: "cred-1",
+      authenticatorAttachment: "cross-platform",
       response: { userHandle: bytesToBase64Url(HANDLE) },
       clientExtensionResults: { prf: { results: { first: prfB64 } } },
     });
@@ -57,5 +62,4 @@ describe("createReactNativePasskeyAdapter", () => {
     await expect(pk.discover()).rejects.toThrow(/platform authenticator/i);
     await expect(pk.authenticate("cred-1")).rejects.toThrow(/platform authenticator/i);
   });
-
 });

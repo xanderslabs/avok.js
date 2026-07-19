@@ -1,8 +1,19 @@
 // Types
 export type {
-  Rail, ExecutionContext, Disclosure, PendingAuthorization, ResolvedBatch,
-  SimulationConfidence, SimMethod, DecodedCall, FeeBreakdown, NativeFeeEstimate, SimulationResult,
-  ReceiptStatus, Receipt, Call,
+  Rail,
+  ExecutionContext,
+  Disclosure,
+  PendingAuthorization,
+  ResolvedBatch,
+  SimulationConfidence,
+  SimMethod,
+  DecodedCall,
+  FeeBreakdown,
+  NativeFeeEstimate,
+  SimulationResult,
+  ReceiptStatus,
+  Receipt,
+  Call,
 } from "./types.js";
 export { railFromContext } from "./types.js";
 
@@ -21,7 +32,12 @@ export { selfPayFees } from "./gas-model.js";
 export { createViemVaultReader } from "./vault-reader.js";
 
 // ERC-7677 paymaster client
-export type { Paymaster7677, Paymaster7677Options, Paymaster7677StubParams, Paymaster7677DataParams } from "./paymaster-7677.js";
+export type {
+  Paymaster7677,
+  Paymaster7677Options,
+  Paymaster7677StubParams,
+  Paymaster7677DataParams,
+} from "./paymaster-7677.js";
 export { createPaymaster7677 } from "./paymaster-7677.js";
 
 // ERC-4337 bundler client
@@ -42,12 +58,22 @@ export { getReceiptStatus } from "./track.js";
 
 // Registry (re-export the canonical profile from contracts)
 export type {
-  ChainProfile, ChainCapabilities, TokenProfile,
-  EvmChainProfile, EvmTokenProfile, SolanaChainProfile, SolanaTokenProfile,
+  ChainProfile,
+  ChainCapabilities,
+  TokenProfile,
+  EvmChainProfile,
+  EvmTokenProfile,
+  SolanaChainProfile,
+  SolanaTokenProfile,
   ChainId,
 } from "@avokjs/contracts";
 export {
-  CHAIN_PROFILES, getChainProfile, getTokenProfile,
-  getSolanaChainProfile, getSolanaTokenProfile, getChainProfileById,
-  listChains, listFeeTokens,
+  CHAIN_PROFILES,
+  getChainProfile,
+  getTokenProfile,
+  getSolanaChainProfile,
+  getSolanaTokenProfile,
+  getChainProfileById,
+  listChains,
+  listFeeTokens,
 } from "@avokjs/contracts";

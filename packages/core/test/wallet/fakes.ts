@@ -3,7 +3,10 @@ import type { DiscoveredPasskey, PasskeyAdapter, PasskeyRegistration } from "../
 import type { VaultReader } from "../../src/wallet/vault.js";
 import { bytesToBase64Url } from "../../src/wallet/encoding.js";
 
-interface FakeCredential { prfOutput: ArrayBuffer; userHandle: Uint8Array }
+interface FakeCredential {
+  prfOutput: ArrayBuffer;
+  userHandle: Uint8Array;
+}
 
 /** In-memory WebAuthn stand-in: deterministic per-credential PRF. `discover()` surfaces the most
  *  recently created credential's opaque user handle, exactly as a real authenticator would. */
@@ -16,9 +19,8 @@ export class FakePasskeyAdapter implements PasskeyAdapter {
     this.counter += 1;
     const plainId = `fake-cred-${this.seed}-${this.counter}`;
     const credentialId = bytesToBase64Url(new TextEncoder().encode(plainId));
-    const prfOutput = new Uint8Array(
-      Array.from({ length: 32 }, (_, i) => (this.seed + this.counter * 31 + i) % 256),
-    ).buffer;
+    const prfOutput = new Uint8Array(Array.from({ length: 32 }, (_, i) => (this.seed + this.counter * 31 + i) % 256))
+      .buffer;
     this.credentials.set(credentialId, { prfOutput, userHandle });
     return {
       credentialId,

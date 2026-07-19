@@ -25,8 +25,12 @@ const fakeSecondary = () => {
         platform: { authenticatorAttachment: "platform" } as const,
       };
     },
-    async authenticate() { return PRF_B; },
-    async discover() { throw new Error("not used"); },
+    async authenticate() {
+      return PRF_B;
+    },
+    async discover() {
+      throw new Error("not used");
+    },
   } as unknown as PasskeyAdapter;
   return { passkey, captured };
 };
@@ -37,7 +41,12 @@ describe("addPasskey (secondary enrolment)", () => {
     // Solana address IS the ed25519 public key of K. A freshly derived key would be a new wallet.
     const { passkey } = fakeSecondary();
     const { slot, blob } = await addPasskey({
-      passkey, networkName: "Avok", container: { key: hexToBytes(KEY) }, address: EVM, solanaAddress: SOL, anchorChainId: 10,
+      passkey,
+      networkName: "Avok",
+      container: { key: hexToBytes(KEY) },
+      address: EVM,
+      solanaAddress: SOL,
+      anchorChainId: 10,
     });
     const recovered = await decryptKeyBlob(blob, PRF_B, EVM, slot.credentialId);
     expect(recovered.key).toEqual(hexToBytes(KEY));
@@ -45,7 +54,14 @@ describe("addPasskey (secondary enrolment)", () => {
 
   it("marks the credential as a secondary and records both addresses + anchor chain in its handle", async () => {
     const { passkey, captured } = fakeSecondary();
-    await addPasskey({ passkey, networkName: "Avok", container: { key: hexToBytes(KEY) }, address: EVM, solanaAddress: SOL, anchorChainId: 10 });
+    await addPasskey({
+      passkey,
+      networkName: "Avok",
+      container: { key: hexToBytes(KEY) },
+      address: EVM,
+      solanaAddress: SOL,
+      anchorChainId: 10,
+    });
     expect(decodeUserHandle(captured.handle!)).toEqual({ kind: "secondary", evm: EVM, anchorChain: 10 });
   });
 
@@ -55,7 +71,12 @@ describe("addPasskey (secondary enrolment)", () => {
     const { passkey } = fakeSecondary();
     const container = { key: hexToBytes(KEY) };
     const r = await addPasskey({
-      passkey, networkName: "Avok", container, address: EVM, solanaAddress: SOL, anchorChainId: 10,
+      passkey,
+      networkName: "Avok",
+      container,
+      address: EVM,
+      solanaAddress: SOL,
+      anchorChainId: 10,
     });
     const slotId = deriveSlotId(EVM, r.slot.credentialId);
     expect(await decryptSlotMeta(hexToBytes(KEY), slotId, r.encryptedMeta)).toEqual({ rpId: r.slot.rpId });

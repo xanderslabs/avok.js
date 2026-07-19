@@ -8,7 +8,8 @@ function randomBytes(length: number): Uint8Array {
 }
 
 function readPrf(credential: PublicKeyCredential): ArrayBuffer | undefined {
-  return (credential.getClientExtensionResults() as { prf?: { results?: { first?: ArrayBuffer } } }).prf?.results?.first;
+  return (credential.getClientExtensionResults() as { prf?: { results?: { first?: ArrayBuffer } } }).prf?.results
+    ?.first;
 }
 
 const CROSS_DEVICE_REJECTED =
@@ -42,8 +43,15 @@ export class WebAuthnPasskeyAdapter implements PasskeyAdapter {
         rp: { name: this.rpName ?? rpId, id: rpId },
         user: { id: bytesToArrayBuffer(userHandle), name: label, displayName: label },
         challenge: bytesToArrayBuffer(randomBytes(32)),
-        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-        authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "required", userVerification: "required" },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },
+          { type: "public-key", alg: -257 },
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          residentKey: "required",
+          userVerification: "required",
+        },
         extensions: { prf: { eval: { first: getPrfSalt() } } } as AuthenticationExtensionsClientInputs,
       },
     })) as PublicKeyCredential | null;
@@ -54,21 +62,31 @@ export class WebAuthnPasskeyAdapter implements PasskeyAdapter {
     // NoPrfError if that also yields nothing. So prfOutput here is always defined key material.
     const prfOutput = readPrf(credential) ?? (await this.authenticate(credentialId, transports));
     return {
-      credentialId, prfOutput, transports, rpId,
-      prf: { extension: "prf", saltVersion: "v0" }, platform: { authenticatorAttachment: "platform" },
+      credentialId,
+      prfOutput,
+      transports,
+      rpId,
+      prf: { extension: "prf", saltVersion: "v0" },
+      platform: { authenticatorAttachment: "platform" },
     };
   }
 
   private allow(credentialId: string, transports?: string[]): PublicKeyCredentialDescriptor {
-    return { type: "public-key", id: bytesToArrayBuffer(base64UrlToBytes(credentialId)),
-      ...(transports?.length ? { transports: transports as AuthenticatorTransport[] } : {}) };
+    return {
+      type: "public-key",
+      id: bytesToArrayBuffer(base64UrlToBytes(credentialId)),
+      ...(transports?.length ? { transports: transports as AuthenticatorTransport[] } : {}),
+    };
   }
 
   async authenticate(credentialId: string, transports?: string[]): Promise<ArrayBuffer> {
     const assertion = (await navigator.credentials.get({
       publicKey: {
-        rpId: this.rpId, challenge: bytesToArrayBuffer(randomBytes(32)),
-        allowCredentials: [this.allow(credentialId, transports)], userVerification: "required", hints: LOCAL_HINTS,
+        rpId: this.rpId,
+        challenge: bytesToArrayBuffer(randomBytes(32)),
+        allowCredentials: [this.allow(credentialId, transports)],
+        userVerification: "required",
+        hints: LOCAL_HINTS,
         extensions: { prf: { eval: { first: getPrfSalt() } } },
       } as PublicKeyCredentialRequestOptions,
     })) as PublicKeyCredential | null;
@@ -87,9 +105,12 @@ export class WebAuthnPasskeyAdapter implements PasskeyAdapter {
 
     const assertion = (await navigator.credentials.get({
       publicKey: {
-        rpId: this.rpId, challenge: bytesToArrayBuffer(randomBytes(32)),
+        rpId: this.rpId,
+        challenge: bytesToArrayBuffer(randomBytes(32)),
         ...(allowCredentials ? { allowCredentials } : {}),
-        userVerification: "required", hints: LOCAL_HINTS, extensions: { prf: { eval: { first: getPrfSalt() } } },
+        userVerification: "required",
+        hints: LOCAL_HINTS,
+        extensions: { prf: { eval: { first: getPrfSalt() } } },
       } as PublicKeyCredentialRequestOptions,
     })) as PublicKeyCredential | null;
     if (!assertion) throw new Error("Passkey discovery was cancelled");
@@ -98,6 +119,10 @@ export class WebAuthnPasskeyAdapter implements PasskeyAdapter {
     if (!prf) throw new NoPrfError();
     const handle = (assertion.response as AuthenticatorAssertionResponse).userHandle;
     if (!handle) throw new Error("Passkey assertion returned no user handle");
-    return { credentialId: bytesToBase64Url(new Uint8Array(assertion.rawId)), prfOutput: prf, userHandle: new Uint8Array(handle) };
+    return {
+      credentialId: bytesToBase64Url(new Uint8Array(assertion.rawId)),
+      prfOutput: prf,
+      userHandle: new Uint8Array(handle),
+    };
   }
 }

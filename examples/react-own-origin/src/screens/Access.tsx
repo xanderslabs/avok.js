@@ -89,8 +89,8 @@ export function Access({ onBack }: { onBack: () => void }) {
           {count === null ? "…" : count}
         </Text>
         <Text variant="label" tone="subtle" as="p" style={{ margin: 0 }}>
-          Verified against the chain. Every one of them can reach your wallet key — adding an access slot grants
-          that domain the ability to use your key, now or at any time later.
+          Verified against the chain. Every one of them can reach your wallet key — adding an access slot grants that
+          domain the ability to use your key, now or at any time later.
         </Text>
       </Card>
 
@@ -99,8 +99,8 @@ export function Access({ onBack }: { onBack: () => void }) {
         {accessSlots === null ? (
           <>
             <Text variant="label" tone="subtle" as="p" style={{ marginBottom: 10 }}>
-              Which domains enrolled these access slots is encrypted under your wallet key, so showing them asks
-              for your passkey. Nothing is cached — this is read fresh every time.
+              Which domains enrolled these access slots is encrypted under your wallet key, so showing them asks for
+              your passkey. Nothing is cached — this is read fresh every time.
             </Text>
             <Button variant="primary" onClick={reveal} disabled={listing}>
               {listing ? "Reading…" : "Show which domains"}
@@ -129,10 +129,10 @@ export function Access({ onBack }: { onBack: () => void }) {
               {confirmSlot === d.slotId ? (
                 <div>
                   <Text variant="label" tone="danger" as="p" style={{ margin: "0 0 8px" }}>
-                    Closing this access slot frees it so you can enrol another. It is housekeeping, not a
-                    security control:
-                    <br />• It cannot un-learn your key. A passkey that ever signed held the key in memory and
-                    could have kept it.
+                    Closing this access slot frees it so you can enrol another. It is housekeeping, not a security
+                    control:
+                    <br />• It cannot un-learn your key. A passkey that ever signed held the key in memory and could
+                    have kept it.
                     <br />• Its encrypted copy stays in this chain's history forever.
                     <br />• Any passkey can close any other — they all sign as the same key.
                     <br />

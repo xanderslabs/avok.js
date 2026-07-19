@@ -30,7 +30,9 @@ describe("no PRF, no wallet", () => {
 
   test("native create() throws NoPrfError when PRF is absent at create AND get", async () => {
     const create = vi.fn().mockResolvedValue({
-      id: "cred-1", response: { transports: ["internal"] }, clientExtensionResults: {},
+      id: "cred-1",
+      response: { transports: ["internal"] },
+      clientExtensionResults: {},
     });
     const get = vi.fn().mockResolvedValue({ id: "cred-1", clientExtensionResults: {} });
     const pk = createReactNativePasskeyAdapter({ create, get }, { rpId: "qudi.fi" });

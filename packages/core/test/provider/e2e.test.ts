@@ -24,7 +24,13 @@ test("stock viem: getAddresses + signMessage + sendCalls over the provider, no A
     },
   } as unknown as ClientConfig;
   const engine = {
-    send: vi.fn(async () => ({ id: "0xbundle", rail: "self-pay", status: "submitted", txHash: "0xbundle", chainId: 8453 })),
+    send: vi.fn(async () => ({
+      id: "0xbundle",
+      rail: "self-pay",
+      status: "submitted",
+      txHash: "0xbundle",
+      chainId: 8453,
+    })),
     status: vi.fn(async (r: Record<string, unknown>) => ({ ...r, status: "confirmed" })),
   } as unknown as SendEngine;
 
@@ -62,15 +68,23 @@ test("stock viem: sendCalls with a paymasterService capability drives the 4337 S
   let receiptReady = false;
   const bundler = {
     estimateUserOperationGas: async () => ({
-      callGasLimit: 100_000n, verificationGasLimit: 120_000n, preVerificationGas: 50_000n,
-      paymasterVerificationGasLimit: 20_000n, paymasterPostOpGasLimit: 10_000n,
+      callGasLimit: 100_000n,
+      verificationGasLimit: 120_000n,
+      preVerificationGas: 50_000n,
+      paymasterVerificationGasLimit: 20_000n,
+      paymasterPostOpGasLimit: 10_000n,
     }),
     sendUserOperation: vi.fn(async () => "0xuserophash" as Hex),
     getUserOperationReceipt: async () =>
       receiptReady ? { success: true, receipt: { transactionHash: "0xminedtx" as Hex } } : null,
   };
   const paymaster = {
-    getPaymasterStubData: async () => ({ paymaster: USDC, paymasterData: "0xstub" as Hex, paymasterVerificationGasLimit: 20_000n, paymasterPostOpGasLimit: 10_000n }),
+    getPaymasterStubData: async () => ({
+      paymaster: USDC,
+      paymasterData: "0xstub" as Hex,
+      paymasterVerificationGasLimit: 20_000n,
+      paymasterPostOpGasLimit: 10_000n,
+    }),
     getPaymasterData: async () => ({ paymaster: USDC, paymasterData: "0xfinal" as Hex }),
   } as never;
 
@@ -82,7 +96,13 @@ test("stock viem: sendCalls with a paymasterService capability drives the 4337 S
     },
     paymasterUrl: "https://pm.test",
     bundlerUrl: "https://bundler.test",
-    deps: { rpc, bundler: bundler as never, paymaster, chain, oracle: { read: async () => ({ priceE8: 200_000_000_000n }) } },
+    deps: {
+      rpc,
+      bundler: bundler as never,
+      paymaster,
+      chain,
+      oracle: { read: async () => ({ priceE8: 200_000_000_000n }) },
+    },
   } as unknown as ClientConfig;
 
   const engine: SendEngine = createSendEngine(config);
@@ -124,10 +144,6 @@ test("stock Wallet Standard: getWallets() discovers the Avok Solana wallet and i
   expect(avok).toBeDefined();
   expect(avok!.chains).toContain("solana:mainnet");
   expect(Object.keys(avok!.features)).toEqual(
-    expect.arrayContaining([
-      "standard:connect",
-      "solana:signMessage",
-      "solana:signAndSendTransaction",
-    ]),
+    expect.arrayContaining(["standard:connect", "solana:signMessage", "solana:signAndSendTransaction"]),
   );
 });

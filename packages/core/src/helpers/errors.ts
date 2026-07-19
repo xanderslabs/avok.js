@@ -1,9 +1,4 @@
-export type SendErrorKind =
-  | "rejected"
-  | "insufficient-funds"
-  | "wrong-chain"
-  | "sponsored-unavailable"
-  | "unknown";
+export type SendErrorKind = "rejected" | "insufficient-funds" | "wrong-chain" | "sponsored-unavailable" | "unknown";
 
 function messageOf(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -83,7 +78,11 @@ export function classifySendError(err: unknown): { kind: SendErrorKind; message:
     kind = "wrong-chain";
   } else if (
     // Incoming error text may come from any source and use either word — match both defensively.
-    raw.includes("paymaster") || raw.includes("relayer") || raw.includes("sponsored") || raw.includes("fronted") || raw.includes("fee token")
+    raw.includes("paymaster") ||
+    raw.includes("relayer") ||
+    raw.includes("sponsored") ||
+    raw.includes("fronted") ||
+    raw.includes("fee token")
   ) {
     kind = "sponsored-unavailable";
   }
@@ -94,7 +93,10 @@ export function classifySendError(err: unknown): { kind: SendErrorKind; message:
   // recognise is still shown verbatim: an unknown reason is far more useful than no reason.
   const reason = paymasterReason(detail);
   if (reason) {
-    return { kind: "sponsored-unavailable", message: PAYMASTER_REASON[reason] ?? `The paymaster refused this transaction: ${reason}.` };
+    return {
+      kind: "sponsored-unavailable",
+      message: PAYMASTER_REASON[reason] ?? `The paymaster refused this transaction: ${reason}.`,
+    };
   }
 
   const message = kind === "unknown" ? `${FRIENDLY.unknown} (${detail})` : FRIENDLY[kind];

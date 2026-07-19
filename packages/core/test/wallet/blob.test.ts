@@ -186,8 +186,8 @@ describe("the lifeboat wrapping key", () => {
   });
 
   test("rejects a malformed wrapping key rather than sealing under a weak one", async () => {
-    await expect(
-      encryptKeyBlobWithWrappingKey({ container: K, wrappingKey: new Uint8Array(16) }),
-    ).rejects.toThrow(/32 bytes/i);
+    await expect(encryptKeyBlobWithWrappingKey({ container: K, wrappingKey: new Uint8Array(16) })).rejects.toThrow(
+      /32 bytes/i,
+    );
   });
 });

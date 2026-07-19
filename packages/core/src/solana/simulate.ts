@@ -90,7 +90,14 @@ export async function simulateSolanaMessage(args: {
   const base64Tx = getBase64EncodedWireTransaction(compiled as never);
   // The message already holds the instructions in final order — read the program list off it rather
   // than asking every caller to reconstruct it (and get the compute-budget offset wrong).
-  const programOrder = (args.message as { instructions?: readonly { programAddress?: string }[] }).instructions
-    ?.map((ix) => ix.programAddress ?? "");
-  return simulateSolana({ rpc: args.rpc, base64Tx, decoded: args.decoded, fee: args.fee, ...(programOrder ? { programOrder } : {}) });
+  const programOrder = (args.message as { instructions?: readonly { programAddress?: string }[] }).instructions?.map(
+    (ix) => ix.programAddress ?? "",
+  );
+  return simulateSolana({
+    rpc: args.rpc,
+    base64Tx,
+    decoded: args.decoded,
+    fee: args.fee,
+    ...(programOrder ? { programOrder } : {}),
+  });
 }

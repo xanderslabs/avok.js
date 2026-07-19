@@ -7,7 +7,10 @@ const TO = "0x1111111111111111111111111111111111111111" as Address;
 it("forwards authorizationList to the viem estimateGas call", async () => {
   let seen: Record<string, unknown> | undefined;
   const viem = {
-    estimateGas: async (a: Record<string, unknown>) => { seen = a; return 123n; },
+    estimateGas: async (a: Record<string, unknown>) => {
+      seen = a;
+      return 123n;
+    },
   } as unknown as ViemLike;
   const rpc = createViemRpcClient(viem);
   const authList = [{ address: TO, chainId: 8453, nonce: 0 }];

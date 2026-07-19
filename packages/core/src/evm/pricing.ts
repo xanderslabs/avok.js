@@ -19,10 +19,7 @@ export async function estimateNativeFee(args: {
   undelegated: boolean;
 }): Promise<NativeFeeEstimate> {
   const gasUnits = await selfPayGasEstimate(args);
-  const [baseFee, suggestedTip] = await Promise.all([
-    args.rpc.getBaseFeePerGas(),
-    args.rpc.getMaxPriorityFeePerGas(),
-  ]);
+  const [baseFee, suggestedTip] = await Promise.all([args.rpc.getBaseFeePerGas(), args.rpc.getMaxPriorityFeePerGas()]);
   const gasPrice = selfPayEffectiveGasPrice(suggestedTip, baseFee);
   return { amount: gasUnits * gasPrice, gasUnits, gasPrice };
 }

@@ -160,13 +160,7 @@ describe("domain separation between the wallet key and the blob AES key", () => 
 
     // (1) Prove the mirror IS the real blob key: decrypt the blob's own ciphertext with it.
     // AES-GCM's auth tag makes this a hard equivalence check — a drifted derivation throws here.
-    const aesKey = await crypto.subtle.importKey(
-      "raw",
-      blobKeyBits,
-      { name: "AES-GCM" },
-      false,
-      ["decrypt"],
-    );
+    const aesKey = await crypto.subtle.importKey("raw", blobKeyBits, { name: "AES-GCM" }, false, ["decrypt"]);
     const plaintext = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: bytesToArrayBuffer(blob.iv) },
       aesKey,

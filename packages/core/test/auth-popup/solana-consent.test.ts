@@ -7,12 +7,7 @@ import {
   compressTransactionMessageUsingAddressLookupTables,
 } from "@solana/kit";
 import { createWallet } from "../../src/wallet/index.js";
-import {
-  buildSolanaMessage,
-  buildSplTransfer,
-  associatedTokenAddress,
-  toKitSigner,
-} from "../../src/solana/index.js";
+import { buildSolanaMessage, buildSplTransfer, associatedTokenAddress, toKitSigner } from "../../src/solana/index.js";
 import { decodeSolanaConsent, formatBaseUnits } from "../../src/auth-popup/sign/solana-consent.js";
 import { decodeSignConsent } from "../../src/auth-popup/sign/consent.js";
 
@@ -24,9 +19,7 @@ class FakePasskeyAdapter {
   async create(_label: string, _address: string) {
     this.counter += 1;
     const credentialId = `fake-cred-${this.counter}`;
-    const prfOutput = new Uint8Array(
-      Array.from({ length: 32 }, (_, i) => (this.counter * 17 + i) % 256),
-    ).buffer;
+    const prfOutput = new Uint8Array(Array.from({ length: 32 }, (_, i) => (this.counter * 17 + i) % 256)).buffer;
     this.credentials.set(credentialId, { prfOutput });
     return {
       credentialId,
@@ -113,18 +106,30 @@ async function makeAltFixture(): Promise<Uint8Array> {
   const signer = toKitSigner({ state, passkey: passkey as any });
 
   const { instructions } = await buildSplTransfer({
-    rpc: fakeRpc, mint: MINT, from: state.solanaAddress as string, to: RECIPIENT_OWNER,
-    amount: AMOUNT, payer: state.solanaAddress as string, authority: signer, decimals: 6,
+    rpc: fakeRpc,
+    mint: MINT,
+    from: state.solanaAddress as string,
+    to: RECIPIENT_OWNER,
+    amount: AMOUNT,
+    payer: state.solanaAddress as string,
+    authority: signer,
+    decimals: 6,
   });
   const { message } = await buildSolanaMessage({
-    rpc: fakeRpc, instructions, feePayer: { kind: "signer", signer },
-    computeUnitLimit: 100_000, computeUnitPrice: 0n,
+    rpc: fakeRpc,
+    instructions,
+    feePayer: { kind: "signer", signer },
+    computeUnitLimit: 100_000,
+    computeUnitPrice: 0n,
   });
 
   const LOOKUP_TABLE = "SysvarRent111111111111111111111111111111111"; // any valid 32-byte base58
-  const compressed = compressTransactionMessageUsingAddressLookupTables(message as never, {
-    [LOOKUP_TABLE]: [MINT],
-  } as never);
+  const compressed = compressTransactionMessageUsingAddressLookupTables(
+    message as never,
+    {
+      [LOOKUP_TABLE]: [MINT],
+    } as never,
+  );
   const compiled = compileTransaction(compressed as Parameters<typeof compileTransaction>[0]);
   return compiled.messageBytes as unknown as Uint8Array;
 }
@@ -314,9 +319,9 @@ describe("decodeSolanaConsent", () => {
     // The pure decoder rejects...
     expect(() => decodeSolanaConsent(altBytes)).toThrow(/Address Lookup Tables/i);
     // ...and the origin's request dispatcher propagates it rather than rendering a blind view.
-    expect(() =>
-      decodeSignConsent({ op: "signSolanaTransaction", messageBytesB64: base64.encode(altBytes) }),
-    ).toThrow(/Address Lookup Tables/i);
+    expect(() => decodeSignConsent({ op: "signSolanaTransaction", messageBytesB64: base64.encode(altBytes) })).toThrow(
+      /Address Lookup Tables/i,
+    );
   });
 
   it("renders an SPL transfer line with destination + amount and the fee payer", async () => {

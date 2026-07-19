@@ -39,7 +39,8 @@ function capturingVault() {
     },
     hasSlot: async (slotId: Hex) => store.has(slotId.toLowerCase()),
     assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
     getAccessSlot: async (_address: Address, slotId: Hex) => store.get(slotId.toLowerCase()) ?? null,
   };
 }
@@ -100,9 +101,9 @@ describe("Enrolling the user's OWN second device (the same one ceremony)", () =>
   it("rejects verbs with no session", async () => {
     const A = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
     await A.create();
-    await expect(
-      A.pairing.holder.complete({ qr: "x", sasConfirmed: true, ctx: capturingVault() }),
-    ).rejects.toThrow(/no enrolment session|authorize/i);
+    await expect(A.pairing.holder.complete({ qr: "x", sasConfirmed: true, ctx: capturingVault() })).rejects.toThrow(
+      /no enrolment session|authorize/i,
+    );
 
     const B = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
     await expect(B.pairing.enroller.enroll({ sasConfirmed: true })).rejects.toThrow(/no enrolment session|receiveAck/i);

@@ -32,7 +32,10 @@ function clientWith(receiptSequence: (null | { success: boolean; transactionHash
       return step ? { success: step.success, receipt: { transactionHash: step.transactionHash } } : null;
     }),
   };
-  const connection = { account: () => ({ evm: { address: WALLET as Address }, solana: { address: "1" } }), status: () => true } as unknown as Connection;
+  const connection = {
+    account: () => ({ evm: { address: WALLET as Address }, solana: { address: "1" } }),
+    status: () => true,
+  } as unknown as Connection;
   return createEvmNamespace({
     connection,
     paymasterUrl: "https://pm.test",

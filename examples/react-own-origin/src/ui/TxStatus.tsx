@@ -16,7 +16,10 @@ export function TxStatus({ state, explorerUrl }: { state: TxState; explorerUrl?:
         {label[state]}
       </Text>
       {explorerUrl && (state === "pending" || state === "confirmed") ? (
-        <a href={explorerUrl} target="_blank" rel="noreferrer"> View on explorer ↗</a>
+        <a href={explorerUrl} target="_blank" rel="noreferrer">
+          {" "}
+          View on explorer ↗
+        </a>
       ) : null}
     </div>
   );

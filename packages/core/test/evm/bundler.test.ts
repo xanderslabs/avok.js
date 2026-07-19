@@ -3,7 +3,10 @@ import { custom, numberToHex, type Address, type Hash, type Hex } from "viem";
 import { entryPoint08Address } from "viem/account-abstraction";
 import { createBundler } from "../../src/evm/bundler.js";
 
-interface RpcCall { method: string; params: readonly unknown[] }
+interface RpcCall {
+  method: string;
+  params: readonly unknown[];
+}
 
 const SENDER = "0x1111111111111111111111111111111111111111" as Address;
 const USEROP_HASH = ("0x" + "ab".repeat(32)) as Hash;

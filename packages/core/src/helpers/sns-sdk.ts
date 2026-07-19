@@ -14,7 +14,10 @@ export type SnsRpc = unknown;
 
 interface SnsSdk {
   resolveDomain(a: { rpc: SnsRpc; domain: string }): Promise<string>;
-  getPrimaryDomain(a: { rpc: SnsRpc; walletAddress: string }): Promise<{ domainName: string; domainAddress: string; stale: boolean }>;
+  getPrimaryDomain(a: {
+    rpc: SnsRpc;
+    walletAddress: string;
+  }): Promise<{ domainName: string; domainAddress: string; stale: boolean }>;
 }
 
 const sdk = snsSdk as unknown as SnsSdk;

@@ -9,7 +9,6 @@ import { deriveSlotId } from "../../src/wallet/index.js";
 import type { Connection, SelfCustodyConnection } from "../../src/types.js";
 import { makeFakePasskey, makeFakeRpc } from "./fakes.js";
 
-
 // chainId 10 (Optimism) is in the registry; first token is a real, priceable fee token.
 const CHAIN = getChainProfile(10)!;
 const FEE_TOKEN = Object.values(CHAIN.tokens)[0]!.address;
@@ -31,8 +30,7 @@ function makeFakeConnection(overrides: Partial<Connection> & { address?: Address
     status: () => true,
     signTypedData: overrides.signTypedData ?? vi.fn(async () => "0xsig" as Hex),
     signAuthorization:
-      overrides.signAuthorization ??
-      vi.fn(async (a) => ({ ...a, r: "0xr" as Hex, s: "0xs" as Hex, yParity: 0 })),
+      overrides.signAuthorization ?? vi.fn(async (a) => ({ ...a, r: "0xr" as Hex, s: "0xs" as Hex, yParity: 0 })),
     signTransaction: overrides.signTransaction ?? vi.fn(async () => "0xserialized" as Hex),
     signMessage: vi.fn(),
     signSiwe: vi.fn(),
@@ -201,7 +199,11 @@ describe("createAvokClient — sponsored send via 4337 UserOp (D3)", () => {
     // The connection signed the UserOp once (one gesture); the bundler received the signed op.
     expect(connection.signUserOp).toHaveBeenCalledOnce();
     expect(bundler.sendUserOperation).toHaveBeenCalledOnce();
-    const submitted = bundler.sendUserOperation.mock.calls[0]![0] as { signature: Hex; paymaster?: Address; paymasterData?: Hex };
+    const submitted = bundler.sendUserOperation.mock.calls[0]![0] as {
+      signature: Hex;
+      paymaster?: Address;
+      paymasterData?: Hex;
+    };
     expect(submitted.signature).toBe("0xu5e40p"); // the connection's signature, not the stub
     expect(submitted.paymasterData).toBe("0xfinal"); // the FINAL sponsorship, not the stub
     // The receipt id is the bundler's userOpHash — an intent id, not a tx hash.

@@ -31,7 +31,8 @@ describe("signing", () => {
     const pk = new FakePasskeyAdapter();
     const { state } = await createWallet({ passkey: pk, networkName: "Qudi" });
     const { message, signature } = await signSiwe({
-      state, passkey: pk,
+      state,
+      passkey: pk,
       params: { domain: "qudi.fi", uri: "https://qudi.fi", version: "1", chainId: 10, nonce: "abcdef12" },
     });
     expect(parseSiweMessage(message).address).toBe(state.evmAddress);

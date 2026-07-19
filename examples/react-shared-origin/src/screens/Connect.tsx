@@ -50,8 +50,7 @@ export function Connect({ onConnected }: { onConnected: () => void }) {
         Continue with {operator}
       </Text>
       <Text variant="body" tone="subtle" as="p" style={{ margin: "0 0 20px", maxWidth: "32ch", marginInline: "auto" }}>
-        Sign in to {operator} to use the same wallet here. Keys stay at {operator} — this app only
-        receives signatures.
+        Sign in to {operator} to use the same wallet here. Keys stay at {operator} — this app only receives signatures.
       </Text>
 
       <Button variant="primary" icon={<Icon name="external" size={15} />} onClick={handleContinue} disabled={pending}>

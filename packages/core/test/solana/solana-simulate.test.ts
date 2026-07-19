@@ -17,7 +17,10 @@ function fakeSolanaConnection(opts?: { onSign?: () => void }): Connection {
     status: () => true,
     async signSolanaTransaction(_messageBytes: Uint8Array) {
       opts?.onSign?.();
-      return { signature: "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111", consent: undefined };
+      return {
+        signature: "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+        consent: undefined,
+      };
     },
   } as unknown as Connection;
 }
@@ -73,7 +76,11 @@ const fakeIx = { programAddress: "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr", 
 describe("client.simulate", () => {
   it("self-pay simulate builds with the user as fee payer and does not sign", async () => {
     let signed = false;
-    const connection = fakeSolanaConnection({ onSign: () => { signed = true; } });
+    const connection = fakeSolanaConnection({
+      onSign: () => {
+        signed = true;
+      },
+    });
     const client = createSolanaNamespace({
       connection,
       deps: { solanaRpc: fakeSolanaRpc() },
@@ -86,7 +93,11 @@ describe("client.simulate", () => {
 
   it("explicit feeToken:null forces self-pay (parity with EVM)", async () => {
     let signed = false;
-    const connection = fakeSolanaConnection({ onSign: () => { signed = true; } });
+    const connection = fakeSolanaConnection({
+      onSign: () => {
+        signed = true;
+      },
+    });
     const client = createSolanaNamespace({
       connection,
       koraUrl: "http://kora",

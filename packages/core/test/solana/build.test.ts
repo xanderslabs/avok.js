@@ -25,7 +25,10 @@ describe("buildSolanaMessage", () => {
       computeUnitLimit: 200_000,
       computeUnitPrice: 1000n,
     });
-    const msg = message as { feePayer: { address: string; signTransactions?: unknown }; instructions: { programAddress: string }[] };
+    const msg = message as {
+      feePayer: { address: string; signTransactions?: unknown };
+      instructions: { programAddress: string }[];
+    };
     expect(msg.feePayer.address).toBe(feePayerAddr);
     // bare address: no signTransactions
     expect("signTransactions" in msg.feePayer).toBe(false);
@@ -42,7 +45,10 @@ describe("buildSolanaMessage", () => {
       computeUnitLimit: 200_000,
       computeUnitPrice: 1000n,
     });
-    const msg = message as { feePayer: { address: string; signTransactions?: unknown }; instructions: { programAddress: string }[] };
+    const msg = message as {
+      feePayer: { address: string; signTransactions?: unknown };
+      instructions: { programAddress: string }[];
+    };
     expect(msg.feePayer.address).toBe(signerAddr);
     // signer feePayer: has signTransactions
     expect(typeof msg.feePayer.signTransactions).toBe("function");

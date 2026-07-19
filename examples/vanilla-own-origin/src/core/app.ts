@@ -25,10 +25,22 @@ export interface AppState {
 // them, mirroring react-own-origin's Send screen. It is deliberately hand-written rather than
 // imported from sdk-core/internal: an operator app should not reach into another package's
 // internals, and this way the view states exactly what this demo depends on.
-type EvmSim = { success: boolean; revertReason?: string; fee?: { feeToken: string; amount: bigint }; nativeFee?: { amount: bigint }; [k: string]: unknown };
+type EvmSim = {
+  success: boolean;
+  revertReason?: string;
+  fee?: { feeToken: string; amount: bigint };
+  nativeFee?: { amount: bigint };
+  [k: string]: unknown;
+};
 // The Solana SELF-PAY estimate keeps a base/priority/rent split (SolanaNativeFeeEstimate); the
 // SPONSORED quote does not — Kora answers one all-in number (#5). Not the same animal.
-type SolanaSim = { success: boolean; error?: string; fee?: { feeToken: string; amount: bigint }; nativeFee?: { baseFee: bigint; priorityFee: bigint; rent: bigint }; [k: string]: unknown };
+type SolanaSim = {
+  success: boolean;
+  error?: string;
+  fee?: { feeToken: string; amount: bigint };
+  nativeFee?: { baseFee: bigint; priorityFee: bigint; rent: bigint };
+  [k: string]: unknown;
+};
 type EvmToken = { address: string; symbol: string; decimals: number };
 type SolanaToken = { mint: string; symbol: string; decimals: number };
 
@@ -36,7 +48,10 @@ export interface OwnOriginNamespaces {
   evm: {
     feeTokens(chainId: number): EvmToken[];
     simulate(calls: unknown[], opts: { chainId: number; feeToken: string | null }): Promise<EvmSim>;
-    send(input: EvmSim | unknown[], opts: { chainId: number; feeToken: string | null }): Promise<{ id: string; txHash?: string }>;
+    send(
+      input: EvmSim | unknown[],
+      opts: { chainId: number; feeToken: string | null },
+    ): Promise<{ id: string; txHash?: string }>;
     wait(receipt: { id: string; txHash?: string }): Promise<{ status: string; txHash?: string; error?: string }>;
     signMessage(a: { message: string }): Promise<`0x${string}`>;
   };
@@ -44,10 +59,19 @@ export interface OwnOriginNamespaces {
     feeTokens(cluster: string): SolanaToken[];
     supportedFeeTokens(cluster: string): Promise<SolanaToken[]>;
     simulate(ix: unknown[], opts: { cluster: string; feeToken: string | null }): Promise<SolanaSim>;
-    send(input: SolanaSim | unknown[], opts: { cluster: string; feeToken: string | null }): Promise<{ id: string; signature?: string }>;
+    send(
+      input: SolanaSim | unknown[],
+      opts: { cluster: string; feeToken: string | null },
+    ): Promise<{ id: string; signature?: string }>;
     wait(receipt: { id: string; signature?: string }): Promise<{ status: string; signature?: string; error?: string }>;
     signMessage(message: string): Promise<{ signature: string }>;
-    buildSplTransfer(args: { mint: string; to: string; amount: bigint; cluster: string; feeToken: string | null }): Promise<unknown[]>;
+    buildSplTransfer(args: {
+      mint: string;
+      to: string;
+      amount: bigint;
+      cluster: string;
+      feeToken: string | null;
+    }): Promise<unknown[]>;
   };
 }
 
@@ -95,11 +119,7 @@ export function createCtx(client: FullAvokClient): Ctx {
 }
 
 /** Mount the app into `root`, re-rendering on every store change. */
-export function mountApp(
-  root: HTMLElement,
-  ctx: Ctx,
-  screens: Record<Nav | "onboard", ScreenFn>,
-): void {
+export function mountApp(root: HTMLElement, ctx: Ctx, screens: Record<Nav | "onboard", ScreenFn>): void {
   function navbar(active: Nav): HTMLElement {
     return el(
       "nav",
@@ -135,11 +155,7 @@ export function mountApp(
     parts.push(screens[nav](ctx));
     if (nav === "account") {
       parts.push(
-        el(
-          "div",
-          { class: "shell-logout" },
-          el("button", { class: "btn btn-ghost", onclick: logout }, "Log out"),
-        ),
+        el("div", { class: "shell-logout" }, el("button", { class: "btn btn-ghost", onclick: logout }, "Log out")),
       );
     }
     root.replaceChildren(...parts);

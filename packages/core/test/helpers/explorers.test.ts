@@ -15,9 +15,7 @@ describe("explorers", () => {
     expect(evmExplorerTxUrl(999999, "0xabc")).toContain("0xabc");
   });
   it("builds Solana devnet explorer url with cluster query", () => {
-    expect(solanaExplorerTxUrl("devnet", "sig1")).toBe(
-      "https://explorer.solana.com/tx/sig1?cluster=devnet",
-    );
+    expect(solanaExplorerTxUrl("devnet", "sig1")).toBe("https://explorer.solana.com/tx/sig1?cluster=devnet");
   });
   it("omits cluster query on mainnet", () => {
     expect(solanaExplorerTxUrl("mainnet", "sig1")).toBe("https://explorer.solana.com/tx/sig1");

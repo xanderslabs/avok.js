@@ -47,7 +47,11 @@ describe("selfPayGasEstimate", () => {
     // The wallet calling execute() on itself is precisely what self-pay broadcasts, so the
     // simulation's gas is the answer. Nothing to add, nothing to guess.
     const g = await selfPayGasEstimate({
-      rpc: fakeRpc(), walletAddress: WALLET, implementation: IMPL, calls: [call()], undelegated: false,
+      rpc: fakeRpc(),
+      walletAddress: WALLET,
+      implementation: IMPL,
+      calls: [call()],
+      undelegated: false,
     });
     expect(g).toBe(SIM_GAS);
 

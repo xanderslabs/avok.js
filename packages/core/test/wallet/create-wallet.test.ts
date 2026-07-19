@@ -23,7 +23,11 @@ const fakePasskey = (prfFill: number): PasskeyAdapter & { lastHandle?: Uint8Arra
       return new Uint8Array(32).fill(prfFill).buffer;
     },
     async discover() {
-      return { credentialId: "Y3JlZC0x", prfOutput: new Uint8Array(32).fill(prfFill).buffer, userHandle: self.lastHandle! };
+      return {
+        credentialId: "Y3JlZC0x",
+        prfOutput: new Uint8Array(32).fill(prfFill).buffer,
+        userHandle: self.lastHandle!,
+      };
     },
   };
   return self as unknown as PasskeyAdapter & { lastHandle?: Uint8Array };

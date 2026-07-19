@@ -19,12 +19,7 @@ import {
 import { getChainProfile } from "@avokjs/contracts";
 import { performSign } from "./sign/perform-sign.js";
 import type { SignConsentRequest } from "./sign/consent.js";
-import {
-  runAuthPopup,
-  type AuthPopupConfig,
-  type AuthPopupCeremonyDeps,
-  type AuthPopupAccount,
-} from "./ceremony.js";
+import { runAuthPopup, type AuthPopupConfig, type AuthPopupCeremonyDeps, type AuthPopupAccount } from "./ceremony.js";
 import { createDomView } from "./view-dom.js";
 
 /**

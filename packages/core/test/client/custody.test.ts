@@ -6,16 +6,23 @@ import type { Connection, SelfCustodyConnection } from "../../src/types.js";
 function fakeUseOnly(): Connection {
   return {
     custody: "use-only",
-    continue: async () => ({ evm: { address: "0x0000000000000000000000000000000000000000" }, solana: { address: "x" } }),
+    continue: async () => ({
+      evm: { address: "0x0000000000000000000000000000000000000000" },
+      solana: { address: "x" },
+    }),
     logout: () => {},
     account: () => null,
     status: () => false,
   } as unknown as Connection;
 }
 function fakeSelf(): SelfCustodyConnection {
-  return { ...fakeUseOnly(), custody: "self", canExport: true,
+  return {
+    ...fakeUseOnly(),
+    custody: "self",
+    canExport: true,
     create: async () => ({ evm: { address: "0x0" }, solana: { address: "x" } }),
-    export: async () => "0xkey", addPasskey: async () => ({ slotId: "0x1", txId: "t", passkeyCount: 2 }),
+    export: async () => "0xkey",
+    addPasskey: async () => ({ slotId: "0x1", txId: "t", passkeyCount: 2 }),
     pairing: { holder: {}, enroller: {} },
     passkeyCount: () => 1,
   } as unknown as SelfCustodyConnection;

@@ -23,7 +23,10 @@ import { CameraUnavailableError } from "./pairing.js";
  * `@avokjs/helpers` — React Native ships its own transport against the same interface.
  * Requires a secure context (HTTPS or localhost) for `getUserMedia`.
  */
-export function createBrowserQrTransport(mounts: { qrContainer: HTMLElement; video: HTMLVideoElement }): PairingTransport {
+export function createBrowserQrTransport(mounts: {
+  qrContainer: HTMLElement;
+  video: HTMLVideoElement;
+}): PairingTransport {
   let stream: MediaStream | null = null;
   let raf = 0;
 

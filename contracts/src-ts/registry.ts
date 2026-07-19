@@ -100,7 +100,10 @@ const ENS_DEPLOYMENTS: Record<number, EnsDeployment> = {
 /** ENS contract deployment for a name-resolution chain. Throws on a chain with no known ENS deployment. */
 export function getEnsDeployment(chainId: number): EnsDeployment {
   const d = ENS_DEPLOYMENTS[chainId];
-  if (!d) throw new Error(`no ENS deployment for chainId ${chainId} — ENS resolution requires an ENS-enabled chain (1 or 11155111)`);
+  if (!d)
+    throw new Error(
+      `no ENS deployment for chainId ${chainId} — ENS resolution requires an ENS-enabled chain (1 or 11155111)`,
+    );
   return d;
 }
 
@@ -256,8 +259,20 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     rpcDefault: "https://solana-rpc.publicnode.com",
     tokens: {
       // Classic SPL token accounts are 165 bytes (getTokenSize(), verified at runtime).
-      [SOL_USDC_MAINNET]: { mint: SOL_USDC_MAINNET, symbol: "USDC", decimals: 6, tokenProgram: TOKEN_PROGRAM, ataSize: 165 },
-      [SOL_USDT_MAINNET]: { mint: SOL_USDT_MAINNET, symbol: "USDT", decimals: 6, tokenProgram: TOKEN_PROGRAM, ataSize: 165 },
+      [SOL_USDC_MAINNET]: {
+        mint: SOL_USDC_MAINNET,
+        symbol: "USDC",
+        decimals: 6,
+        tokenProgram: TOKEN_PROGRAM,
+        ataSize: 165,
+      },
+      [SOL_USDT_MAINNET]: {
+        mint: SOL_USDT_MAINNET,
+        symbol: "USDT",
+        decimals: 6,
+        tokenProgram: TOKEN_PROGRAM,
+        ataSize: 165,
+      },
     },
   },
   "solana:devnet": {
@@ -270,7 +285,13 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     // where the devnet USDC mint does not exist, so balances read 0 no matter how healthy the RPC.)
     rpcDefault: "https://api.devnet.solana.com",
     tokens: {
-      [SOL_USDC_DEVNET]: { mint: SOL_USDC_DEVNET, symbol: "USDC", decimals: 6, tokenProgram: TOKEN_PROGRAM, ataSize: 165 },
+      [SOL_USDC_DEVNET]: {
+        mint: SOL_USDC_DEVNET,
+        symbol: "USDC",
+        decimals: 6,
+        tokenProgram: TOKEN_PROGRAM,
+        ataSize: 165,
+      },
       // PYUSD (PayPal USD) — Token-2022, devnet sandbox mint (Paxos).
       //
       // Verified on chain (2026-07-14), because Token-2022 mints carry extensions that change how a
@@ -284,7 +305,13 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
       //     everywhere; noted because it is a real custody property, not a quirk of devnet.
       //   • ataSize 187 bytes (rent 2,192,400 lamports) — MEASURED by simulating a create-ATA for a
       //     fresh owner, not derived. The obvious derivation gives 182 and is wrong.
-      [SOL_PYUSD_DEVNET]: { mint: SOL_PYUSD_DEVNET, symbol: "PYUSD", decimals: 6, tokenProgram: TOKEN_2022_PROGRAM, ataSize: 187 },
+      [SOL_PYUSD_DEVNET]: {
+        mint: SOL_PYUSD_DEVNET,
+        symbol: "PYUSD",
+        decimals: 6,
+        tokenProgram: TOKEN_2022_PROGRAM,
+        ataSize: 187,
+      },
     },
   },
 };
@@ -337,7 +364,9 @@ export function resolveAnchorChain(anchorChainId: ChainId): EvmChainProfile {
     throw new Error(`resolveAnchorChain: unknown chain id "${anchorChainId}" — not present in the registry`);
   }
   if (profile.kind !== "evm") {
-    throw new Error(`resolveAnchorChain: anchor chain must be an EVM chain, got "${anchorChainId}" (kind: ${profile.kind})`);
+    throw new Error(
+      `resolveAnchorChain: anchor chain must be an EVM chain, got "${anchorChainId}" (kind: ${profile.kind})`,
+    );
   }
   return profile;
 }

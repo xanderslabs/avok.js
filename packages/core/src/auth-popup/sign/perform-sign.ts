@@ -78,9 +78,7 @@ export async function performSign(
     }
 
     case "signSponsored": {
-      const authorization = request.authorization
-        ? await keys.evm.signAuthorization(request.authorization)
-        : undefined;
+      const authorization = request.authorization ? await keys.evm.signAuthorization(request.authorization) : undefined;
       const signature = await keys.evm.signTypedData(request.typedData);
       return { signature, ...(authorization ? { authorization } : {}) };
     }
@@ -89,9 +87,7 @@ export async function performSign(
       // Recompute the v0.8 userOpHash from the SUPPLIED fields — never trust a caller-supplied hash, so
       // the signed digest is provably the one derived from the batch the consent screen decoded. The
       // hash is already the EIP-712 digest the contract's validateUserOp checks, so sign it RAW.
-      const authorization = request.authorization
-        ? await keys.evm.signAuthorization(request.authorization)
-        : undefined;
+      const authorization = request.authorization ? await keys.evm.signAuthorization(request.authorization) : undefined;
       const userOpHash = getUserOperationHash({
         chainId: request.chainId,
         entryPointAddress: entryPoint08Address,

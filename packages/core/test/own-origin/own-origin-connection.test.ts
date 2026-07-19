@@ -81,7 +81,11 @@ describe("createOwnOriginConnection.continue", () => {
     const b = createOwnOriginConnection({
       rpId: "qudi.fi",
       passkey,
-      anchorVault: { getAccessSlot: async () => { throw new Error("primary must not read the vault"); } },
+      anchorVault: {
+        getAccessSlot: async () => {
+          throw new Error("primary must not read the vault");
+        },
+      },
     });
     const acct = await b.continue();
     expect(acct.evm.address).toBe(created.evm.address);
@@ -106,7 +110,9 @@ describe("createOwnOriginConnection signing verbs", () => {
   it("signMessage produces a signature recoverable to the wallet", async () => {
     const passkey = makeFakePasskey();
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    const { evm: { address } } = await conn.create();
+    const {
+      evm: { address },
+    } = await conn.create();
     const signature = await conn.signMessage({ message: "hello avok" });
     expect(await verifyMessage({ address, message: "hello avok", signature })).toBe(true);
   });
@@ -114,7 +120,9 @@ describe("createOwnOriginConnection signing verbs", () => {
   it("signTypedData produces a signature verifiable with verifyTypedData", async () => {
     const passkey = makeFakePasskey();
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    const { evm: { address } } = await conn.create();
+    const {
+      evm: { address },
+    } = await conn.create();
     const domain = { name: "Test", version: "1", chainId: 1 } as const;
     const types = { Foo: [{ name: "bar", type: "string" }] } as const;
     const message = { bar: "hello avok" } as const;
@@ -126,7 +134,9 @@ describe("createOwnOriginConnection signing verbs", () => {
   it("signSiwe returns a message containing the wallet address and a recoverable signature", async () => {
     const passkey = makeFakePasskey();
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    const { evm: { address } } = await conn.create();
+    const {
+      evm: { address },
+    } = await conn.create();
     const params = {
       domain: "qudi.fi",
       uri: "https://qudi.fi",
@@ -175,7 +185,9 @@ describe("createOwnOriginConnection signing verbs", () => {
   it("signUserOp signs the userOpHash so it recovers to the wallet address", async () => {
     const passkey = makeFakePasskey();
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    const { evm: { address } } = await conn.create();
+    const {
+      evm: { address },
+    } = await conn.create();
     const op = makeUserOp(address as Address);
 
     const { signature, authorization } = await conn.signUserOp({ userOp: op, chainId: 10 });
@@ -188,7 +200,9 @@ describe("createOwnOriginConnection signing verbs", () => {
   it("signUserOp also returns the 7702 authorization when undelegated (one gesture)", async () => {
     const passkey = makeFakePasskey();
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    const { evm: { address } } = await conn.create();
+    const {
+      evm: { address },
+    } = await conn.create();
     const op = makeUserOp(address as Address);
     const delegate = "0x1234567890123456789012345678901234567890" as const;
 
@@ -213,7 +227,9 @@ describe("createOwnOriginConnection Solana signing verbs", () => {
   it("signSolanaTransaction signs raw bytes and signature verifies against the wallet solana key", async () => {
     const passkey = makeFakePasskey();
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    const { solana: { address } } = await conn.create();
+    const {
+      solana: { address },
+    } = await conn.create();
     const solanaPub = base58.decode(address);
 
     const messageBytes = new Uint8Array([1, 2, 3, 4, 5]);
@@ -231,7 +247,9 @@ describe("createOwnOriginConnection Solana signing verbs", () => {
   it("signSolanaMessage signs a UTF-8 string and signature verifies against the wallet solana key", async () => {
     const passkey = makeFakePasskey();
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    const { solana: { address } } = await conn.create();
+    const {
+      solana: { address },
+    } = await conn.create();
     const solanaPub = base58.decode(address);
 
     const message = "hello solana";
@@ -248,12 +266,17 @@ describe("createOwnOriginConnection.addPasskey", () => {
   it("enrols a secondary and writes its ciphertext slot as a self-call on the anchor chain", async () => {
     const passkey = makeFakePasskey("localhost");
     const conn = createOwnOriginConnection({ rpId: "localhost", passkey, anchorChainId: "eip155:10" });
-    const { evm: { address } } = await conn.create();
+    const {
+      evm: { address },
+    } = await conn.create();
     expect(conn.passkeyCount()).toBe(1);
 
     const submitted: { calls: Call[]; chainId: number }[] = [];
     const ctx = {
-      submit: async (calls: Call[], o: { chainId: number }) => { submitted.push({ calls, chainId: o.chainId }); return { id: "tx-add" }; },
+      submit: async (calls: Call[], o: { chainId: number }) => {
+        submitted.push({ calls, chainId: o.chainId });
+        return { id: "tx-add" };
+      },
       hasSlot: async (): Promise<boolean> => false,
       assertCanAffordAccessSlot: async (): Promise<void> => {},
       ...ACCESS_SLOT_WRITER,
@@ -282,7 +305,10 @@ describe("createOwnOriginConnection.addPasskey", () => {
     await conn.create();
     const submitted: Call[] = [];
     const ctx = {
-      submit: async (calls: Call[], _o: { chainId: number }) => { submitted.push(...calls); return { id: "tx-add" }; },
+      submit: async (calls: Call[], _o: { chainId: number }) => {
+        submitted.push(...calls);
+        return { id: "tx-add" };
+      },
       hasSlot: async (): Promise<boolean> => true, // slot already stored on chain
       assertCanAffordAccessSlot: async (): Promise<void> => {},
       ...ACCESS_SLOT_WRITER,
@@ -295,8 +321,14 @@ describe("createOwnOriginConnection.addPasskey", () => {
 
   it("throws when no wallet is active", async () => {
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
-    const ctx = { submit: async () => ({ id: "x" }), hasSlot: async () => false, assertCanAffordAccessSlot: async () => {}, ...ACCESS_SLOT_WRITER,
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER };
+    const ctx = {
+      submit: async () => ({ id: "x" }),
+      hasSlot: async () => false,
+      assertCanAffordAccessSlot: async () => {},
+      ...ACCESS_SLOT_WRITER,
+      ...ACCESS_SLOT_WRITER,
+      ...ACCESS_SLOT_WRITER,
+    };
     await expect(conn.addPasskey(ctx)).rejects.toThrow(/no wallet active/i);
   });
 });

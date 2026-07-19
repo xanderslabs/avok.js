@@ -23,20 +23,38 @@ export type {
 } from "./passkey/adapter.js";
 
 export type { WalletState, SolanaSigner } from "./sandbox.js";
-export { withDiscoveredKeys, withWalletKey, withWalletKeyAndContainer, withSolanaKey, withDecryptedContainer } from "./sandbox.js";
+export {
+  withDiscoveredKeys,
+  withWalletKey,
+  withWalletKeyAndContainer,
+  withSolanaKey,
+  withDecryptedContainer,
+} from "./sandbox.js";
 // The provisioning channel. NOTE what is NOT here: sealContainer / unsealContainer / PairGrant. The
 // ceremony that shipped K to the new device is gone; K never travels. See enrolment.ts.
 export {
-  generateEphemeral, randomNonce, buildRequest, encodePayload, decodePayload,
+  generateEphemeral,
+  randomNonce,
+  buildRequest,
+  encodePayload,
+  decodePayload,
   deriveSession,
-  type PairEphemeral, type PairRequest, type PairAck,
+  type PairEphemeral,
+  type PairRequest,
+  type PairAck,
 } from "./pairing.js";
 
 // The ONE enrolment ceremony — same passkey whether the credential is on your second device or under an
 // independent domain.
 export type { AccessSlotOffer, AccessSlotWrap } from "./enrolment.js";
 export {
-  buildAck, openAck, createPasskeyCredential, repairPasskeyCredential, sealWrap, openWrap, sealAccessSlot,
+  buildAck,
+  openAck,
+  createPasskeyCredential,
+  repairPasskeyCredential,
+  sealWrap,
+  openWrap,
+  sealAccessSlot,
 } from "./enrolment.js";
 
 export type { AvokAccount, ExportedWallet, BirthResult } from "./wallet.js";
@@ -60,7 +78,6 @@ export { resolveBlob } from "./resolution.js";
 
 export type { SiweParams } from "./signing.js";
 export { signMessage, signTypedData, signSiwe } from "./signing.js";
-
 
 export { MissingRpIdError } from "./passkey/adapter.js";
 export { WebAuthnPasskeyAdapter } from "./passkey/web.js";

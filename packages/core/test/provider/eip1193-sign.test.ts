@@ -49,7 +49,7 @@ test("eth_signTypedData_v4 JSON-parses the payload and forwards the typed data o
 test("a sign for a non-active address rejects with 4100", async () => {
   const p = createEip1193Provider(fakeConfig(), { defaultChainId: 8453 });
   const other = "0x2222222222222222222222222222222222222222";
-  await expect(
-    p.request({ method: "personal_sign", params: [stringToHex("x"), other] }),
-  ).rejects.toMatchObject({ code: 4100 });
+  await expect(p.request({ method: "personal_sign", params: [stringToHex("x"), other] })).rejects.toMatchObject({
+    code: 4100,
+  });
 });

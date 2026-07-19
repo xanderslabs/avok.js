@@ -55,9 +55,9 @@ describe("passkey enrolment (one ceremony, whoever the enroller is)", () => {
     const { qr: ack } = await holder.pairing.holder.authorize({ qr: request, ctx: vault });
     await enroller.pairing.enroller.receiveAck(ack);
 
-    await expect(
-      enroller.pairing.enroller.enroll({ sasConfirmed: false as unknown as true }),
-    ).rejects.toThrow(/sasConfirmed/i);
+    await expect(enroller.pairing.enroller.enroll({ sasConfirmed: false as unknown as true })).rejects.toThrow(
+      /sasConfirmed/i,
+    );
   });
 
   it("the holder refuses to seal K under a wrapping key whose SAS was never confirmed", async () => {

@@ -17,12 +17,13 @@ class FakePasskeyAdapter {
   async create(_label: string, _address: string) {
     this.counter += 1;
     const credentialId = `fake-cred-${this.counter}`;
-    const prfOutput = new Uint8Array(
-      Array.from({ length: 32 }, (_, i) => (this.counter * 17 + i) % 256),
-    ).buffer;
+    const prfOutput = new Uint8Array(Array.from({ length: 32 }, (_, i) => (this.counter * 17 + i) % 256)).buffer;
     this.credentials.set(credentialId, { prfOutput });
     return {
-      credentialId, prfOutput, transports: ["internal"], rpId: "test.local",
+      credentialId,
+      prfOutput,
+      transports: ["internal"],
+      rpId: "test.local",
       prf: { extension: "prf" as const, saltVersion: "v0" as const },
       platform: { authenticatorAttachment: "platform" as const },
       largeBlobSupported: true,
@@ -35,8 +36,12 @@ class FakePasskeyAdapter {
     return cred.prfOutput.slice(0); // fresh buffer per call: sandbox zeroes prfOutput (single-use contract)
   }
 
-  async discover(): Promise<never> { throw new Error("not needed"); }
-  async supportsLargeBlob(): Promise<boolean> { return true; }
+  async discover(): Promise<never> {
+    throw new Error("not needed");
+  }
+  async supportsLargeBlob(): Promise<boolean> {
+    return true;
+  }
   async writeLargeBlob(credentialId: string, _t: string[] | undefined, bytes: Uint8Array): Promise<boolean> {
     if (!this.credentials.has(credentialId)) return false;
     this.largeBlobs.set(credentialId, bytes);
@@ -131,19 +136,31 @@ export async function makeAltMessageBytes(): Promise<Uint8Array> {
   const signer = toKitSigner({ state, passkey: passkey as any });
 
   const { instructions } = await buildSplTransfer({
-    rpc: fakeRpc, mint: MINT, from: state.solanaAddress as string, to: RECIPIENT_OWNER,
-    amount: AMOUNT, payer: state.solanaAddress as string, authority: signer, decimals: 6,
+    rpc: fakeRpc,
+    mint: MINT,
+    from: state.solanaAddress as string,
+    to: RECIPIENT_OWNER,
+    amount: AMOUNT,
+    payer: state.solanaAddress as string,
+    authority: signer,
+    decimals: 6,
   });
   const { message } = await buildSolanaMessage({
-    rpc: fakeRpc, instructions, feePayer: { kind: "signer", signer },
-    computeUnitLimit: 100_000, computeUnitPrice: 0n,
+    rpc: fakeRpc,
+    instructions,
+    feePayer: { kind: "signer", signer },
+    computeUnitLimit: 100_000,
+    computeUnitPrice: 0n,
   });
 
   // Move the readonly mint account into a lookup table → the compiled message gains a lookup.
   const LOOKUP_TABLE = "SysvarRent111111111111111111111111111111111"; // any valid 32-byte base58
-  const compressed = compressTransactionMessageUsingAddressLookupTables(message as never, {
-    [LOOKUP_TABLE]: [MINT],
-  } as never);
+  const compressed = compressTransactionMessageUsingAddressLookupTables(
+    message as never,
+    {
+      [LOOKUP_TABLE]: [MINT],
+    } as never,
+  );
   const compiled = compileTransaction(compressed as Parameters<typeof compileTransaction>[0]);
   return compiled.messageBytes as unknown as Uint8Array;
 }

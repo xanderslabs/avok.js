@@ -64,7 +64,11 @@ const SAS_REJECTED = "SAS did not match — pairing cancelled";
  *  It returns nothing: the enroller is not logged in by the ceremony, because it was handed no key.
  *  The app calls `client.login()` once the holder's write has landed — one ordinary passkey prompt,
  *  and the price of the wallet key never touching the wire. */
-export async function runImportCeremony(ctl: ImportCtl, t: PairingTransport, h: CeremonyHandlers<ImportStep>): Promise<void> {
+export async function runImportCeremony(
+  ctl: ImportCtl,
+  t: PairingTransport,
+  h: CeremonyHandlers<ImportStep>,
+): Promise<void> {
   h.onStep("show-request");
   const { requestQr } = await ctl.begin();
   t.showCode(requestQr);
@@ -89,7 +93,11 @@ export async function runImportCeremony(ctl: ImportCtl, t: PairingTransport, h: 
 }
 
 /** HOLDER: scan request → show ack → confirm SAS → scan wrap → done (writes the access slot, and pays). */
-export async function runExportCeremony(ctl: ExportCtl, t: PairingTransport, h: CeremonyHandlers<ExportStep>): Promise<void> {
+export async function runExportCeremony(
+  ctl: ExportCtl,
+  t: PairingTransport,
+  h: CeremonyHandlers<ExportStep>,
+): Promise<void> {
   h.onStep("scan-request");
   const requestQr = await t.scanCode();
   const { ackQr, sas } = await ctl.authorize(requestQr);

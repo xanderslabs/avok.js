@@ -17,13 +17,20 @@ import { Account } from "./screens/Account.js";
 import { Device } from "./screens/Device.js";
 import { Access } from "./screens/Access.js";
 
-const connection = createOwnOriginConnection({ rpId: config.rpId, operatorName: config.operatorName, anchorChainId: config.anchorChainId });
-const client = createAvokClient({
-  connection,
-  paymasterUrl: config.paymasterUrl,
-  bundlerUrl: config.bundlerUrl,
-  koraUrl: config.koraUrl,
-}, { name: "Avok Demo", rdns: "js.avok.demo" }) as FullAvokClient;
+const connection = createOwnOriginConnection({
+  rpId: config.rpId,
+  operatorName: config.operatorName,
+  anchorChainId: config.anchorChainId,
+});
+const client = createAvokClient(
+  {
+    connection,
+    paymasterUrl: config.paymasterUrl,
+    bundlerUrl: config.bundlerUrl,
+    koraUrl: config.koraUrl,
+  },
+  { name: "Avok Demo", rdns: "js.avok.demo" },
+) as FullAvokClient;
 
 const ctx = createCtx(client);
 mountApp(document.getElementById("app")!, ctx, {

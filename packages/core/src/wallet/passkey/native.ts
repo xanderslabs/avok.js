@@ -58,9 +58,11 @@ export function createReactNativePasskeyAdapter(
 
   async function authenticate(credentialId: string, transports?: string[]): Promise<ArrayBuffer> {
     const result = await passkeyModule.get({
-      challenge: randomChallenge(), rpId,
+      challenge: randomChallenge(),
+      rpId,
       allowCredentials: [{ type: "public-key", id: credentialId, ...(transports?.length ? { transports } : {}) }],
-      userVerification: "required", extensions: { prf: { eval: { first: prfSalt } } },
+      userVerification: "required",
+      extensions: { prf: { eval: { first: prfSalt } } },
     });
     assertLocalNative(result.authenticatorAttachment);
     const prf = readPrf(result.clientExtensionResults);
@@ -74,16 +76,27 @@ export function createReactNativePasskeyAdapter(
         rp: { name: rpName, id: rpId },
         user: { id: bytesToBase64Url(userHandle), name: label, displayName: label },
         challenge: randomChallenge(),
-        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-        authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "required", userVerification: "required" },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },
+          { type: "public-key", alg: -257 },
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          residentKey: "required",
+          userVerification: "required",
+        },
         extensions: { prf: { eval: { first: prfSalt } } },
       });
       const transports = result.response?.transports ?? [];
       // authenticate() throws NoPrfError if the get() fallback also yields no PRF, so prfOutput is defined.
       const prfOutput = readPrf(result.clientExtensionResults) ?? (await authenticate(result.id, transports));
       return {
-        credentialId: result.id, prfOutput, transports, rpId,
-        prf: { extension: "prf", saltVersion: "v0" }, platform: { authenticatorAttachment: "platform" },
+        credentialId: result.id,
+        prfOutput,
+        transports,
+        rpId,
+        prf: { extension: "prf", saltVersion: "v0" },
+        platform: { authenticatorAttachment: "platform" },
       };
     },
     authenticate,
@@ -91,10 +104,10 @@ export function createReactNativePasskeyAdapter(
       // Same contract as web: a credentialId constrains the assertion to ONE credential, so the OS
       // prompts for that passkey directly rather than showing a chooser.
       const result = await passkeyModule.get({
-        challenge: randomChallenge(), rpId, userVerification: "required",
-        ...(opts?.credentialId
-          ? { allowCredentials: [{ type: "public-key", id: opts.credentialId }] }
-          : {}),
+        challenge: randomChallenge(),
+        rpId,
+        userVerification: "required",
+        ...(opts?.credentialId ? { allowCredentials: [{ type: "public-key", id: opts.credentialId }] } : {}),
         extensions: { prf: { eval: { first: prfSalt } } },
       });
       assertLocalNative(result.authenticatorAttachment);

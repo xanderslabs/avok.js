@@ -17,7 +17,7 @@ export interface LeanResolveArgs {
   chain: EvmChainProfile;
   address: Address;
   userCalls: Call[];
-  ctx: ExecutionContext;            // { chainId, feeToken? }
+  ctx: ExecutionContext; // { chainId, feeToken? }
   nonce: bigint;
   deadline: bigint;
 }

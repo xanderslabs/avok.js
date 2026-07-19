@@ -11,7 +11,13 @@ import type { Ctx } from "../core/app.js";
 import { Screen, Card, Button } from "../ui/index.js";
 import { Ceremony } from "../pairing/ceremony.js";
 
-const secLabel = { fontSize: "11px", textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text3)", marginBottom: "10px" };
+const secLabel = {
+  fontSize: "11px",
+  textTransform: "uppercase",
+  letterSpacing: ".06em",
+  color: "var(--text3)",
+  marginBottom: "10px",
+};
 const errText = { color: "var(--danger)", fontSize: "12px", marginTop: "10px" };
 
 export function Device(ctx: Ctx): HTMLElement {
@@ -51,24 +57,46 @@ export function Device(ctx: Ctx): HTMLElement {
       Card(
         { style: { marginBottom: "16px" } },
         el("div", { style: secLabel }, "Add a passkey (same device)"),
-        el("p", { style: { fontSize: "12px", color: "var(--text3)", margin: "0 0 10px" } }, "Enrol another passkey for this wallet on THIS device (e.g. a second provider or a hardware key). It's a secondary — it can't derive your key by itself, so an encrypted copy is written on chain: one transaction, paid by the wallet."),
-        Button({ variant: "ghost", label: s.adding ? "Enrolling…" : "Add a passkey", disabled: s.adding, onClick: () => void handleAddPasskey() }),
+        el(
+          "p",
+          { style: { fontSize: "12px", color: "var(--text3)", margin: "0 0 10px" } },
+          "Enrol another passkey for this wallet on THIS device (e.g. a second provider or a hardware key). It's a secondary — it can't derive your key by itself, so an encrypted copy is written on chain: one transaction, paid by the wallet.",
+        ),
+        Button({
+          variant: "ghost",
+          label: s.adding ? "Enrolling…" : "Add a passkey",
+          disabled: s.adding,
+          onClick: () => void handleAddPasskey(),
+        }),
         // A LOCAL credential count — it cannot tell an access slot from an orphan (a credential whose slot
         // write never landed opens nothing). The honest "ways in" number is accessSlotCount(), on Access.
-        s.addResult !== null && el("p", { style: { fontSize: "12px", marginTop: "8px", color: "var(--text2)" } }, `Enrolled — ${s.addResult} credential(s) on this device. That is not the same as access slots; see “Who can reach this wallet” for the chain-verified count.`),
+        s.addResult !== null &&
+          el(
+            "p",
+            { style: { fontSize: "12px", marginTop: "8px", color: "var(--text2)" } },
+            `Enrolled — ${s.addResult} credential(s) on this device. That is not the same as access slots; see “Who can reach this wallet” for the chain-verified count.`,
+          ),
         s.addErr && el("p", { style: errText }, s.addErr),
       ),
 
       Card(
         null,
         el("div", { style: secLabel }, "Export to a device (cross device)"),
-        el("p", { style: { fontSize: "12px", color: "var(--text3)", margin: "0 0 14px", lineHeight: "1.5" } }, "Provision this wallet onto a NEW device you own: it runs “Set up this device” and shows a QR — scan it here, then show it yours. You'll confirm a 6-digit code matches on both before anything is granted."),
+        el(
+          "p",
+          { style: { fontSize: "12px", color: "var(--text3)", margin: "0 0 14px", lineHeight: "1.5" } },
+          "Provision this wallet onto a NEW device you own: it runs “Set up this device” and shows a QR — scan it here, then show it yours. You'll confirm a 6-digit code matches on both before anything is granted.",
+        ),
         // This version cannot un-pair a device — not because removal is impossible, but because nothing
         // can tell you which slot belongs to which device. A user who is not told will assume otherwise.
         // Enrolling a passkey is a DEFERRED GRANT: the other device can obtain the wallet key whenever it
         // likes. Removing its access slot later is housekeeping (it frees capacity); it cannot un-learn a key
         // the passkey already had. Never imply removal undoes the grant.
-        el("p", { style: { fontSize: "12px", color: "var(--danger)", margin: "0 0 14px", lineHeight: "1.5" } }, "⚠ This grants the other device the ability to use your wallet key — now, or at any time later. Only pair a device you control. You can remove its access slot afterwards (see “Who can reach this wallet”), but that only frees capacity: it cannot un-learn a key the device already had. If a device is lost or compromised, move your funds to a new wallet."),
+        el(
+          "p",
+          { style: { fontSize: "12px", color: "var(--danger)", margin: "0 0 14px", lineHeight: "1.5" } },
+          "⚠ This grants the other device the ability to use your wallet key — now, or at any time later. Only pair a device you control. You can remove its access slot afterwards (see “Who can reach this wallet”), but that only frees capacity: it cannot un-learn a key the device already had. If a device is lost or compromised, move your funds to a new wallet.",
+        ),
         ceremonyNode,
       ),
     );

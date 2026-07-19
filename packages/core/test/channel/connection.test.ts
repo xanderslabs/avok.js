@@ -60,7 +60,11 @@ describe("createSharedOriginConnection", () => {
   });
 
   it("account() surfaces solanaAddress and credentialId", async () => {
-    const conn = createSharedOriginConnection({ authOrigin: AUTH_ORIGIN, channel: makeFakeChannel(), storage: memoryStorage() });
+    const conn = createSharedOriginConnection({
+      authOrigin: AUTH_ORIGIN,
+      channel: makeFakeChannel(),
+      storage: memoryStorage(),
+    });
     await conn.connect();
 
     expect(conn.account()?.solanaAddress).toBe(TEST_SOLANA);
@@ -97,7 +101,11 @@ describe("createSharedOriginConnection", () => {
   });
 
   it("signMessage(): throws if called before connect", async () => {
-    const conn = createSharedOriginConnection({ authOrigin: AUTH_ORIGIN, channel: makeFakeChannel(), storage: memoryStorage() });
+    const conn = createSharedOriginConnection({
+      authOrigin: AUTH_ORIGIN,
+      channel: makeFakeChannel(),
+      storage: memoryStorage(),
+    });
     await expect(conn.signMessage({ message: "hi" })).rejects.toThrow(/Not connected/);
   });
 

@@ -6,7 +6,13 @@
  * The transport + ceremony driver live in @avokjs/core/helpers; this is only the UI over them.
  */
 import { el } from "../core/el.js";
-import { runImportCeremony, runExportCeremony, type PairingTransport, type ImportStep, type ExportStep } from "@avokjs/core/helpers";
+import {
+  runImportCeremony,
+  runExportCeremony,
+  type PairingTransport,
+  type ImportStep,
+  type ExportStep,
+} from "@avokjs/core/helpers";
 import { createBrowserQrTransport, CameraUnavailableError } from "@avokjs/core/qr";
 import { Button, Card } from "../ui/index.js";
 import { createSetupController, createAuthorizeController } from "./controller.js";
@@ -117,7 +123,13 @@ export function Ceremony(opts: {
   const video = el("video") as HTMLVideoElement;
   video.playsInline = true;
   video.muted = true;
-  Object.assign(video.style, { width: "100%", maxHeight: "260px", borderRadius: "12px", background: "#000", marginBottom: "12px" });
+  Object.assign(video.style, {
+    width: "100%",
+    maxHeight: "260px",
+    borderRadius: "12px",
+    background: "#000",
+    marginBottom: "12px",
+  });
 
   let s = {
     phase: "loading" as Phase,
@@ -243,7 +255,11 @@ export function Ceremony(opts: {
         el(
           "div",
           null,
-          el("p", { style: { fontSize: "12px", color: "var(--text3)", margin: "0 0 12px", textAlign: "center" } }, caption),
+          el(
+            "p",
+            { style: { fontSize: "12px", color: "var(--text3)", margin: "0 0 12px", textAlign: "center" } },
+            caption,
+          ),
           isGrantShow
             ? Button({
                 variant: "primary",
@@ -263,7 +279,11 @@ export function Ceremony(opts: {
         el(
           "div",
           null,
-          el("p", { style: { fontSize: "12px", color: "var(--text3)", margin: "0 0 12px", textAlign: "center" } }, caption),
+          el(
+            "p",
+            { style: { fontSize: "12px", color: "var(--text3)", margin: "0 0 12px", textAlign: "center" } },
+            caption,
+          ),
           Button({ variant: "primary", label: "Open camera ›", onClick: () => scanTap() }),
         ),
 
@@ -289,8 +309,24 @@ export function Ceremony(opts: {
         el(
           "div",
           { style: { textAlign: "center", margin: "6px 0 0" } },
-          el("div", { style: { fontSize: "12px", color: "var(--text2)", marginBottom: "8px" } }, "Confirm this code matches on both devices:"),
-          el("div", { style: { fontSize: "30px", letterSpacing: "6px", fontFamily: "var(--font-mono)", color: "var(--text)", marginBottom: "14px" } }, s.sas),
+          el(
+            "div",
+            { style: { fontSize: "12px", color: "var(--text2)", marginBottom: "8px" } },
+            "Confirm this code matches on both devices:",
+          ),
+          el(
+            "div",
+            {
+              style: {
+                fontSize: "30px",
+                letterSpacing: "6px",
+                fontFamily: "var(--font-mono)",
+                color: "var(--text)",
+                marginBottom: "14px",
+              },
+            },
+            s.sas,
+          ),
           Button({ variant: "primary", label: "Codes match — continue", onClick: () => sasResolve(true) }),
           el("div", { style: { height: "8px" } }),
           Button({ variant: "danger", label: "Codes don’t match — cancel", onClick: () => sasResolve(false) }),

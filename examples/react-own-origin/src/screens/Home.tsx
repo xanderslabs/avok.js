@@ -6,7 +6,8 @@ import { config, type SolanaCluster } from "../config.js";
 import { Card, ChainSwitcher, TokenRow, AddressText, EmptyState, Button, Icon, Text } from "../ui/index.js";
 
 // Home-base display defaults to the ANCHOR chain (where this wallet anchors its access slots).
-const DEFAULT_CHAIN = selectableChains.find((c) => c.id === config.anchorChainNumeric)?.id ?? selectableChains[0]?.id ?? 8453;
+const DEFAULT_CHAIN =
+  selectableChains.find((c) => c.id === config.anchorChainNumeric)?.id ?? selectableChains[0]?.id ?? 8453;
 const CLUSTERS: SolanaCluster[] = ["devnet", "mainnet"];
 
 export function Home({ onSend }: { onSend: () => void }) {

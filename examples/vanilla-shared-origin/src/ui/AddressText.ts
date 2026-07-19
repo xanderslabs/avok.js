@@ -19,19 +19,11 @@ export function AddressText({
   truncate?: boolean;
   copy?: boolean;
 }): HTMLElement {
-  const span = el(
-    "span",
-    { class: truncate ? "addr" : "addr addr-full" },
-    truncate ? truncateAddr(address) : address,
-  );
+  const span = el("span", { class: truncate ? "addr" : "addr addr-full" }, truncate ? truncateAddr(address) : address);
 
   if (copy) {
     let copied = false;
-    const btn = el(
-      "button",
-      { class: "addr-copy", type: "button", "aria-label": "Copy address" },
-      Icon("copy", 12),
-    );
+    const btn = el("button", { class: "addr-copy", type: "button", "aria-label": "Copy address" }, Icon("copy", 12));
     function render(): void {
       btn.replaceChildren(Icon(copied ? "check" : "copy", 12));
       btn.classList.toggle("is-copied", copied);

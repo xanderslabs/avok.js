@@ -93,7 +93,13 @@ describe("the provisioning channel", () => {
 describe("K-transport is gone, and must stay gone", () => {
   test("pairing.ts holds no container/key-sealing API", () => {
     const src = readFileSync(join(import.meta.dirname, "../../src/wallet/pairing.ts"), "utf8");
-    for (const forbidden of ["sealContainer", "unsealContainer", "PairGrant", "SecretContainer", "serializeContainer"]) {
+    for (const forbidden of [
+      "sealContainer",
+      "unsealContainer",
+      "PairGrant",
+      "SecretContainer",
+      "serializeContainer",
+    ]) {
       expect(src, `pairing.ts must not reference ${forbidden} — the channel never carries K`).not.toContain(forbidden);
     }
   });

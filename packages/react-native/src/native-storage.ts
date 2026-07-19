@@ -33,9 +33,7 @@ export interface SecureStoreShape {
  * @param opts.secureStore — inject a SecureStore-compatible implementation.
  *   Pass a fake object in unit tests to avoid needing a real expo-secure-store.
  */
-export function secureStoreStorage(opts?: {
-  secureStore?: SecureStoreShape;
-}): StorageAdapter {
+export function secureStoreStorage(opts?: { secureStore?: SecureStoreShape }): StorageAdapter {
   // ── Path 1: explicit injection ───────────────────────────────────────────
   const ss = opts?.secureStore;
   if (ss) {
@@ -49,8 +47,7 @@ export function secureStoreStorage(opts?: {
   // ── Path 2: localStorage (web environment / JSDOM / RN-web) ─────────────
   let ls: Storage | null = null;
   try {
-    const candidate =
-      typeof window !== "undefined" ? window.localStorage : null;
+    const candidate = typeof window !== "undefined" ? window.localStorage : null;
     if (
       candidate != null &&
       typeof candidate.getItem === "function" &&
@@ -79,7 +76,11 @@ export function secureStoreStorage(opts?: {
   const map = new Map<string, string>();
   return {
     get: (k) => Promise.resolve(map.get(k) ?? null),
-    set: (k, v) => { map.set(k, v); },
-    remove: (k) => { map.delete(k); },
+    set: (k, v) => {
+      map.set(k, v);
+    },
+    remove: (k) => {
+      map.delete(k);
+    },
   };
 }

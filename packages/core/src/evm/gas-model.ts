@@ -17,7 +17,8 @@ export const AUTH_7702_GAS: bigint = 25_000n;
 
 // Fail-loud: none of these may be zero/negative — a zeroed constant would silently undercharge.
 for (const [name, v] of Object.entries({
-  BASE_TX_GAS, AUTH_7702_GAS,
+  BASE_TX_GAS,
+  AUTH_7702_GAS,
 })) {
   if (v <= 0n) throw new Error(`${name} must be a positive bigint, got ${v} (calibrate before mainnet, spec §15)`);
 }
@@ -70,7 +71,11 @@ export function selfPayEffectiveGasPrice(suggestedTip: bigint, baseFee: bigint):
  * simulator already does (sim-methods.ts) — the gas estimator was the one place still guessing.
  */
 async function simulateBatchGas(args: {
-  rpc: RpcClient; walletAddress: Address; implementation: Address; calls: Call[]; undelegated: boolean;
+  rpc: RpcClient;
+  walletAddress: Address;
+  implementation: Address;
+  calls: Call[];
+  undelegated: boolean;
 }): Promise<bigint> {
   const { rpc, walletAddress, implementation, calls, undelegated } = args;
   if (calls.length === 0) return BASE_TX_GAS;
@@ -96,7 +101,11 @@ async function simulateBatchGas(args: {
  * transaction — a 51% over-quote, which is exactly the gap that showed up on a real consent screen.
  */
 export async function selfPayGasEstimate(args: {
-  rpc: RpcClient; walletAddress: Address; implementation: Address; calls: Call[]; undelegated: boolean;
+  rpc: RpcClient;
+  walletAddress: Address;
+  implementation: Address;
+  calls: Call[];
+  undelegated: boolean;
 }): Promise<bigint> {
   const batchGas = await simulateBatchGas(args);
   // The 7702 authorization is the ONE cost the simulation cannot show: it is charged by the outer

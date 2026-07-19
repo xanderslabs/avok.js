@@ -33,7 +33,8 @@ function chainVault() {
     },
     hasSlot: async (slotId: Hex) => store.has(slotId.toLowerCase()),
     assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
     getAccessSlot: async (_address: Address, slotId: Hex) => store.get(slotId.toLowerCase()) ?? null,
   };
 }
@@ -48,8 +49,13 @@ describe("cross-app secondary recovery (shared rpId, different app anchors)", ()
     const acc = await appA.create();
 
     const vaultA = chainVault(); // stands in for optimism's access vault
-    const { passkeyCount } = await appA.addPasskey({ submit: vaultA.submit, hasSlot: vaultA.hasSlot, assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER });
+    const { passkeyCount } = await appA.addPasskey({
+      submit: vaultA.submit,
+      hasSlot: vaultA.hasSlot,
+      assertCanAffordAccessSlot: async () => {},
+      ...ACCESS_SLOT_WRITER,
+      ...ACCESS_SLOT_WRITER,
+    });
     expect(passkeyCount).toBe(2);
 
     // ── App B: FRESH connection, anchor = mainnet (eip155:1). Same authenticator (ROR), presenting
@@ -71,6 +77,8 @@ describe("cross-app secondary recovery (shared rpId, different app anchors)", ()
     expect(recovered.solana.address).toBe(acc.solana.address);
     // And the recovered secondary decrypts the SAME K, so it signs to the same address.
     const sig = await appB.signMessage({ message: "cross-app recovered" });
-    expect(await verifyMessage({ address: acc.evm.address, message: "cross-app recovered", signature: sig })).toBe(true);
+    expect(await verifyMessage({ address: acc.evm.address, message: "cross-app recovered", signature: sig })).toBe(
+      true,
+    );
   });
 });

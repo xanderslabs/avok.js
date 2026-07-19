@@ -42,10 +42,18 @@ const ENROLMENT_VERSION = 1 as const;
 /** What the holder tells the enroller: the wallet, and the chain its slot goes on. The enroller needs
  *  both BEFORE it can mint a credential (they are baked into the passkey's user handle at creation),
  *  which is why this rides the ACK — folding it there keeps the ceremony at three codes. */
-export interface AccessSlotOffer { evm: Address; anchorChainId: number }
+export interface AccessSlotOffer {
+  evm: Address;
+  anchorChainId: number;
+}
 
 /** What the enroller sends back: its credential, its domain (for the roster), and its wrapping key. */
-export interface AccessSlotWrap { v: 1; kind: "wrap"; iv: string; ct: string }
+export interface AccessSlotWrap {
+  v: 1;
+  kind: "wrap";
+  iv: string;
+  ct: string;
+}
 
 /** The payload kind is the AES-GCM additionalData, so an ack cannot be replayed as a wrap. */
 async function seal(key: CryptoKey, kind: "ack" | "wrap", body: unknown): Promise<{ iv: string; ct: string }> {

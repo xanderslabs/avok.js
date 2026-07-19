@@ -15,7 +15,13 @@ import { Card, ChainSwitcher, TokenRow, AddressText, EmptyState, Button, Icon } 
 const DEFAULT_CHAIN = selectableChains[0]?.id ?? 8453;
 const CLUSTERS: SolanaCluster[] = ["devnet", "mainnet"];
 
-const secLabel = { fontSize: "11px", textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text3)", marginBottom: "8px" };
+const secLabel = {
+  fontSize: "11px",
+  textTransform: "uppercase",
+  letterSpacing: ".06em",
+  color: "var(--text3)",
+  marginBottom: "8px",
+};
 
 export function Home(ctx: Ctx): HTMLElement {
   const account = ctx.client.account();
@@ -66,7 +72,11 @@ export function Home(ctx: Ctx): HTMLElement {
       el(
         "div",
         { style: { marginBottom: "18px" } },
-        el("div", { style: { fontSize: "15px", fontWeight: "600", color: "var(--text)", marginBottom: "8px" } }, "Your wallet"),
+        el(
+          "div",
+          { style: { fontSize: "15px", fontWeight: "600", color: "var(--text)", marginBottom: "8px" } },
+          "Your wallet",
+        ),
         el(
           "div",
           { style: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" } },
@@ -120,7 +130,10 @@ export function Home(ctx: Ctx): HTMLElement {
           "div",
           { style: { marginBottom: "12px" } },
           ChainSwitcher({
-            chains: CLUSTERS.map((c) => ({ id: c === "mainnet" ? 1 : 0, name: c === "mainnet" ? "Solana Mainnet" : "Solana Devnet" })),
+            chains: CLUSTERS.map((c) => ({
+              id: c === "mainnet" ? 1 : 0,
+              name: c === "mainnet" ? "Solana Mainnet" : "Solana Devnet",
+            })),
             selected: cluster === "mainnet" ? 1 : 0,
             onSelect: (id) => loadSolana(id === 1 ? "mainnet" : "devnet"),
           }),

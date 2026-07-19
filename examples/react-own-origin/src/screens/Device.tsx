@@ -34,8 +34,8 @@ export function Device({ onBack }: { onBack: () => void }) {
     return (
       <Screen title="Export to a device" onBack={() => setView("menu")}>
         <Text variant="label" tone="subtle" as="p" style={{ margin: "0 0 14px" }}>
-          Provision this wallet onto a NEW device: it runs "Set up this device" and shows a QR — scan it
-          here, then show it yours. You'll confirm a 6-digit code matches on both before anything is granted.
+          Provision this wallet onto a NEW device: it runs "Set up this device" and shows a QR — scan it here, then show
+          it yours. You'll confirm a 6-digit code matches on both before anything is granted.
         </Text>
         <AuthorizeFlow />
       </Screen>
@@ -51,16 +51,16 @@ export function Device({ onBack }: { onBack: () => void }) {
       <Card>
         <div className="section-label">Add a passkey (same device)</div>
         <Text variant="label" tone="subtle" as="p" style={{ marginBottom: 10 }}>
-          Enrol another passkey for this wallet on THIS device (e.g. a second provider or a hardware key).
-          It's a secondary — it can't derive your key by itself, so an encrypted copy is written on chain:
-          one transaction, paid by the wallet.
+          Enrol another passkey for this wallet on THIS device (e.g. a second provider or a hardware key). It's a
+          secondary — it can't derive your key by itself, so an encrypted copy is written on chain: one transaction,
+          paid by the wallet.
         </Text>
         {/* A LOCAL credential count — it cannot tell an access slot from an orphan (a credential whose slot
             write never landed opens nothing). The honest "ways in" number is accessSlotCount(), on Access. */}
         {passkeyCount !== null && (
           <Text variant="label" tone="subtle" as="p" style={{ marginBottom: 10 }}>
-            {passkeyCount} credential(s) on this device — not the same as access slots. See "Who can reach this
-            wallet" for the chain-verified count.
+            {passkeyCount} credential(s) on this device — not the same as access slots. See "Who can reach this wallet"
+            for the chain-verified count.
           </Text>
         )}
         <Button variant="ghost" onClick={handleAddPasskey} disabled={adding}>
@@ -76,19 +76,21 @@ export function Device({ onBack }: { onBack: () => void }) {
       <Card>
         <div className="section-label">Export to a device (cross device)</div>
         <Text variant="label" tone="subtle" as="p" style={{ marginBottom: 10 }}>
-          Provision this wallet onto a DIFFERENT device you own — via a SAS-confirmed handshake. Run this
-          on your existing device; the new device runs the matching import.
+          Provision this wallet onto a DIFFERENT device you own — via a SAS-confirmed handshake. Run this on your
+          existing device; the new device runs the matching import.
         </Text>
         {/* Enrolling a passkey is a DEFERRED GRANT: the other device can obtain the wallet key whenever
             it likes. Removing its access slot later is housekeeping (it frees capacity); it cannot un-learn a
             key the passkey already had. Never imply removal undoes the grant. */}
         <Text variant="label" tone="danger" as="p" style={{ marginBottom: 10 }}>
-          ⚠ This grants the other device the ability to use your wallet key — now, or at any time later.
-          Only pair a device you control. You can remove its access slot afterwards (see "Who can reach this
-          wallet"), but that only frees the slot: it cannot un-learn a key the device already had. If a
-          device is lost or compromised, move your funds to a new wallet.
+          ⚠ This grants the other device the ability to use your wallet key — now, or at any time later. Only pair a
+          device you control. You can remove its access slot afterwards (see "Who can reach this wallet"), but that only
+          frees the slot: it cannot un-learn a key the device already had. If a device is lost or compromised, move your
+          funds to a new wallet.
         </Text>
-        <Button variant="primary" onClick={() => setView("pair")}>Export to a device</Button>
+        <Button variant="primary" onClick={() => setView("pair")}>
+          Export to a device
+        </Button>
       </Card>
     </Screen>
   );

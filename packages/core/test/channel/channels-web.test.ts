@@ -142,7 +142,13 @@ describe("createWebChannel", () => {
 
     // Verify still pending: attach a flag, flush microtasks
     let settled = false;
-    promise.then(() => { settled = true; }).catch(() => { settled = true; });
+    promise
+      .then(() => {
+        settled = true;
+      })
+      .catch(() => {
+        settled = true;
+      });
     await Promise.resolve(); // flush one microtask tick
     expect(settled).toBe(false);
 
@@ -284,7 +290,13 @@ describe("createWebChannel", () => {
 
     // Promise must remain pending
     let settled = false;
-    promise.then(() => { settled = true; }).catch(() => { settled = true; });
+    promise
+      .then(() => {
+        settled = true;
+      })
+      .catch(() => {
+        settled = true;
+      });
     await Promise.resolve();
     expect(settled).toBe(false);
 
@@ -298,9 +310,7 @@ describe("createWebChannel", () => {
   // -------------------------------------------------------------------------
 
   it("Fix 2 — throws at construction for a non-localhost HTTP authOrigin", () => {
-    expect(() => createWebChannel({ authOrigin: "http://evil.example.com" })).toThrow(
-      /must use HTTPS/i,
-    );
+    expect(() => createWebChannel({ authOrigin: "http://evil.example.com" })).toThrow(/must use HTTPS/i);
   });
 
   it("Fix 2 — does NOT throw for http://localhost (dev allowance)", () => {
@@ -324,7 +334,13 @@ describe("createWebChannel", () => {
     fireMessage({ kind: "unexpected-garbage", payload: 42 }, AUTH_ORIGIN);
 
     let settled = false;
-    promise.then(() => { settled = true; }).catch(() => { settled = true; });
+    promise
+      .then(() => {
+        settled = true;
+      })
+      .catch(() => {
+        settled = true;
+      });
     await Promise.resolve();
     expect(settled).toBe(false);
 
@@ -342,7 +358,13 @@ describe("createWebChannel", () => {
     fireMessage(null, AUTH_ORIGIN, fakePopup);
 
     let settled = false;
-    promise.then(() => { settled = true; }).catch(() => { settled = true; });
+    promise
+      .then(() => {
+        settled = true;
+      })
+      .catch(() => {
+        settled = true;
+      });
     await Promise.resolve();
     expect(settled).toBe(false);
 

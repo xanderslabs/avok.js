@@ -86,7 +86,13 @@ export interface SolanaNamespace {
    *  quote); in self-pay the user funds it in SOL. `decimals`
    *  and `tokenProgram` are looked up from the registry — throws when the mint is unknown to the
    *  cluster. Pass the result straight to `simulate`/`send` with the SAME `{ cluster, feeToken }`. */
-  buildSplTransfer(args: { mint: string; to: string; amount: bigint; cluster?: string; feeToken?: string | null }): Promise<Instruction[]>;
+  buildSplTransfer(args: {
+    mint: string;
+    to: string;
+    amount: bigint;
+    cluster?: string;
+    feeToken?: string | null;
+  }): Promise<Instruction[]>;
 }
 
 /** Resolves the given cluster (required, per-call) and throws if it is not a valid cluster. */
@@ -220,14 +226,28 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
     const computeUnitPrice = opts?.computeUnitPrice ?? DEFAULT_CU_PRICE;
 
     if (!feeToken) {
-      return { allIx: instructions, feePayer: { kind: "signer", signer }, rail: "self-pay", rpc, computeUnitLimit, computeUnitPrice };
+      return {
+        allIx: instructions,
+        feePayer: { kind: "signer", signer },
+        rail: "self-pay",
+        rpc,
+        computeUnitLimit,
+        computeUnitPrice,
+      };
     }
 
     // sponsored — but only if a Kora is actually reachable. No Kora ⇒ self-pay: a sponsored attempt on a
     // cluster with no fee payer must degrade, not fail (SPEC-05 §1).
     const kora = resolveKora();
     if (!kora) {
-      return { allIx: instructions, feePayer: { kind: "signer", signer }, rail: "self-pay", rpc, computeUnitLimit, computeUnitPrice };
+      return {
+        allIx: instructions,
+        feePayer: { kind: "signer", signer },
+        rail: "self-pay",
+        rpc,
+        computeUnitLimit,
+        computeUnitPrice,
+      };
     }
 
     // Kora is the fee payer. Ask who that is BEFORE building: the transaction cannot be assembled, let

@@ -15,12 +15,7 @@
  *   ...then the new device (enroller) calls login() to log in, like any other passkey — `finish()`.
  */
 import { useEffect, useRef, useState } from "react";
-import {
-  runImportCeremony,
-  runExportCeremony,
-  type PairingTransport,
-  type PairingVerbs,
-} from "@avokjs/core/helpers";
+import { runImportCeremony, runExportCeremony, type PairingTransport, type PairingVerbs } from "@avokjs/core/helpers";
 import { createBrowserQrTransport, CameraUnavailableError } from "@avokjs/core/qr";
 import { useSelfCustody } from "./hooks.js";
 

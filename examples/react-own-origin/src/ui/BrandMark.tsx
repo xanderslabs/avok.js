@@ -4,10 +4,7 @@
 export function BrandMark({ size = 20 }: { size?: number }) {
   const glyph = Math.round(size * 0.55);
   return (
-    <span
-      className="brand-mark"
-      style={{ width: size, height: size, borderRadius: Math.round(size * 0.3) }}
-    >
+    <span className="brand-mark" style={{ width: size, height: size, borderRadius: Math.round(size * 0.3) }}>
       <svg viewBox="0 0 24 24" width={glyph} height={glyph} fill="currentColor" aria-hidden="true">
         <rect x="7" y="7" width="10" height="10" rx="2.6" transform="rotate(45 12 12)" />
       </svg>

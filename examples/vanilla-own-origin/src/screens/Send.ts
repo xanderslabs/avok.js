@@ -24,7 +24,19 @@ import { classifySendError, type SendErrorKind } from "@avokjs/core/helpers";
 import { resolveRecipient } from "@avokjs/core/helpers";
 import { hasEvmSponsored, hasSolanaSponsored, type SolanaCluster } from "../config.js";
 import { resolver } from "../resolver.js";
-import { Screen, Card, Field, AmountField, ConsentLines, TxStatus, ErrorNote, Button, ChainSwitcher, AddressText, Icon } from "../ui/index.js";
+import {
+  Screen,
+  Card,
+  Field,
+  AmountField,
+  ConsentLines,
+  TxStatus,
+  ErrorNote,
+  Button,
+  ChainSwitcher,
+  AddressText,
+  Icon,
+} from "../ui/index.js";
 
 type Rail = "evm" | "solana";
 type FeeMode = "self" | "sponsored";
@@ -38,7 +50,13 @@ const SOL_DECIMALS = 9;
 const DEFAULT_EVM_CHAIN = selectableChains[0]?.id ?? 8453;
 const CLUSTERS: SolanaCluster[] = ["devnet", "mainnet"];
 
-const secLabel = { fontSize: "11px", textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text3)", marginBottom: "8px" };
+const secLabel = {
+  fontSize: "11px",
+  textTransform: "uppercase",
+  letterSpacing: ".06em",
+  color: "var(--text3)",
+  marginBottom: "8px",
+};
 
 export function Send(ctx: Ctx): HTMLElement {
   const account = ctx.client.account();
@@ -84,8 +102,12 @@ export function Send(ctx: Ctx): HTMLElement {
     }
     void ctx.client.solana
       .supportedFeeTokens(cluster)
-      .then((tokens) => { if (load === feeTokenLoad) set({ solFeeTokens: tokens }); })
-      .catch(() => { if (load === feeTokenLoad) set({ solFeeTokens: [] }); });
+      .then((tokens) => {
+        if (load === feeTokenLoad) set({ solFeeTokens: tokens });
+      })
+      .catch(() => {
+        if (load === feeTokenLoad) set({ solFeeTokens: [] });
+      });
   }
   loadSolanaFeeTokens(s.cluster);
 
@@ -108,9 +130,19 @@ export function Send(ctx: Ctx): HTMLElement {
         : s.solFeeTokens.map((t) => ({ key: t.mint, symbol: t.symbol }));
     const canSponsored = (s.rail === "evm" ? hasEvmSponsored : hasSolanaSponsored) && sponsoredFeeTokens.length > 0;
     const effectiveFeeMode: FeeMode = canSponsored ? s.feeMode : "self";
-    const selectedFeeToken =
-      effectiveFeeMode === "sponsored" ? (sponsoredFeeTokens[s.feeTokenIdx]?.key ?? null) : null;
-    return { canSponsored, effectiveFeeMode, chain, evmToken, solTokens, solToken, decimals, symbol, sponsoredFeeTokens, selectedFeeToken };
+    const selectedFeeToken = effectiveFeeMode === "sponsored" ? (sponsoredFeeTokens[s.feeTokenIdx]?.key ?? null) : null;
+    return {
+      canSponsored,
+      effectiveFeeMode,
+      chain,
+      evmToken,
+      solTokens,
+      solToken,
+      decimals,
+      symbol,
+      sponsoredFeeTokens,
+      selectedFeeToken,
+    };
   }
 
   function amountBaseFor(decimals: number): bigint | null {
@@ -122,7 +154,20 @@ export function Send(ctx: Ctx): HTMLElement {
   }
 
   function switchRail(next: Rail): void {
-    set({ rail: next, step: "form", tokenIdx: 0, feeTokenIdx: 0, evmSim: null, solSim: null, formError: null, err: null, resolvedTo: null, resolvedFrom: null, explorerUrl: undefined, txState: txReduce(s.txState, "reset") });
+    set({
+      rail: next,
+      step: "form",
+      tokenIdx: 0,
+      feeTokenIdx: 0,
+      evmSim: null,
+      solSim: null,
+      formError: null,
+      err: null,
+      resolvedTo: null,
+      resolvedFrom: null,
+      explorerUrl: undefined,
+      txState: txReduce(s.txState, "reset"),
+    });
   }
 
   async function handleReview(): Promise<void> {
@@ -248,9 +293,20 @@ export function Send(ctx: Ctx): HTMLElement {
           // And the relayer's own reason was never surfaced here at all (the React demos do it): a
           // bare "Failed" is undiagnosable.
           ...(final.status === "failed" && final.error
-            ? { err: { kind: "sponsored-unavailable" as const, message: `The relayer could not submit this transaction: ${final.error}` } }
+            ? {
+                err: {
+                  kind: "sponsored-unavailable" as const,
+                  message: `The relayer could not submit this transaction: ${final.error}`,
+                },
+              }
             : final.status !== "confirmed" && final.status !== "failed"
-              ? { err: { kind: "unknown" as const, message: "The transaction was accepted but has not confirmed yet. Check the explorer before retrying — it may still land." } }
+              ? {
+                  err: {
+                    kind: "unknown" as const,
+                    message:
+                      "The transaction was accepted but has not confirmed yet. Check the explorer before retrying — it may still land.",
+                  },
+                }
               : {}),
         });
       } else {
@@ -276,7 +332,12 @@ export function Send(ctx: Ctx): HTMLElement {
           ...(final.signature ? { explorerUrl: solanaExplorerTxUrl(s.cluster, final.signature) } : {}),
           // A bare "Failed" is undiagnosable. The relayer tells us why it could not submit; show it.
           ...(final.status === "failed" && final.error
-            ? { err: { kind: "sponsored-unavailable" as const, message: `The relayer could not submit this transaction: ${final.error}` } }
+            ? {
+                err: {
+                  kind: "sponsored-unavailable" as const,
+                  message: `The relayer could not submit this transaction: ${final.error}`,
+                },
+              }
             : final.status !== "confirmed" && final.status !== "failed"
               ? {
                   err: {
@@ -296,7 +357,15 @@ export function Send(ctx: Ctx): HTMLElement {
   }
 
   function startOver(): void {
-    set({ step: "form", evmSim: null, solSim: null, formError: null, err: null, explorerUrl: undefined, txState: txReduce(s.txState, "reset") });
+    set({
+      step: "form",
+      evmSim: null,
+      solSim: null,
+      formError: null,
+      err: null,
+      explorerUrl: undefined,
+      txState: txReduce(s.txState, "reset"),
+    });
   }
 
   /** SPONSORED fees are exact and signed. SELF-PAY fees are not: the chain charges at inclusion, so the
@@ -342,11 +411,15 @@ export function Send(ctx: Ctx): HTMLElement {
     //
     // Resolve the fee symbol on the rail the transaction actually runs on. Searching only the EVM
     // chain's tokens left a Solana fee token unfound, so the consent screen printed its raw mint.
-    const feeSymbol = effectiveFeeMode === "sponsored"
-      ? (s.rail === "solana"
+    const feeSymbol =
+      effectiveFeeMode === "sponsored"
+        ? s.rail === "solana"
           ? (ctx.client.solana.feeTokens(s.cluster).find((t) => t.mint === selectedFeeToken)?.symbol ?? "the fee token")
-          : (chain?.tokens.find((t) => t.address.toLowerCase() === (selectedFeeToken ?? "").toLowerCase())?.symbol ?? "the fee token"))
-      : s.rail === "evm" ? (chain?.nativeSymbol ?? "native") : "SOL";
+          : (chain?.tokens.find((t) => t.address.toLowerCase() === (selectedFeeToken ?? "").toLowerCase())?.symbol ??
+            "the fee token")
+        : s.rail === "evm"
+          ? (chain?.nativeSymbol ?? "native")
+          : "SOL";
     const lines = [
       s.rail === "evm" ? `Chain: ${chainName(s.chainId)}` : `Chain: Solana ${s.cluster}`,
       // The RECIPIENT belongs on a consent screen. This line used to name only the amount and the
@@ -367,7 +440,11 @@ export function Send(ctx: Ctx): HTMLElement {
       el(
         "div",
         { style: { marginTop: "10px" } },
-        el("div", { style: { fontSize: "11px", color: "var(--text3)", marginBottom: "4px" } }, s.resolvedFrom ? `Recipient (${s.resolvedFrom})` : "Recipient"),
+        el(
+          "div",
+          { style: { fontSize: "11px", color: "var(--text3)", marginBottom: "4px" } },
+          s.resolvedFrom ? `Recipient (${s.resolvedFrom})` : "Recipient",
+        ),
         AddressText({ address: s.resolvedTo ?? s.to, truncate: false, copy: true }),
       ),
       el("div", { style: { marginTop: "14px" } }, TxStatus({ state: s.txState, explorerUrl: s.explorerUrl })),
@@ -407,7 +484,18 @@ export function Send(ctx: Ctx): HTMLElement {
           selected: s.rail === "evm" ? s.chainId : -1,
           onSelect: (id) => {
             if (id === -1) switchRail("solana");
-            else set({ rail: "evm", chainId: id, tokenIdx: 0, feeTokenIdx: 0, step: "form", formError: null, err: null, explorerUrl: undefined, txState: txReduce(s.txState, "reset") });
+            else
+              set({
+                rail: "evm",
+                chainId: id,
+                tokenIdx: 0,
+                feeTokenIdx: 0,
+                step: "form",
+                formError: null,
+                err: null,
+                explorerUrl: undefined,
+                txState: txReduce(s.txState, "reset"),
+              });
           },
         }),
       ),
@@ -421,7 +509,14 @@ export function Send(ctx: Ctx): HTMLElement {
             "div",
             { style: { display: "flex", gap: "8px" } },
             ...CLUSTERS.map((c) =>
-              Button({ variant: s.cluster === c ? "primary" : "ghost", label: c === "mainnet" ? "Mainnet" : "Devnet", onClick: () => { set({ cluster: c, feeTokenIdx: 0, tokenIdx: 0 }); loadSolanaFeeTokens(c); } }),
+              Button({
+                variant: s.cluster === c ? "primary" : "ghost",
+                label: c === "mainnet" ? "Mainnet" : "Devnet",
+                onClick: () => {
+                  set({ cluster: c, feeTokenIdx: 0, tokenIdx: 0 });
+                  loadSolanaFeeTokens(c);
+                },
+              }),
             ),
           ),
         ),
@@ -429,7 +524,8 @@ export function Send(ctx: Ctx): HTMLElement {
       Field({
         label: "To",
         value: s.to,
-        placeholder: s.rail === "evm" ? "0x… address or name (e.g. alice.eth)" : "Solana address or name (e.g. alice.sol)",
+        placeholder:
+          s.rail === "evm" ? "0x… address or name (e.g. alice.eth)" : "Solana address or name (e.g. alice.sol)",
         onChange: (v) => {
           s.to = v;
           s.resolvedTo = null;
@@ -472,8 +568,17 @@ export function Send(ctx: Ctx): HTMLElement {
         el(
           "div",
           { style: { display: "flex", gap: "8px" } },
-          Button({ variant: effectiveFeeMode === "self" ? "primary" : "ghost", label: "Self-pay", onClick: () => set({ feeMode: "self" }) }),
-          Button({ variant: effectiveFeeMode === "sponsored" ? "primary" : "ghost", label: "Sponsored", disabled: !canSponsored, onClick: () => set({ feeMode: "sponsored" }) }),
+          Button({
+            variant: effectiveFeeMode === "self" ? "primary" : "ghost",
+            label: "Self-pay",
+            onClick: () => set({ feeMode: "self" }),
+          }),
+          Button({
+            variant: effectiveFeeMode === "sponsored" ? "primary" : "ghost",
+            label: "Sponsored",
+            disabled: !canSponsored,
+            onClick: () => set({ feeMode: "sponsored" }),
+          }),
         ),
         effectiveFeeMode === "sponsored" &&
           sponsoredFeeTokens.length > 0 &&
@@ -485,7 +590,11 @@ export function Send(ctx: Ctx): HTMLElement {
               "div",
               { style: { display: "flex", gap: "8px" } },
               ...sponsoredFeeTokens.map((t, i) =>
-                Button({ variant: s.feeTokenIdx === i ? "primary" : "ghost", label: t.symbol, onClick: () => set({ feeTokenIdx: i }) }),
+                Button({
+                  variant: s.feeTokenIdx === i ? "primary" : "ghost",
+                  label: t.symbol,
+                  onClick: () => set({ feeTokenIdx: i }),
+                }),
               ),
             ),
           ),
@@ -503,7 +612,8 @@ export function Send(ctx: Ctx): HTMLElement {
           ),
       ),
 
-      s.formError && el("div", { style: { marginBottom: "10px" } }, ErrorNote({ kind: "unknown", message: s.formError })),
+      s.formError &&
+        el("div", { style: { marginBottom: "10px" } }, ErrorNote({ kind: "unknown", message: s.formError })),
 
       Button({ variant: "primary", label: "Review transfer", onClick: () => void handleReview() }),
     );

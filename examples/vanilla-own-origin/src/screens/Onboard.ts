@@ -133,7 +133,15 @@ export function Onboard(ctx: Ctx): HTMLElement {
       ),
       el(
         "p",
-        { style: { fontSize: "11px", color: "var(--text3)", margin: "12px auto 0", maxWidth: "34ch", lineHeight: "1.5" } },
+        {
+          style: {
+            fontSize: "11px",
+            color: "var(--text3)",
+            margin: "12px auto 0",
+            maxWidth: "34ch",
+            lineHeight: "1.5",
+          },
+        },
         "Setting it up from another device costs one on-chain transaction, paid by the wallet.",
       ),
       s.error && el("div", { style: { marginTop: "14px" } }, ErrorNote(s.error)),
@@ -148,7 +156,15 @@ export function Onboard(ctx: Ctx): HTMLElement {
       el("div", { style: { display: "flex", justifyContent: "center", marginBottom: "16px" } }, BrandMark(50)),
       el(
         "h3",
-        { style: { fontSize: "19px", fontWeight: "700", letterSpacing: "-.02em", color: "var(--text)", margin: "0 0 6px" } },
+        {
+          style: {
+            fontSize: "19px",
+            fontWeight: "700",
+            letterSpacing: "-.02em",
+            color: "var(--text)",
+            margin: "0 0 6px",
+          },
+        },
         "Welcome back",
       ),
       el(
@@ -192,7 +208,15 @@ export function Onboard(ctx: Ctx): HTMLElement {
       el("div", { style: { display: "flex", justifyContent: "center", marginBottom: "16px" } }, BrandMark(50)),
       el(
         "h3",
-        { style: { fontSize: "19px", fontWeight: "700", letterSpacing: "-.02em", color: "var(--text)", margin: "0 0 6px" } },
+        {
+          style: {
+            fontSize: "19px",
+            fontWeight: "700",
+            letterSpacing: "-.02em",
+            color: "var(--text)",
+            margin: "0 0 6px",
+          },
+        },
         "Welcome to Avok",
       ),
       el(
@@ -229,7 +253,15 @@ export function Onboard(ctx: Ctx): HTMLElement {
 
       el(
         "p",
-        { style: { fontSize: "11px", color: "var(--text3)", margin: "12px auto 0", maxWidth: "34ch", lineHeight: "1.5" } },
+        {
+          style: {
+            fontSize: "11px",
+            color: "var(--text3)",
+            margin: "12px auto 0",
+            maxWidth: "34ch",
+            lineHeight: "1.5",
+          },
+        },
         "Create makes a new, separate wallet.",
       ),
 

@@ -26,7 +26,9 @@ export type SolanaSendToken = { symbol: string; mint: string | null; decimals: n
 export function solanaTokens(cluster: SolanaCluster): SolanaSendToken[] {
   const native: SolanaSendToken = { symbol: "SOL", mint: null, decimals: 9 };
   const profile = getSolanaChainProfile(cluster);
-  const spl = profile ? Object.values(profile.tokens).map((t) => ({ symbol: t.symbol, mint: t.mint, decimals: t.decimals })) : [];
+  const spl = profile
+    ? Object.values(profile.tokens).map((t) => ({ symbol: t.symbol, mint: t.mint, decimals: t.decimals }))
+    : [];
   return [native, ...spl];
 }
 

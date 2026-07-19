@@ -37,7 +37,22 @@ export {
 } from "@avokjs/core";
 
 // ─── Types (re-exported from @avokjs/core so the published .d.ts is self-contained) ───
-export type { UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, Account, CreateOpts, ContinueOpts, TxOpts, ClientConfig, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken, WalletInfo } from "@avokjs/core";
+export type {
+  UseOnlyAvokClient,
+  FullAvokClient,
+  AvokClientFor,
+  SelfCustodyConnection,
+  Account,
+  CreateOpts,
+  ContinueOpts,
+  TxOpts,
+  ClientConfig,
+  SolanaTxOpts,
+  SolanaSimulation,
+  FeeToken,
+  EvmFeeToken,
+  WalletInfo,
+} from "@avokjs/core";
 
 // ─── Catchable error types (re-exported as values so a react app can `instanceof`-narrow them without
 //     a second import of @avokjs/core). MissingRpIdError is intentionally absent (fail-fast config error). ───

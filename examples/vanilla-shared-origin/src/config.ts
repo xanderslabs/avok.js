@@ -31,7 +31,7 @@ function readRpcUrls(): RpcOverrides | undefined {
       );
     } catch {
       // Fail loud: a typo here silently drops you onto a public endpoint you did not choose.
-      throw new Error("VITE_EVM_RPC_URLS must be JSON, e.g. {\"8453\":\"https://...\"}");
+      throw new Error('VITE_EVM_RPC_URLS must be JSON, e.g. {"8453":"https://..."}');
     }
   }
 

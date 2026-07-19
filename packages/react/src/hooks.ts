@@ -59,7 +59,9 @@ export function useAvok(): UseOnlyAvokClient {
 export function useSelfCustody(): FullAvokClient {
   const { client } = useAvokContext();
   if (client.custody !== "self") {
-    throw new Error("useSelfCustody requires an own-origin (self-custody) connection; this app is shared-origin (use-only)");
+    throw new Error(
+      "useSelfCustody requires an own-origin (self-custody) connection; this app is shared-origin (use-only)",
+    );
   }
   return client as FullAvokClient;
 }
@@ -77,10 +79,7 @@ export function useCreate(): {
   error: Error | null;
 } {
   const client = useSelfCustody();
-  const { call, pending, error } = useMutation(
-    (o?: CreateOpts) => client.create(o),
-    [client],
-  );
+  const { call, pending, error } = useMutation((o?: CreateOpts) => client.create(o), [client]);
   return { create: call, pending, error };
 }
 
@@ -91,10 +90,7 @@ export function useLogin(): {
   error: Error | null;
 } {
   const { client } = useAvokContext();
-  const { call, pending, error } = useMutation(
-    (o?: ContinueOpts) => client.login(o),
-    [client],
-  );
+  const { call, pending, error } = useMutation((o?: ContinueOpts) => client.login(o), [client]);
   return { login: call, pending, error };
 }
 
@@ -105,10 +101,9 @@ export function useLogout(): {
   error: Error | null;
 } {
   const { client } = useAvokContext();
-  const { call, pending, error } = useMutation(
-    async () => { await (client.logout() as Promise<void> | void); },
-    [client],
-  );
+  const { call, pending, error } = useMutation(async () => {
+    await (client.logout() as Promise<void> | void);
+  }, [client]);
   return { logout: call, pending, error };
 }
 

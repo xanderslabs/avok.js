@@ -61,11 +61,7 @@ export function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 /** SVG-namespaced variant for the Icon/BrandMark glyphs. */
-export function svg(
-  tag: string,
-  props?: ElProps | null,
-  ...children: (ElChild | ElChild[])[]
-): SVGElement {
+export function svg(tag: string, props?: ElProps | null, ...children: (ElChild | ElChild[])[]): SVGElement {
   const node = document.createElementNS(SVG_NS, tag);
   if (props) applyProps(node, props);
   appendChildren(node, children);

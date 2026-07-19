@@ -3,7 +3,11 @@ import QRCode from "qrcode";
 import jsQRImport from "jsqr";
 
 // jsqr's default export is the decode function; pin the callable type (see src/qr.ts).
-const jsQR = jsQRImport as unknown as (data: Uint8ClampedArray, width: number, height: number) => { data: string } | null;
+const jsQR = jsQRImport as unknown as (
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+) => { data: string } | null;
 
 // Render a QR to a raw RGBA pixel buffer WITHOUT a native canvas: QRCode.create gives the module
 // matrix; we paint each dark module as a black block over a white quiet zone, then decode with

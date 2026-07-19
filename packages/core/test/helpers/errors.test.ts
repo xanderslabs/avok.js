@@ -8,7 +8,10 @@ describe("classifySendError", () => {
   });
   it("classifies a cancelled/timed-out passkey (WebAuthn NotAllowedError)", () => {
     // Browser DOMException: name = NotAllowedError, message = prose with no "notallowed" token.
-    const domLike = { name: "NotAllowedError", message: "The operation either timed out or was not allowed. See: https://www.w3.org/TR/webauthn-2/" };
+    const domLike = {
+      name: "NotAllowedError",
+      message: "The operation either timed out or was not allowed. See: https://www.w3.org/TR/webauthn-2/",
+    };
     expect(classifySendError(domLike).kind).toBe("rejected");
     // Even when surfaced as a generic Error carrying only the prose message:
     expect(classifySendError(new Error("The operation either timed out or was not allowed.")).kind).toBe("rejected");

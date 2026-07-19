@@ -27,9 +27,9 @@ const TOKEN = "0x3600000000000000000000000000000000000000" as Address;
 const SIM_GAS = 56_090n;
 // Three distinct numbers, satisfying the chain's identity gasPrice == baseFee + suggestedTip. The
 // self-pay rail bids the SUGGESTED tip; it used to bid the whole gasPrice, paying the base fee twice.
-const GAS_PRICE = 1_000_000_000n;     // eth_gasPrice = base + a SUGGESTED tip. Neither term on its own.
-const BASE_FEE = 400_000_000n;        // the chain's actual base fee
-const SUGGESTED_TIP = 600_000_000n;   // eth_maxPriorityFeePerGas — what to bid
+const GAS_PRICE = 1_000_000_000n; // eth_gasPrice = base + a SUGGESTED tip. Neither term on its own.
+const BASE_FEE = 400_000_000n; // the chain's actual base fee
+const SUGGESTED_TIP = 600_000_000n; // eth_maxPriorityFeePerGas — what to bid
 
 const rpc = {
   simulateCalls: async () => [{ success: true, gasUsed: SIM_GAS }],
@@ -49,7 +49,11 @@ const transferCall = {
 describe("self-pay native fee estimate", () => {
   it("IS the simulation — self-pay sends exactly the transaction it simulates", async () => {
     const est = await estimateNativeFee({
-      rpc, walletAddress: WALLET, implementation: IMPL, calls: [transferCall], undelegated: false,
+      rpc,
+      walletAddress: WALLET,
+      implementation: IMPL,
+      calls: [transferCall],
+      undelegated: false,
     });
 
     // No constants, no double-count. The simulation already carries the intrinsic, the calldata and
@@ -60,8 +64,20 @@ describe("self-pay native fee estimate", () => {
   });
 
   it("charges the EIP-7702 authorization on the first (undelegated) send, and not after", async () => {
-    const first = await estimateNativeFee({ rpc, walletAddress: WALLET, implementation: IMPL, calls: [transferCall], undelegated: true });
-    const later = await estimateNativeFee({ rpc, walletAddress: WALLET, implementation: IMPL, calls: [transferCall], undelegated: false });
+    const first = await estimateNativeFee({
+      rpc,
+      walletAddress: WALLET,
+      implementation: IMPL,
+      calls: [transferCall],
+      undelegated: true,
+    });
+    const later = await estimateNativeFee({
+      rpc,
+      walletAddress: WALLET,
+      implementation: IMPL,
+      calls: [transferCall],
+      undelegated: false,
+    });
 
     // The account upgrade is a real, one-time cost the user pays. Hiding it makes the first send —
     // the one where trust is established — the one whose quote is wrong.
@@ -69,7 +85,13 @@ describe("self-pay native fee estimate", () => {
   });
 
   it("prices at baseFee + the SUGGESTED tip — the price eth_gasPrice already predicted", async () => {
-    const est = await estimateNativeFee({ rpc, walletAddress: WALLET, implementation: IMPL, calls: [transferCall], undelegated: false });
+    const est = await estimateNativeFee({
+      rpc,
+      walletAddress: WALLET,
+      implementation: IMPL,
+      calls: [transferCall],
+      undelegated: false,
+    });
 
     // The price is STATED, not recomputed from the model under test. EIP-1559 charges baseFee + the
     // tip bid; bidding the tip the chain suggested costs 0.4 + 0.6 = 1.0 gwei — exactly what
@@ -79,12 +101,18 @@ describe("self-pay native fee estimate", () => {
     expect(est.gasPrice).toBe(CORRECT_PRICE);
 
     // The two prices that shipped, both of them here, both certified by a test that re-derived them:
-    expect(est.gasPrice).not.toBe(GAS_PRICE * 2n);            // "baseFee == gasPrice", so double it
-    expect(est.gasPrice).not.toBe(BASE_FEE + GAS_PRICE);      // "gasPrice is a tip" — pays base twice
+    expect(est.gasPrice).not.toBe(GAS_PRICE * 2n); // "baseFee == gasPrice", so double it
+    expect(est.gasPrice).not.toBe(BASE_FEE + GAS_PRICE); // "gasPrice is a tip" — pays base twice
   });
 
   it("does NOT quote the maxFeePerGas ceiling, which would over-state the fee", async () => {
-    const est = await estimateNativeFee({ rpc, walletAddress: WALLET, implementation: IMPL, calls: [transferCall], undelegated: false });
+    const est = await estimateNativeFee({
+      rpc,
+      walletAddress: WALLET,
+      implementation: IMPL,
+      calls: [transferCall],
+      undelegated: false,
+    });
     // `selfPayFees().maxFeePerGas` carries spike headroom on the BASE fee; the chain refunds the
     // difference. Displaying the ceiling as the fee is a lie in the user's disfavour.
     const ceiling = selfPayFees(SUGGESTED_TIP, BASE_FEE).maxFeePerGas;

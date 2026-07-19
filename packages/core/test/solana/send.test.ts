@@ -35,8 +35,12 @@ class FakePasskeyAdapter {
     return cred.prfOutput.slice(0); // fresh buffer per call: sandbox zeroes prfOutput (single-use contract)
   }
 
-  async discover(): Promise<never> { throw new Error("not needed"); }
-  async supportsLargeBlob(): Promise<boolean> { return true; }
+  async discover(): Promise<never> {
+    throw new Error("not needed");
+  }
+  async supportsLargeBlob(): Promise<boolean> {
+    return true;
+  }
 
   async writeLargeBlob(credentialId: string, _t: string[] | undefined, bytes: Uint8Array): Promise<boolean> {
     if (!this.credentials.has(credentialId)) return false;

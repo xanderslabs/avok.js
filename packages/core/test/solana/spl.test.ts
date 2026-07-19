@@ -20,7 +20,10 @@ class FakePasskeyAdapter {
     const prfOutput = new Uint8Array(Array.from({ length: 32 }, (_, i) => (this.counter * 17 + i) % 256)).buffer;
     this.credentials.set(credentialId, { prfOutput });
     return {
-      credentialId, prfOutput, transports: ["internal"], rpId: "test.local",
+      credentialId,
+      prfOutput,
+      transports: ["internal"],
+      rpId: "test.local",
       prf: { extension: "prf" as const, saltVersion: "v0" as const },
       platform: { authenticatorAttachment: "platform" as const },
       largeBlobSupported: true,
@@ -33,8 +36,12 @@ class FakePasskeyAdapter {
     return cred.prfOutput.slice(0); // fresh buffer per call: sandbox zeroes prfOutput (single-use contract)
   }
 
-  async discover(): Promise<never> { throw new Error("not needed"); }
-  async supportsLargeBlob(): Promise<boolean> { return true; }
+  async discover(): Promise<never> {
+    throw new Error("not needed");
+  }
+  async supportsLargeBlob(): Promise<boolean> {
+    return true;
+  }
   async writeLargeBlob(credentialId: string, _t: string[] | undefined, bytes: Uint8Array): Promise<boolean> {
     if (!this.credentials.has(credentialId)) return false;
     this.largeBlobs.set(credentialId, bytes);
@@ -48,10 +55,10 @@ class FakePasskeyAdapter {
 // ── Shared addresses ──────────────────────────────────────────────────────────
 // All addresses are valid 32-byte base58-encoded Solana public keys.
 const ADDRS = {
-  mint:  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC mint
-  from:  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",  // token program addr (stand-in owner)
-  to:    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL", // assoc token program addr (stand-in owner)
-  payer: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",  // Serum DEX v3 (stand-in payer)
+  mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC mint
+  from: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // token program addr (stand-in owner)
+  to: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL", // assoc token program addr (stand-in owner)
+  payer: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin", // Serum DEX v3 (stand-in payer)
 };
 
 // The SOURCE account must exist (we cannot create it — only its owner can fund it) while the
@@ -71,7 +78,13 @@ const fakeRpc = (destPresent: boolean, sourcePresent = true) => {
 describe("buildSplTransfer", () => {
   it("emits only a transfer when the destination ATA exists", async () => {
     const authority = createNoopSigner(address(ADDRS.from));
-    const { instructions, createdAta } = await buildSplTransfer({ rpc: fakeRpc(true), ...ADDRS, amount: 1000n, authority, decimals: 6 });
+    const { instructions, createdAta } = await buildSplTransfer({
+      rpc: fakeRpc(true),
+      ...ADDRS,
+      amount: 1000n,
+      authority,
+      decimals: 6,
+    });
     expect(createdAta).toBe(false);
     expect(instructions).toHaveLength(1);
   });
@@ -89,12 +102,20 @@ describe("buildSplTransfer", () => {
 
   it("prepends an idempotent create-ATA when the destination ATA is missing", async () => {
     const authority = createNoopSigner(address(ADDRS.from));
-    const { instructions, createdAta } = await buildSplTransfer({ rpc: fakeRpc(false), ...ADDRS, amount: 1000n, authority, decimals: 6 });
+    const { instructions, createdAta } = await buildSplTransfer({
+      rpc: fakeRpc(false),
+      ...ADDRS,
+      amount: 1000n,
+      authority,
+      decimals: 6,
+    });
     expect(createdAta).toBe(true);
     expect(instructions).toHaveLength(2); // create-ATA, then transfer
     // Assert order: first instruction is ATA-create, last is SPL transfer
     expect((instructions[0] as { programAddress: string }).programAddress).toBe(ASSOCIATED_TOKEN_PROGRAM_ADDRESS);
-    expect((instructions[instructions.length - 1] as { programAddress: string }).programAddress).toBe(TOKEN_PROGRAM_ADDRESS);
+    expect((instructions[instructions.length - 1] as { programAddress: string }).programAddress).toBe(
+      TOKEN_PROGRAM_ADDRESS,
+    );
   });
 });
 

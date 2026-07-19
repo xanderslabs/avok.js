@@ -21,12 +21,7 @@ export function TokenRow({
     "div",
     { class: first ? "token-row is-first" : "token-row" },
     el("span", { class: "token-glyph" }, glyph ?? symbol.slice(0, 1)),
-    el(
-      "div",
-      null,
-      el("div", { class: "token-name" }, name),
-      el("div", { class: "token-chain" }, chain),
-    ),
+    el("div", null, el("div", { class: "token-name" }, name), el("div", { class: "token-chain" }, chain)),
     el(
       "div",
       { class: "token-end" },

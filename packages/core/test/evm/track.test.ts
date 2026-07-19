@@ -6,17 +6,26 @@ const TX = ("0x" + "ab".repeat(32)) as `0x${string}`;
 
 test("self-pay: maps a mined receipt to confirmed/failed", async () => {
   const rpc = new FakeRpcClient({ receipts: { [TX]: { status: "success", transactionHash: TX } } });
-  const out = await getReceiptStatus({ id: TX, rail: "self-pay", status: "submitted", txHash: TX, chainId: 10 }, { rpc });
+  const out = await getReceiptStatus(
+    { id: TX, rail: "self-pay", status: "submitted", txHash: TX, chainId: 10 },
+    { rpc },
+  );
   expect(out.status).toBe("confirmed");
 
   const rpc2 = new FakeRpcClient({ receipts: { [TX]: { status: "reverted", transactionHash: TX } } });
-  const out2 = await getReceiptStatus({ id: TX, rail: "self-pay", status: "submitted", txHash: TX, chainId: 10 }, { rpc: rpc2 });
+  const out2 = await getReceiptStatus(
+    { id: TX, rail: "self-pay", status: "submitted", txHash: TX, chainId: 10 },
+    { rpc: rpc2 },
+  );
   expect(out2.status).toBe("failed");
 });
 
 test("self-pay: not yet mined stays submitted", async () => {
   const rpc = new FakeRpcClient();
-  const out = await getReceiptStatus({ id: TX, rail: "self-pay", status: "submitted", txHash: TX, chainId: 10 }, { rpc });
+  const out = await getReceiptStatus(
+    { id: TX, rail: "self-pay", status: "submitted", txHash: TX, chainId: 10 },
+    { rpc },
+  );
   expect(out.status).toBe("submitted");
 });
 

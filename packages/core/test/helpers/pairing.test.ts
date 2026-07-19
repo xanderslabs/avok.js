@@ -20,7 +20,10 @@ describe("runImportCeremony (the ENROLLER — the device getting a passkey)", ()
     let sas = "";
     await runImportCeremony(setup as never, t, {
       onStep: (s) => steps.push(s),
-      confirmSas: async (s) => { sas = s; return true; },
+      confirmSas: async (s) => {
+        sas = s;
+        return true;
+      },
     });
     // It SHOWS two codes now (request, then its wrapping key) and scans one (the ack). It returns no
     // account: it was handed no key, so it is not logged in — the app calls continue() afterwards.
@@ -34,10 +37,16 @@ describe("runImportCeremony (the ENROLLER — the device getting a passkey)", ()
   it("rejects when the user says the SAS does not match — and mints no credential", async () => {
     // Rejecting before confirm() means no passkey is created at all, so no orphaned credential is left
     // behind: the credential is minted inside confirm(), which the gate guards.
-    const setup = { begin: vi.fn(async () => ({ requestQr: "REQ" })), receiveAck: vi.fn(async () => ({ sas: "000000" })), confirm: vi.fn(), reject: vi.fn() };
+    const setup = {
+      begin: vi.fn(async () => ({ requestQr: "REQ" })),
+      receiveAck: vi.fn(async () => ({ sas: "000000" })),
+      confirm: vi.fn(),
+      reject: vi.fn(),
+    };
     const t = fakeTransport(["ACK"]);
-    await expect(runImportCeremony(setup as never, t, { onStep: () => {}, confirmSas: async () => false }))
-      .rejects.toThrow(/SAS|cancel/i);
+    await expect(
+      runImportCeremony(setup as never, t, { onStep: () => {}, confirmSas: async () => false }),
+    ).rejects.toThrow(/SAS|cancel/i);
     expect(setup.reject).toHaveBeenCalled();
     expect(setup.confirm).not.toHaveBeenCalled();
   });
@@ -64,8 +73,9 @@ describe("runExportCeremony (the HOLDER — the live wallet, which pays)", () =>
     // A rejected SAS must mean nothing is ever sealed.
     const auth = { authorize: vi.fn(async () => ({ ackQr: "ACK", sas: "000000" })), confirm: vi.fn(), reject: vi.fn() };
     const t = fakeTransport(["REQ"]);
-    await expect(runExportCeremony(auth as never, t, { onStep: () => {}, confirmSas: async () => false }))
-      .rejects.toThrow(/SAS|cancel/i);
+    await expect(
+      runExportCeremony(auth as never, t, { onStep: () => {}, confirmSas: async () => false }),
+    ).rejects.toThrow(/SAS|cancel/i);
     expect(auth.reject).toHaveBeenCalled();
     expect(auth.confirm).not.toHaveBeenCalled();
   });

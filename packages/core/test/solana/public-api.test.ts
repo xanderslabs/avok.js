@@ -28,9 +28,16 @@ describe("public API exports", () => {
   // discriminant, and the decode surface (which is its own /decode subpath). A re-add should trip this.
   it("does NOT re-export the low-level internals or the decode surface", () => {
     for (const name of [
-      "LAMPORTS_PER_SIGNATURE", "ATA_PROGRAM_ADDRESS", "ataExists", "simulateSolana",
-      "selectPriorityFee", "DEFAULT_PRIORITY_FEE_PERCENTILE", "OFFCHAIN_MESSAGE_VERSION",
-      "decodeCompiledMessage", "classifySplTransfer", "TOKEN_2022_PROGRAM_ADDRESS",
+      "LAMPORTS_PER_SIGNATURE",
+      "ATA_PROGRAM_ADDRESS",
+      "ataExists",
+      "simulateSolana",
+      "selectPriorityFee",
+      "DEFAULT_PRIORITY_FEE_PERCENTILE",
+      "OFFCHAIN_MESSAGE_VERSION",
+      "decodeCompiledMessage",
+      "classifySplTransfer",
+      "TOKEN_2022_PROGRAM_ADDRESS",
     ]) {
       expect(api, `internal leaked to the barrel: ${name}`).not.toHaveProperty(name);
     }

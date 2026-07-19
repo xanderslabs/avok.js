@@ -10,10 +10,17 @@ class FakePasskeyAdapter {
   private readonly largeBlobs = new Map<string, Uint8Array>();
   private counter = 0;
 
-  async create(_label: string, _address: string): Promise<{
-    credentialId: string; prfOutput: ArrayBuffer; transports: string[];
-    rpId: string; prf: { extension: "prf"; saltVersion: "v0" };
-    platform: { authenticatorAttachment: "platform" }; largeBlobSupported: boolean;
+  async create(
+    _label: string,
+    _address: string,
+  ): Promise<{
+    credentialId: string;
+    prfOutput: ArrayBuffer;
+    transports: string[];
+    rpId: string;
+    prf: { extension: "prf"; saltVersion: "v0" };
+    platform: { authenticatorAttachment: "platform" };
+    largeBlobSupported: boolean;
   }> {
     this.counter += 1;
     const credentialId = `fake-cred-${this.counter}`;
@@ -36,8 +43,12 @@ class FakePasskeyAdapter {
     return cred.prfOutput.slice(0); // fresh buffer per call: sandbox zeroes prfOutput (single-use contract)
   }
 
-  async discover(): Promise<never> { throw new Error("not needed"); }
-  async supportsLargeBlob(): Promise<boolean> { return true; }
+  async discover(): Promise<never> {
+    throw new Error("not needed");
+  }
+  async supportsLargeBlob(): Promise<boolean> {
+    return true;
+  }
 
   async writeLargeBlob(credentialId: string, _t: string[] | undefined, bytes: Uint8Array): Promise<boolean> {
     if (!this.credentials.has(credentialId)) return false;
@@ -86,10 +97,7 @@ describe("toKitSigner", () => {
 
     const msg1 = new Uint8Array([0xaa, 0xbb]);
     const msg2 = new Uint8Array([0xcc, 0xdd]);
-    const [d1, d2] = await signer.signTransactions([
-      { messageBytes: msg1 } as never,
-      { messageBytes: msg2 } as never,
-    ]);
+    const [d1, d2] = await signer.signTransactions([{ messageBytes: msg1 } as never, { messageBytes: msg2 } as never]);
 
     // Still only ONE gesture for the batch.
     expect(authSpy).toHaveBeenCalledTimes(1);

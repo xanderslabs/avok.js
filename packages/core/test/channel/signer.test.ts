@@ -10,7 +10,11 @@ describe("remote signer", () => {
     const signer = createRemoteSigner({ channel, credentialId: "cred1" });
     const sig = await signer.signMessage({ message: "hello" });
     expect(sig).toBe("0xsig");
-    expect(open).toHaveBeenCalledWith({ kind: "sign", credentialId: "cred1", request: { op: "signMessage", message: "hello" } });
+    expect(open).toHaveBeenCalledWith({
+      kind: "sign",
+      credentialId: "cred1",
+      request: { op: "signMessage", message: "hello" },
+    });
   });
 
   it("routes signTypedData and returns the signature", async () => {
@@ -173,6 +177,11 @@ describe("composite ops — one round-trip, one popup", () => {
     expect(out.signature).toBe("0xsig");
     expect(out.authorization).toBeUndefined();
     expect(open).toHaveBeenCalledTimes(1);
-    expect(open.mock.calls[0]![0].request).toEqual({ op: "signUserOp", userOp: USEROP, chainId: 10, authorization: undefined });
+    expect(open.mock.calls[0]![0].request).toEqual({
+      op: "signUserOp",
+      userOp: USEROP,
+      chainId: 10,
+      authorization: undefined,
+    });
   });
 });

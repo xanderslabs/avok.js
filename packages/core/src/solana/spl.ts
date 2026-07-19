@@ -13,11 +13,7 @@ import { TOKEN_2022_PROGRAM_ADDRESS } from "./decode.js";
  * @param tokenProgram - base58 SPL token program address; defaults to the classic Token program.
  *   Pass the Token-2022 program address to derive the Token-2022 ATA (which is seeded differently).
  */
-export async function associatedTokenAddress(
-  mint: string,
-  owner: string,
-  tokenProgram?: string,
-): Promise<string> {
+export async function associatedTokenAddress(mint: string, owner: string, tokenProgram?: string): Promise<string> {
   const [pda] = await findAssociatedTokenPda({
     mint: address(mint),
     owner: address(owner),

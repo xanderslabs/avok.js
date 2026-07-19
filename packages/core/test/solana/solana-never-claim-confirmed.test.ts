@@ -59,7 +59,9 @@ describe("solana wait(): sponsored", () => {
   });
 
   it("resolves confirmed ONLY when the CHAIN says so", async () => {
-    const sol = namespaceWith(rpc({ getSignatureStatus: async () => ({ confirmationStatus: "confirmed", err: null }) }));
+    const sol = namespaceWith(
+      rpc({ getSignatureStatus: async () => ({ confirmationStatus: "confirmed", err: null }) }),
+    );
 
     const final = await sol.wait(sponsoredReceipt, { intervalMs: 1 });
 
@@ -80,7 +82,9 @@ describe("solana wait(): sponsored", () => {
   });
 
   it("reports an on-chain error as failed", async () => {
-    const sol = namespaceWith(rpc({ getSignatureStatus: async () => ({ confirmationStatus: null, err: { InstructionError: [0, "Custom"] } }) }));
+    const sol = namespaceWith(
+      rpc({ getSignatureStatus: async () => ({ confirmationStatus: null, err: { InstructionError: [0, "Custom"] } }) }),
+    );
     expect((await sol.wait(sponsoredReceipt, { intervalMs: 1 })).status).toBe("failed");
   });
 
@@ -100,12 +104,16 @@ describe("solana wait(): self-pay", () => {
   });
 
   it("confirms only once the chain has confirmed it", async () => {
-    const sol = namespaceWith(rpc({ getSignatureStatus: async () => ({ confirmationStatus: "confirmed", err: null }) }));
+    const sol = namespaceWith(
+      rpc({ getSignatureStatus: async () => ({ confirmationStatus: "confirmed", err: null }) }),
+    );
     expect((await sol.wait(selfPayReceipt, { intervalMs: 1 })).status).toBe("confirmed");
   });
 
   it("reports an on-chain error as failed, not confirmed", async () => {
-    const sol = namespaceWith(rpc({ getSignatureStatus: async () => ({ confirmationStatus: null, err: { InstructionError: [0, "Custom"] } }) }));
+    const sol = namespaceWith(
+      rpc({ getSignatureStatus: async () => ({ confirmationStatus: null, err: { InstructionError: [0, "Custom"] } }) }),
+    );
     expect((await sol.wait(selfPayReceipt, { intervalMs: 1 })).status).toBe("failed");
   });
 

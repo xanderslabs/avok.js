@@ -24,7 +24,8 @@ export function capturingVault() {
     },
     hasSlot: async (slotId: Hex) => blobs.has(slotId.toLowerCase()),
     assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
     getAccessSlot: async (_a: Address, slotId: Hex) => blobs.get(slotId.toLowerCase()) ?? null,
     getAccessSlotIds: async (_a: Address) => [...blobs.keys()] as Hex[],
     getAccessSlotAddedAt: async () => 1_700_000_000,
@@ -72,11 +73,15 @@ export async function enrolAccessSlot(holder: Conn, enroller: Conn, vault: Vault
 }
 
 /** What the enrolled credential can do afterwards, holding ONLY its own passkey. */
-export async function openAccessSlot(passkey: FakePasskey, vault: Vault, address: Address, slotId: Hex): Promise<Uint8Array> {
+export async function openAccessSlot(
+  passkey: FakePasskey,
+  vault: Vault,
+  address: Address,
+  slotId: Hex,
+): Promise<Uint8Array> {
   const stored = await vault.getAccessSlot(address, slotId);
   const credentialId = passkey.allCredentialIds()[0];
   const prf = await passkey.authenticate(credentialId);
   const container = await decryptKeyBlob(deserializeBlob(stored!), prf, address, credentialId);
   return Uint8Array.from(container.key); // a copy — reconstructFromKey wipes what it is handed
 }
-

@@ -14,14 +14,19 @@ const base = {
 
 describe("blob container payload", () => {
   it("round-trips a seed-only container and stamps the current blob version", async () => {
-    const container: SecretContainer = { key: hexToBytes("0x0000000000000000000000000000000000000000000000000000000000000000") };
+    const container: SecretContainer = {
+      key: hexToBytes("0x0000000000000000000000000000000000000000000000000000000000000000"),
+    };
     const blob = await encryptKeyBlob({ ...base, container });
     expect(blob.version).toBe(BLOB_VERSION);
     expect(await decryptKeyBlob(blob, prf, ADDR, CRED)).toEqual(container);
   });
 
   it("rejects decrypting a mis-versioned blob", async () => {
-    const blob = await encryptKeyBlob({ ...base, container: { key: hexToBytes("0x0000000000000000000000000000000000000000000000000000000000000000") } });
+    const blob = await encryptKeyBlob({
+      ...base,
+      container: { key: hexToBytes("0x0000000000000000000000000000000000000000000000000000000000000000") },
+    });
     const tampered = { ...blob, version: 3 as unknown as typeof BLOB_VERSION };
     await expect(decryptKeyBlob(tampered, prf, ADDR, CRED)).rejects.toThrow(/version/i);
   });

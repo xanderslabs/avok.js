@@ -8,7 +8,10 @@ import type { RpcClient, SimulateArgs, SimCallResult, ReadArgs } from "../../src
 /** One fake credential: the opaque user handle it was created with (primary or secondary), plus a
  *  FIXED PRF output. Fixed + deterministic is the whole point — "same passkey ⇒ same wallet", because
  *  K = HKDF(PRF) and both chains' keys derive from K. There is no largeBlob: the extension is gone. */
-interface FakeCredential { prfOutput: ArrayBuffer; userHandle: Uint8Array }
+interface FakeCredential {
+  prfOutput: ArrayBuffer;
+  userHandle: Uint8Array;
+}
 
 /** In-memory WebAuthn stand-in on the CURRENT seam: `create(label, userHandle)` stores the opaque
  *  handle, `discover()` surfaces `{ credentialId, prfOutput, userHandle }`. Models wallet-core's
@@ -23,7 +26,10 @@ class FakePasskeyAdapter implements PasskeyAdapter {
   /** Every label passed to create(), in order — lets a test assert the wallet-label prefix. */
   readonly createdLabels: string[] = [];
 
-  constructor(private readonly rpId: string, seed?: number) {
+  constructor(
+    private readonly rpId: string,
+    seed?: number,
+  ) {
     this.seed = seed ?? Math.floor(Math.random() * 0xffff);
   }
 
@@ -49,9 +55,8 @@ class FakePasskeyAdapter implements PasskeyAdapter {
     this.counter += 1;
     const plainId = `fake-cred-${this.seed}-${this.counter}`;
     const credentialId = bytesToBase64Url(new TextEncoder().encode(plainId));
-    const prfOutput = new Uint8Array(
-      Array.from({ length: 32 }, (_, i) => (this.seed + this.counter * 31 + i) % 256),
-    ).buffer;
+    const prfOutput = new Uint8Array(Array.from({ length: 32 }, (_, i) => (this.seed + this.counter * 31 + i) % 256))
+      .buffer;
     this.credentials.set(credentialId, { prfOutput, userHandle });
     if (!this.firstCredentialId) this.firstCredentialId = credentialId;
     return {
@@ -124,10 +129,7 @@ export function makeFakeRpc(opts: {
   balance?: bigint;
 }): RpcClient {
   const txNonce = Number(opts.nonce);
-  const accountCode: Hex =
-    opts.delegated === false
-      ? "0x"
-      : (`0xef0100${(opts.delegated as string).slice(2)}` as Hex);
+  const accountCode: Hex = opts.delegated === false ? "0x" : (`0xef0100${(opts.delegated as string).slice(2)}` as Hex);
   const implDeployed = opts.implDeployed ?? true;
   const DEPLOYED_CODE: Hex = "0x6001600101"; // arbitrary non-empty bytecode, simulates a deployed contract
   let getCodeCalls = 0;
@@ -186,9 +188,10 @@ function bytesToBase64url(bytes: Uint8Array): string {
 let _testSigner: { jwks: { keys: JsonWebKey[] }; sign(p: Record<string, unknown>): Promise<string> } | null = null;
 async function getTestSigner() {
   if (_testSigner) return _testSigner;
-  const { privateKey, publicKey } = (await crypto.subtle.generateKey(
-    { name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"],
-  )) as CryptoKeyPair;
+  const { privateKey, publicKey } = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+    "sign",
+    "verify",
+  ])) as CryptoKeyPair;
   const jwk = (await crypto.subtle.exportKey("jwk", publicKey)) as JsonWebKey & { kid?: string };
   jwk.kid = "test-kid";
   _testSigner = {
@@ -197,7 +200,9 @@ async function getTestSigner() {
       const enc = new TextEncoder();
       const header = base64url(JSON.stringify({ alg: "ES256", kid: "test-kid" }));
       const body = base64url(JSON.stringify(payload));
-      const sig = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privateKey, enc.encode(`${header}.${body}`)));
+      const sig = new Uint8Array(
+        await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privateKey, enc.encode(`${header}.${body}`)),
+      );
       return `${header}.${body}.${bytesToBase64url(sig)}`;
     },
   };
@@ -240,8 +245,6 @@ export function makeFakeChannel(opts: { address: string; subname?: string; solan
 
   return channel;
 }
-
-
 
 /**
  * The three access-slot-write phases, for AccessCtx doubles. Spread it into any fake: `{ ...ACCESS_SLOT_WRITER }`.

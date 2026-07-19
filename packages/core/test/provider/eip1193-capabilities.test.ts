@@ -15,7 +15,12 @@ function fakeConfig(): ClientConfig {
 }
 
 /** A fake engine whose `capabilities` reports sponsored support + fee tokens per chain. */
-function fakeEngine(caps: (chainId: number) => { paymasterService: { supported: boolean }; feeTokens: { symbol: string; address: string; decimals: number }[] }) {
+function fakeEngine(
+  caps: (chainId: number) => {
+    paymasterService: { supported: boolean };
+    feeTokens: { symbol: string; address: string; decimals: number }[];
+  },
+) {
   return {
     send: vi.fn(),
     status: vi.fn(),

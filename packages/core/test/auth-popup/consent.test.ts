@@ -6,8 +6,17 @@ const OP_USDC = "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"; // from contracts 
 
 describe("decodeConsent", () => {
   it("decodes an ERC-20 transfer in userCalls and enriches with the registry token", () => {
-    const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: ["0x9999999999999999999999999999999999999999", parseUnits("5", 6)] });
-    const view = decodeConsent({ chainId: 10, typedData: { message: { feeCalls: [], userCalls: [{ to: OP_USDC, value: 0n, data }], nonce: 1n, deadline: 0n } } as never });
+    const data = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: "transfer",
+      args: ["0x9999999999999999999999999999999999999999", parseUnits("5", 6)],
+    });
+    const view = decodeConsent({
+      chainId: 10,
+      typedData: {
+        message: { feeCalls: [], userCalls: [{ to: OP_USDC, value: 0n, data }], nonce: 1n, deadline: 0n },
+      } as never,
+    });
     const line = view.calls[0];
     expect(line.kind).toBe("erc20-transfer");
     expect(line.token?.symbol).toBe("USDC");
@@ -22,8 +31,17 @@ describe("decodeConsent", () => {
     // A token not in the registry (getTokenProfile → undefined). Must NOT hide the transfer as raw:
     // the recipient and base-unit amount are security-critical and must render (symbol/decimals unknown).
     const UNKNOWN_TOKEN = "0xabcabcabcabcabcabcabcabcabcabcabcabcabca";
-    const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: ["0x9999999999999999999999999999999999999999", 1234n] });
-    const view = decodeConsent({ chainId: 10, typedData: { message: { feeCalls: [], userCalls: [{ to: UNKNOWN_TOKEN, value: 0n, data }], nonce: 1n, deadline: 0n } } as never });
+    const data = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: "transfer",
+      args: ["0x9999999999999999999999999999999999999999", 1234n],
+    });
+    const view = decodeConsent({
+      chainId: 10,
+      typedData: {
+        message: { feeCalls: [], userCalls: [{ to: UNKNOWN_TOKEN, value: 0n, data }], nonce: 1n, deadline: 0n },
+      } as never,
+    });
     const line = view.calls[0];
     expect(line.kind).toBe("erc20-transfer");
     expect(line.token?.counterparty).toBe(getAddress("0x9999999999999999999999999999999999999999"));
@@ -35,8 +53,17 @@ describe("decodeConsent", () => {
 
   it("surfaces spender + amount for an ERC-20 approve on an UNREGISTERED token", () => {
     const UNKNOWN_TOKEN = "0xabcabcabcabcabcabcabcabcabcabcabcabcabca";
-    const data = encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: ["0x8888888888888888888888888888888888888888", 42n] });
-    const view = decodeConsent({ chainId: 10, typedData: { message: { feeCalls: [], userCalls: [{ to: UNKNOWN_TOKEN, value: 0n, data }], nonce: 1n, deadline: 0n } } as never });
+    const data = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: "approve",
+      args: ["0x8888888888888888888888888888888888888888", 42n],
+    });
+    const view = decodeConsent({
+      chainId: 10,
+      typedData: {
+        message: { feeCalls: [], userCalls: [{ to: UNKNOWN_TOKEN, value: 0n, data }], nonce: 1n, deadline: 0n },
+      } as never,
+    });
     const line = view.calls[0];
     expect(line.kind).toBe("erc20-approve");
     expect(line.token?.counterparty).toBe(getAddress("0x8888888888888888888888888888888888888888"));
@@ -45,21 +72,38 @@ describe("decodeConsent", () => {
   });
 
   it("falls back to raw for unknown calldata", () => {
-    const view = decodeConsent({ chainId: 10, typedData: { message: { feeCalls: [], userCalls: [{ to: "0x1234567890123456789012345678901234567890", value: 1n, data: "0xdeadbeef" }], nonce: 1n, deadline: 0n } } as never });
+    const view = decodeConsent({
+      chainId: 10,
+      typedData: {
+        message: {
+          feeCalls: [],
+          userCalls: [{ to: "0x1234567890123456789012345678901234567890", value: 1n, data: "0xdeadbeef" }],
+          nonce: 1n,
+          deadline: 0n,
+        },
+      } as never,
+    });
     expect(view.calls[0].kind).toBe("raw");
   });
 });
 
 describe("decodeSignConsent", () => {
   it("decodes a signMessage request to its message", () => {
-    expect(decodeSignConsent({ op: "signMessage", message: "approve login" }))
-      .toEqual({ op: "signMessage", message: "approve login" });
+    expect(decodeSignConsent({ op: "signMessage", message: "approve login" })).toEqual({
+      op: "signMessage",
+      message: "approve login",
+    });
   });
 
   it("decodes a SponsoredBatch typedData to a ConsentView", () => {
     const typedData = {
       domain: { chainId: 10 },
-      message: { feeCalls: [], userCalls: [{ to: "0x1234567890123456789012345678901234567890", value: 1n, data: "0xdeadbeef" }], nonce: 1n, deadline: 0n },
+      message: {
+        feeCalls: [],
+        userCalls: [{ to: "0x1234567890123456789012345678901234567890", value: 1n, data: "0xdeadbeef" }],
+        nonce: 1n,
+        deadline: 0n,
+      },
     };
     const c = decodeSignConsent({ op: "signTypedData", typedData: typedData as never });
     expect(c.op).toBe("signTypedData");

@@ -16,7 +16,9 @@ test("FakeRpcClient returns programmed getCode and receipt", async () => {
 // --- createViemRpcClient adapter tests ---
 
 function makeStub(overrides: Partial<ViemLike> = {}): ViemLike {
-  const unused = async () => { throw new Error("unused"); };
+  const unused = async () => {
+    throw new Error("unused");
+  };
   return {
     getChainId: unused as unknown as () => Promise<number>,
     getCode: async () => undefined,
@@ -30,7 +32,9 @@ function makeStub(overrides: Partial<ViemLike> = {}): ViemLike {
     getBalance: async () => 10n ** 18n,
     readContract: unused as unknown as ViemLike["readContract"],
     sendRawTransaction: unused as unknown as ViemLike["sendRawTransaction"],
-    getTransactionReceipt: async () => { throw new Error("not found"); },
+    getTransactionReceipt: async () => {
+      throw new Error("not found");
+    },
     getBlockNumber: unused as unknown as () => Promise<bigint>,
     ...overrides,
   };
@@ -44,7 +48,9 @@ test("createViemRpcClient: getCode returns '0x' when viem returns undefined", as
 
 test("createViemRpcClient: getTransactionReceipt returns null when viem throws", async () => {
   const stub = makeStub({
-    getTransactionReceipt: async () => { throw new Error("TransactionReceiptNotFoundError"); },
+    getTransactionReceipt: async () => {
+      throw new Error("TransactionReceiptNotFoundError");
+    },
   });
   const rpc = createViemRpcClient(stub);
   expect(await rpc.getTransactionReceipt("0xdeadbeef" as `0x${string}`)).toBeNull();

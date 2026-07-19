@@ -35,11 +35,7 @@ export function AddressText({
     <span className={truncate ? "addr" : "addr addr-full"}>
       {truncate ? truncateAddr(address) : address}
       {copy && (
-        <button
-          className={copied ? "addr-copy addr-copied" : "addr-copy"}
-          onClick={doCopy}
-          aria-label="Copy address"
-        >
+        <button className={copied ? "addr-copy addr-copied" : "addr-copy"} onClick={doCopy} aria-label="Copy address">
           <Icon name={copied ? "check" : "copy"} size={12} />
         </button>
       )}

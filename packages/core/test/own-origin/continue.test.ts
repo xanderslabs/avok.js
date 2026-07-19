@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { createOwnOriginConnection, OrphanedCredentialError, SlotUnreachableError } from "../../src/own-origin/connection.js";
+import {
+  createOwnOriginConnection,
+  OrphanedCredentialError,
+  SlotUnreachableError,
+} from "../../src/own-origin/connection.js";
 import { makeFakePasskey, ACCESS_SLOT_WRITER } from "../client/fakes.js";
 
 /**
@@ -36,14 +40,23 @@ describe("continue() path selection", () => {
     await conn1.create();
     // Enrol a secondary so discover() can present a SECONDARY handle (its blob lives on chain). The
     // write target is a throwaway — this test is about the READ failing at continue().
-    await conn1.addPasskey({ submit: async () => ({ id: "tx" }), hasSlot: async () => false, assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER });
+    await conn1.addPasskey({
+      submit: async () => ({ id: "tx" }),
+      hasSlot: async () => false,
+      assertCanAffordAccessSlot: async () => {},
+      ...ACCESS_SLOT_WRITER,
+      ...ACCESS_SLOT_WRITER,
+    });
     passkey.setDiscoveredCredential(passkey.allCredentialIds()[1]);
 
     const conn2 = createOwnOriginConnection({
       rpId: "qudi.fi",
       passkey,
-      anchorVault: { getAccessSlot: async () => { throw new Error("RPC down"); } },
+      anchorVault: {
+        getAccessSlot: async () => {
+          throw new Error("RPC down");
+        },
+      },
     });
 
     // Assert the TYPE, not a message regex: a regex would also pass for a plain Error carrying the
@@ -57,15 +70,24 @@ describe("continue() path selection", () => {
     const passkey = makeFakePasskey("qudi.fi", 11);
     const conn1 = createOwnOriginConnection({ rpId: "qudi.fi", passkey, anchorChainId: "eip155:10" });
     await conn1.create();
-    await conn1.addPasskey({ submit: async () => ({ id: "tx" }), hasSlot: async () => false, assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER });
+    await conn1.addPasskey({
+      submit: async () => ({ id: "tx" }),
+      hasSlot: async () => false,
+      assertCanAffordAccessSlot: async () => {},
+      ...ACCESS_SLOT_WRITER,
+      ...ACCESS_SLOT_WRITER,
+    });
     passkey.setDiscoveredCredential(passkey.allCredentialIds()[1]);
 
     // This used to expect SlotUnreachableError. That was the conflation: a chain that ANSWERED and
     // holds no access slot is not a network failure, and "check your connection and retry" is advice that can
     // never succeed. It is an orphan — the write never landed (or has not landed YET, which the error
     // message covers). Still never "no wallet found for this passkey": the wallet is fine.
-    const conn2 = createOwnOriginConnection({ rpId: "qudi.fi", passkey, anchorVault: { getAccessSlot: async () => null } });
+    const conn2 = createOwnOriginConnection({
+      rpId: "qudi.fi",
+      passkey,
+      anchorVault: { getAccessSlot: async () => null },
+    });
     const err = (await conn2.continue().catch((e) => e)) as Error;
     expect(err).toBeInstanceOf(OrphanedCredentialError);
     expect(err.message).not.toMatch(/no wallet found/i);

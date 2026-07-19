@@ -47,10 +47,10 @@ test("an UNDELEGATED account (zero data) resolves to null — that is an ORPHAN,
   // throws ContractFunctionZeroDataError. There is genuinely no access slot here, and retrying never makes one.
   const zeroDataRpc = {
     readContract: async () => {
-      throw new ContractFunctionExecutionError(
-        new ContractFunctionZeroDataError({ functionName: "getAccessSlot" }),
-        { abi: [], functionName: "getAccessSlot" },
-      );
+      throw new ContractFunctionExecutionError(new ContractFunctionZeroDataError({ functionName: "getAccessSlot" }), {
+        abi: [],
+        functionName: "getAccessSlot",
+      });
     },
   } as unknown as Parameters<typeof createViemVaultReader>[0];
   const reader = createViemVaultReader(zeroDataRpc);

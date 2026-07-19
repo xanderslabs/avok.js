@@ -28,12 +28,20 @@ describe("withDiscoveredKeys — Solana on the discovered secondary path", () =>
       userHandle: encodeAccessHandle(fx.evmAddress as Address, 10),
     });
     const passkey = { discover } as never;
-    const anchorVault = anchorVaultWith(fx.evmAddress, deriveSlotId(fx.evmAddress as Address, fx.credentialId), fx.bytes);
+    const anchorVault = anchorVaultWith(
+      fx.evmAddress,
+      deriveSlotId(fx.evmAddress as Address, fx.credentialId),
+      fx.bytes,
+    );
 
     const msg = new Uint8Array([1, 2, 3, 4]);
-    const { signature, address } = await withDiscoveredKeys({ passkey, vaultForChain: () => anchorVault }, async ({ solana }) => ({
-      signature: await solana.sign(msg), address: solana.address,
-    }));
+    const { signature, address } = await withDiscoveredKeys(
+      { passkey, vaultForChain: () => anchorVault },
+      async ({ solana }) => ({
+        signature: await solana.sign(msg),
+        address: solana.address,
+      }),
+    );
 
     expect(discover).toHaveBeenCalledTimes(1);
     expect(address).toBe(fx.solanaAddress);
@@ -58,7 +66,6 @@ describe("withDiscoveredKeys — Solana on the discovered secondary path", () =>
     // failure is the crypto binding, not a not-found.
     const anchorVault = anchorVaultWith(wrongAddress, deriveSlotId(wrongAddress, fx.credentialId), fx.bytes);
 
-    await expect(withDiscoveredKeys({ passkey, vaultForChain: () => anchorVault }, async () => 0))
-      .rejects.toThrow();
+    await expect(withDiscoveredKeys({ passkey, vaultForChain: () => anchorVault }, async () => 0)).rejects.toThrow();
   });
 });

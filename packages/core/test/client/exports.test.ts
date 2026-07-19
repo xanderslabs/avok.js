@@ -7,9 +7,15 @@ describe("catchable error surface", () => {
   // barrel. MissingRpIdError is deliberately absent — it is a fail-fast config error, not caught.
   it("exposes the catchable error classes and NOT the config fail-fast error", () => {
     for (const name of [
-      "UnsupportedFeeTokenError", "UserRejectedError", "NoPrfError",
-      "KoraRejectedError", "EnrolmentUnaffordableError", "VaultUnreadableError",
-      "OrphanedCredentialError", "SlotUnreachableError", "EnrolmentBlockedError",
+      "UnsupportedFeeTokenError",
+      "UserRejectedError",
+      "NoPrfError",
+      "KoraRejectedError",
+      "EnrolmentUnaffordableError",
+      "VaultUnreadableError",
+      "OrphanedCredentialError",
+      "SlotUnreachableError",
+      "EnrolmentBlockedError",
     ]) {
       expect(api, `missing error export: ${name}`).toHaveProperty(name);
       expect((api as Record<string, unknown>)[name]).toBeTypeOf("function");

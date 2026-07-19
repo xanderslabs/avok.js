@@ -29,22 +29,46 @@ import {
 // saw"), so it drives the SDK directly — NOT the provider. #3 removed the per-verb React hooks, so we
 // reach the still-present `evm`/`solana` namespaces off `useAvok()` (like the vanilla-own demo).
 // `UseOnlyAvokClient` doesn't surface them at the type level, hence this structural view.
-type EvmSimulation = { success: boolean; revertReason?: string; fee?: { feeToken: string; amount: bigint }; nativeFee?: { amount: bigint }; [k: string]: unknown };
-type SolanaSim = { success: boolean; error?: string; fee?: { feeToken: string; amount: bigint }; nativeFee?: { baseFee: bigint; priorityFee: bigint; rent: bigint }; [k: string]: unknown };
+type EvmSimulation = {
+  success: boolean;
+  revertReason?: string;
+  fee?: { feeToken: string; amount: bigint };
+  nativeFee?: { amount: bigint };
+  [k: string]: unknown;
+};
+type SolanaSim = {
+  success: boolean;
+  error?: string;
+  fee?: { feeToken: string; amount: bigint };
+  nativeFee?: { baseFee: bigint; priorityFee: bigint; rent: bigint };
+  [k: string]: unknown;
+};
 interface OwnClientNS {
   evm: {
     feeTokens(chainId: number): { address: string; symbol: string; decimals: number }[];
     simulate(calls: unknown[], opts: { chainId: number; feeToken: string | null }): Promise<EvmSimulation>;
-    send(sim: EvmSimulation, opts: { chainId: number; feeToken: string | null }): Promise<{ txHash?: string; id: string }>;
+    send(
+      sim: EvmSimulation,
+      opts: { chainId: number; feeToken: string | null },
+    ): Promise<{ txHash?: string; id: string }>;
     wait(receipt: { txHash?: string; id: string }): Promise<{ status: string; txHash?: string; error?: string }>;
   };
   solana: {
     feeTokens(cluster: string): { mint: string; symbol: string; decimals: number }[];
     supportedFeeTokens(cluster: string): Promise<{ mint: string; symbol: string; decimals: number }[]>;
     simulate(ix: unknown[], opts: { cluster: string; feeToken: string | null }): Promise<SolanaSim>;
-    send(sim: SolanaSim, opts: { cluster: string; feeToken: string | null }): Promise<{ signature?: string; id: string }>;
+    send(
+      sim: SolanaSim,
+      opts: { cluster: string; feeToken: string | null },
+    ): Promise<{ signature?: string; id: string }>;
     wait(receipt: { signature?: string; id: string }): Promise<{ status: string; signature?: string; error?: string }>;
-    buildSplTransfer(args: { mint: string; to: string; amount: bigint; cluster: string; feeToken: string | null }): Promise<unknown[]>;
+    buildSplTransfer(args: {
+      mint: string;
+      to: string;
+      amount: bigint;
+      cluster: string;
+      feeToken: string | null;
+    }): Promise<unknown[]>;
   };
 }
 
@@ -85,7 +109,9 @@ export function Send() {
 
   // What KORA accepts on this cluster (registry ∩ Kora), loaded per cluster. Unreachable Kora ⇒ no
   // sponsored options, which is the truth: nothing will front this send.
-  const [solSupportedFeeTokens, setSolSupportedFeeTokens] = useState<{ mint: string; symbol: string; decimals: number }[]>([]);
+  const [solSupportedFeeTokens, setSolSupportedFeeTokens] = useState<
+    { mint: string; symbol: string; decimals: number }[]
+  >([]);
   useEffect(() => {
     let live = true;
     if (!hasSolanaSponsored) {
@@ -94,9 +120,15 @@ export function Send() {
     }
     c.solana
       .supportedFeeTokens(cluster)
-      .then((t) => { if (live) setSolSupportedFeeTokens(t); })
-      .catch(() => { if (live) setSolSupportedFeeTokens([]); });
-    return () => { live = false; };
+      .then((t) => {
+        if (live) setSolSupportedFeeTokens(t);
+      })
+      .catch(() => {
+        if (live) setSolSupportedFeeTokens([]);
+      });
+    return () => {
+      live = false;
+    };
   }, [cluster]);
   // Local pending flags replace the removed hooks' `pending` — keeps the button-disable UX.
   const [evmSimulating, setEvmSimulating] = useState(false);
@@ -105,19 +137,35 @@ export function Send() {
   const [solSending, setSolSending] = useState(false);
   const evmSimulate = async (calls: unknown[], opts: { chainId: number; feeToken: string | null }) => {
     setEvmSimulating(true);
-    try { return await c.evm.simulate(calls, opts); } finally { setEvmSimulating(false); }
+    try {
+      return await c.evm.simulate(calls, opts);
+    } finally {
+      setEvmSimulating(false);
+    }
   };
   const evmSend = async (sim: EvmSimulation, opts: { chainId: number; feeToken: string | null }) => {
     setEvmSending(true);
-    try { return await c.evm.send(sim, opts); } finally { setEvmSending(false); }
+    try {
+      return await c.evm.send(sim, opts);
+    } finally {
+      setEvmSending(false);
+    }
   };
   const solSimulate = async (ix: unknown[], opts: { cluster: string; feeToken: string | null }) => {
     setSolSimulating(true);
-    try { return await c.solana.simulate(ix, opts); } finally { setSolSimulating(false); }
+    try {
+      return await c.solana.simulate(ix, opts);
+    } finally {
+      setSolSimulating(false);
+    }
   };
   const solSend = async (sim: SolanaSim, opts: { cluster: string; feeToken: string | null }) => {
     setSolSending(true);
-    try { return await c.solana.send(sim, opts); } finally { setSolSending(false); }
+    try {
+      return await c.solana.send(sim, opts);
+    } finally {
+      setSolSending(false);
+    }
   };
 
   if (!account) return null;
@@ -135,8 +183,7 @@ export function Send() {
       : solFeeList.map((t) => ({ key: t.mint, symbol: t.symbol }));
   const canSponsored = (rail === "evm" ? hasEvmSponsored : hasSolanaSponsored) && sponsoredFeeTokens.length > 0;
   const effectiveFeeMode: FeeMode = canSponsored ? feeMode : "self";
-  const selectedFeeToken =
-    effectiveFeeMode === "sponsored" ? (sponsoredFeeTokens[feeTokenIdx]?.key ?? null) : null;
+  const selectedFeeToken = effectiveFeeMode === "sponsored" ? (sponsoredFeeTokens[feeTokenIdx]?.key ?? null) : null;
 
   const chain = rail === "evm" ? getChain(chainId) : undefined;
   const evmToken = chain?.tokens[tokenIdx];
@@ -263,21 +310,22 @@ export function Send() {
         // Native SOL: a plain system transfer. SPL token: the SDK owns the ATA + per-rail rent-payer
         // logic (self-pay → the user pays gas; sponsored → the paymaster SPONSORS gas and the user repays it in the fee token), so the demo just calls it. The `as never`
         // casts on the native path match the vanilla demo — kit's address-branded types reject bare strings.
-        const ix = solToken.mint === null
-          ? [
-              getTransferSolInstruction({
-                source: { address: account.solana.address } as never,
-                destination: toAddr as never,
+        const ix =
+          solToken.mint === null
+            ? [
+                getTransferSolInstruction({
+                  source: { address: account.solana.address } as never,
+                  destination: toAddr as never,
+                  amount: amountBase,
+                }),
+              ]
+            : await c.solana.buildSplTransfer({
+                mint: solToken.mint,
+                to: toAddr,
                 amount: amountBase,
-              }),
-            ]
-          : await c.solana.buildSplTransfer({
-              mint: solToken.mint,
-              to: toAddr,
-              amount: amountBase,
-              cluster,
-              feeToken: selectedFeeToken,
-            });
+                cluster,
+                feeToken: selectedFeeToken,
+              });
         const result = await solSimulate(ix, {
           cluster: cluster,
           feeToken: selectedFeeToken,
@@ -315,9 +363,16 @@ export function Send() {
         setTxState((s) => txReduce(s, final.status === "confirmed" ? "mined" : "revert"));
         // A bare "Failed" is undiagnosable. The relayer tells us why it could not submit; show it.
         if (final.status === "failed" && final.error) {
-          setErr({ kind: "sponsored-unavailable", message: `The relayer could not submit this transaction: ${final.error}` });
+          setErr({
+            kind: "sponsored-unavailable",
+            message: `The relayer could not submit this transaction: ${final.error}`,
+          });
         } else if (final.status !== "confirmed" && final.status !== "failed") {
-          setErr({ kind: "unknown", message: "The transaction was accepted but has not confirmed yet. Check the explorer before retrying — it may still land." });
+          setErr({
+            kind: "unknown",
+            message:
+              "The transaction was accepted but has not confirmed yet. Check the explorer before retrying — it may still land.",
+          });
         }
       } else {
         if (!solSim) return;
@@ -337,7 +392,10 @@ export function Send() {
         setTxState((s) => txReduce(s, final.status === "confirmed" ? "mined" : "revert"));
         // A bare "Failed" is undiagnosable. The relayer tells us why it could not submit; show it.
         if (final.status === "failed" && final.error) {
-          setErr({ kind: "sponsored-unavailable", message: `The relayer could not submit this transaction: ${final.error}` });
+          setErr({
+            kind: "sponsored-unavailable",
+            message: `The relayer could not submit this transaction: ${final.error}`,
+          });
         } else if (final.status !== "confirmed" && final.status !== "failed") {
           setErr({
             kind: "unknown",
@@ -393,25 +451,25 @@ export function Send() {
         )}
         <div style={{ marginTop: 14 }}>
           <Stack direction="row" gap="sm">
-          {done ? (
-            <Button variant="primary" onClick={startOver}>
-              Send another
-            </Button>
-          ) : (
-            <>
-              <Button variant="ghost" onClick={() => setStep("form")} disabled={sending}>
-                Reject
+            {done ? (
+              <Button variant="primary" onClick={startOver}>
+                Send another
               </Button>
-              <Button
-                variant="primary"
-                icon={<Icon name="passkey" size={15} />}
-                onClick={handleConfirm}
-                disabled={sending || txState === "signing" || txState === "pending"}
-              >
-                {sending || txState === "signing" ? "Signing…" : "Confirm"}
-              </Button>
-            </>
-          )}
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => setStep("form")} disabled={sending}>
+                  Reject
+                </Button>
+                <Button
+                  variant="primary"
+                  icon={<Icon name="passkey" size={15} />}
+                  onClick={handleConfirm}
+                  disabled={sending || txState === "signing" || txState === "pending"}
+                >
+                  {sending || txState === "signing" ? "Signing…" : "Confirm"}
+                </Button>
+              </>
+            )}
           </Stack>
         </div>
       </Screen>
@@ -442,7 +500,10 @@ export function Send() {
               <button
                 key={c}
                 className={cluster === c ? "segmented-btn segmented-active" : "segmented-btn"}
-                onClick={() => { setCluster(c); setTokenIdx(0); }}
+                onClick={() => {
+                  setCluster(c);
+                  setTokenIdx(0);
+                }}
               >
                 {c === "mainnet" ? "Mainnet" : "Devnet"}
               </button>
@@ -467,7 +528,9 @@ export function Send() {
           setResolvedTo(null);
           setResolvedFrom(null);
         }}
-        placeholder={rail === "evm" ? "0x… address or name (e.g. alice.eth)" : "Solana address or name (e.g. alice.sol)"}
+        placeholder={
+          rail === "evm" ? "0x… address or name (e.g. alice.eth)" : "Solana address or name (e.g. alice.sol)"
+        }
       />
       {resolvedFrom && resolvedTo && (
         <Text variant="label" tone="subtle" as="div" style={{ marginTop: -8, marginBottom: 12 }}>

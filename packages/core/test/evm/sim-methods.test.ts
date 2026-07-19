@@ -1,17 +1,28 @@
 import { expect, test } from "vitest";
 import { decodeFunctionData, decodeAbiParameters } from "viem";
 import { executeAbi, MODE_BATCH } from "@avokjs/contracts";
-import { encodeExecuteBatch, buildSelfPayCalldata, simulateV1Method, stateOverrideMethod } from "../../src/evm/sim-methods.js";
+import {
+  encodeExecuteBatch,
+  buildSelfPayCalldata,
+  simulateV1Method,
+  stateOverrideMethod,
+} from "../../src/evm/sim-methods.js";
 import type { ResolvedBatch } from "../../src/evm/types.js";
 import { FakeRpcClient } from "./fakes.js";
 
 const ADDR = "0x1111111111111111111111111111111111111111" as const;
 const IMPL = "0x000000000000000000000000000000000000abcd" as const;
 const CALLS = [{ to: "0x2222222222222222222222222222222222222222" as const, value: 0n, data: "0x" as const }];
-const CALLS_PARAM = [{
-  type: "tuple[]",
-  components: [{ name: "to", type: "address" }, { name: "value", type: "uint256" }, { name: "data", type: "bytes" }],
-}] as const;
+const CALLS_PARAM = [
+  {
+    type: "tuple[]",
+    components: [
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "data", type: "bytes" },
+    ],
+  },
+] as const;
 
 test("encodeExecuteBatch produces execute(MODE_BATCH, executionData)", () => {
   const data = encodeExecuteBatch(CALLS);
@@ -23,10 +34,14 @@ test("encodeExecuteBatch produces execute(MODE_BATCH, executionData)", () => {
 test("buildSelfPayCalldata wraps feeCalls+userCalls in execute(MODE_BATCH,…) with fee-first ordering", () => {
   const USDC = "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85" as const;
   const batch: ResolvedBatch = {
-    rail: "self-pay", chainId: 10, walletAddress: ADDR,
+    rail: "self-pay",
+    chainId: 10,
+    walletAddress: ADDR,
     feeCalls: [{ to: USDC, value: 0n, data: "0xfee0" }],
     userCalls: [{ to: "0x2222222222222222222222222222222222222222", value: 0n, data: "0xa9" }],
-    nonce: 5n, deadline: 99n, disclosures: [],
+    nonce: 5n,
+    deadline: 99n,
+    disclosures: [],
   };
   const decoded = decodeFunctionData({ abi: executeAbi, data: buildSelfPayCalldata(batch) });
   expect(decoded.functionName).toBe("execute");
@@ -52,7 +67,6 @@ test("stateOverrideMethod injects the impl code at the wallet address", async ()
   expect(override?.address).toBe(ADDR);
   expect(override?.code).toBe(IMPL_CODE);
 });
-
 
 test("simulateV1Method sums gas across multiple sim results", async () => {
   const rpc = new FakeRpcClient({

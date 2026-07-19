@@ -26,7 +26,24 @@ import { secureStoreStorage } from "./native-storage.js";
 // WalletInfo and exposes getEip1193Provider(). The browser-only announce is window-gated inside.
 export { createAvokClient } from "./provider-wiring.js";
 export type { WiredAvokClient } from "./provider-wiring.js";
-export type { StorageAdapter, Connection, Account, ClientConfig, CreateOpts, ContinueOpts, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, TxOpts, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken, WalletInfo } from "@avokjs/core/engine";
+export type {
+  StorageAdapter,
+  Connection,
+  Account,
+  ClientConfig,
+  CreateOpts,
+  ContinueOpts,
+  UseOnlyAvokClient,
+  FullAvokClient,
+  AvokClientFor,
+  SelfCustodyConnection,
+  TxOpts,
+  SolanaTxOpts,
+  SolanaSimulation,
+  FeeToken,
+  EvmFeeToken,
+  WalletInfo,
+} from "@avokjs/core/engine";
 
 // Catchable error types (values, so an app can `instanceof`-narrow without a second import). Mirrors
 // @avokjs/react. MissingRpIdError is intentionally absent (fail-fast config error, not runtime-catchable).
@@ -42,7 +59,11 @@ export {
   EnrolmentBlockedError,
 } from "@avokjs/core/engine";
 
-export type { ReactNativePasskeyLike, ReactNativePasskeyCreateResult, ReactNativePasskeyGetResult } from "@avokjs/core/wallet";
+export type {
+  ReactNativePasskeyLike,
+  ReactNativePasskeyCreateResult,
+  ReactNativePasskeyGetResult,
+} from "@avokjs/core/wallet";
 
 export { secureStoreStorage } from "./native-storage.js";
 export type { SecureStoreShape } from "./native-storage.js";
@@ -110,5 +131,3 @@ export function createOwnOriginConnection(opts: {
     anchorChainId: opts.anchorChainId,
   });
 }
-
-

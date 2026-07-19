@@ -29,7 +29,8 @@ function capturingVault() {
     },
     hasSlot: async (slotId: Hex) => blobs.has(slotId.toLowerCase()),
     assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
     getAccessSlot: async (_a: Address, slotId: Hex) => blobs.get(slotId.toLowerCase()) ?? null,
     getAccessSlotIds: async (_a: Address) => [...blobs.keys()] as Hex[],
     getAccessSlotAddedAt: async () => 1_700_000_000,
@@ -75,7 +76,8 @@ async function orphanedPasskey(): Promise<FakePasskey> {
       },
       hasSlot: async () => false,
       assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER, // it passed the gate, and the chain died mid-write
+      ...ACCESS_SLOT_WRITER,
+      ...ACCESS_SLOT_WRITER, // it passed the gate, and the chain died mid-write
     }),
   ).rejects.toThrow(/out of gas/);
   return passkey; // the credential exists; its access slot never landed. That is the orphan.
@@ -100,7 +102,8 @@ describe("preflight: never mint a credential you cannot finish enrolling", () =>
           throw new VaultUnreadableError(); // the chain is not answering
         },
         assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER,
+        ...ACCESS_SLOT_WRITER,
+        ...ACCESS_SLOT_WRITER,
       }),
     ).rejects.toBeInstanceOf(EnrolmentBlockedError);
 
@@ -116,8 +119,13 @@ describe("preflight: never mint a credential you cannot finish enrolling", () =>
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey, anchorVault: emptyChain });
     await conn.create();
 
-    const r = await conn.addPasskey({ submit: async () => ({ id: "tx" }), hasSlot: async () => false, assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER });
+    const r = await conn.addPasskey({
+      submit: async () => ({ id: "tx" }),
+      hasSlot: async () => false,
+      assertCanAffordAccessSlot: async () => {},
+      ...ACCESS_SLOT_WRITER,
+      ...ACCESS_SLOT_WRITER,
+    });
     expect(r.txId).toBe("tx");
     expect(passkey.allCredentialIds()).toHaveLength(2);
   });
@@ -147,7 +155,8 @@ describe("preflight: never mint a credential you cannot finish enrolling", () =>
             throw new VaultUnreadableError();
           },
           assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER,
+          ...ACCESS_SLOT_WRITER,
+          ...ACCESS_SLOT_WRITER,
         },
       }),
     ).rejects.toBeInstanceOf(EnrolmentBlockedError);
@@ -228,7 +237,12 @@ describe("repairing an orphan through a surviving passkey", () => {
       holder.pairing.holder.complete({
         qr: wrap0,
         sasConfirmed: true,
-        ctx: { ...vault, submit: async () => { throw new Error("out of gas"); } },
+        ctx: {
+          ...vault,
+          submit: async () => {
+            throw new Error("out of gas");
+          },
+        },
       }),
     ).rejects.toThrow(/out of gas/);
 
@@ -253,7 +267,11 @@ describe("repairing an orphan through a surviving passkey", () => {
 
   it("refuses to send the repaired wrapping key without the SAS confirmation", async () => {
     const vault = capturingVault();
-    const holder = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey("qudi.fi"), anchorVault: vault });
+    const holder = createOwnOriginConnection({
+      rpId: "qudi.fi",
+      passkey: makeFakePasskey("qudi.fi"),
+      anchorVault: vault,
+    });
     await holder.create();
     const orphanPasskey = makeFakePasskey("qudi.fi");
     const orphan = createOwnOriginConnection({ rpId: "qudi.fi", passkey: orphanPasskey, anchorVault: vault });
@@ -261,9 +279,9 @@ describe("repairing an orphan through a surviving passkey", () => {
     const { qr: req } = await orphan.pairing.enroller.begin();
     const { qr: ack } = await holder.pairing.holder.authorize({ qr: req, ctx: vault });
     await orphan.pairing.enroller.receiveAck(ack);
-    await expect(
-      orphan.pairing.enroller.repair({ sasConfirmed: false as unknown as true }),
-    ).rejects.toThrow(/sasConfirmed/i);
+    await expect(orphan.pairing.enroller.repair({ sasConfirmed: false as unknown as true })).rejects.toThrow(
+      /sasConfirmed/i,
+    );
   });
 });
 
@@ -285,7 +303,8 @@ describe("an orphan is never counted as a way into the wallet", () => {
         },
         hasSlot: async () => false,
         assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER,
+        ...ACCESS_SLOT_WRITER,
+        ...ACCESS_SLOT_WRITER,
       }),
     ).rejects.toThrow(/out of gas/);
 
@@ -302,8 +321,13 @@ describe("an orphan is never counted as a way into the wallet", () => {
     const passkey = makeFakePasskey("qudi.fi");
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", passkey, anchorVault: vault });
     await conn.create();
-    await conn.addPasskey({ submit: vault.submit, hasSlot: vault.hasSlot, assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER });
+    await conn.addPasskey({
+      submit: vault.submit,
+      hasSlot: vault.hasSlot,
+      assertCanAffordAccessSlot: async () => {},
+      ...ACCESS_SLOT_WRITER,
+      ...ACCESS_SLOT_WRITER,
+    });
     expect(await conn.accessSlotCount()).toBe(1);
   });
 });

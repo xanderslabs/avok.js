@@ -82,7 +82,10 @@ export function Account({ onBack, onLoggedOut }: { onBack?: () => void; onLogged
     try {
       // Standard provider signing: the wallet's popup shows the message and signs it (personal_sign).
       const provider = (client as unknown as { getEip1193Provider(): Eip1193Like }).getEip1193Provider();
-      const sig = (await provider.request({ method: "personal_sign", params: [message, account!.evm.address] })) as string;
+      const sig = (await provider.request({
+        method: "personal_sign",
+        params: [message, account!.evm.address],
+      })) as string;
       setEvmSig(sig);
     } catch (e) {
       setSignErr(classifySendError(e));
@@ -142,7 +145,8 @@ export function Account({ onBack, onLoggedOut }: { onBack?: () => void; onLogged
   return (
     <Screen title="Account" onBack={onBack}>
       <p style={{ fontSize: 12, marginBottom: 14 }}>
-        Managed by <b>{operator}</b> — export, access slots, and device management happen at the operator's app, not here.
+        Managed by <b>{operator}</b> — export, access slots, and device management happen at the operator's app, not
+        here.
       </p>
 
       {/* Addresses */}
@@ -167,9 +171,7 @@ export function Account({ onBack, onLoggedOut }: { onBack?: () => void; onLogged
         </div>
         {config.managementUrl ? (
           <>
-            <p style={{ fontSize: 12, marginBottom: 10 }}>
-              Add devices or export at {operator}.
-            </p>
+            <p style={{ fontSize: 12, marginBottom: 10 }}>Add devices or export at {operator}.</p>
             <Button variant="ghost" onClick={() => window.open(config.managementUrl, "_blank", "noopener")}>
               Manage at {operator}
             </Button>

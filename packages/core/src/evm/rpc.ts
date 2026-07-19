@@ -1,10 +1,33 @@
 import type { Address, Hex } from "viem";
 
-export interface SimCall { from?: Address; to: Address; value?: bigint; data?: Hex }
-export interface StateOverride { address: Address; code?: Hex; balance?: bigint }
-export interface SimulateArgs { account?: Address; calls: SimCall[]; stateOverrides?: StateOverride[] }
-export interface SimCallResult { status: "success" | "failure"; gasUsed: bigint; returnData: Hex; error?: string }
-export interface ReadArgs { address: Address; abi: readonly unknown[]; functionName: string; args?: readonly unknown[] }
+export interface SimCall {
+  from?: Address;
+  to: Address;
+  value?: bigint;
+  data?: Hex;
+}
+export interface StateOverride {
+  address: Address;
+  code?: Hex;
+  balance?: bigint;
+}
+export interface SimulateArgs {
+  account?: Address;
+  calls: SimCall[];
+  stateOverrides?: StateOverride[];
+}
+export interface SimCallResult {
+  status: "success" | "failure";
+  gasUsed: bigint;
+  returnData: Hex;
+  error?: string;
+}
+export interface ReadArgs {
+  address: Address;
+  abi: readonly unknown[];
+  functionName: string;
+  args?: readonly unknown[];
+}
 
 /** The chain boundary. Engine logic is written against this port; tests use a fake. */
 export interface RpcClient {
@@ -42,7 +65,9 @@ export interface RpcClient {
   /** Native balance, in wei. Used by the enrolment affordability gate. */
   getBalance(address: Address): Promise<bigint>;
   sendRawTransaction(serialized: Hex): Promise<Hex>;
-  getTransactionReceipt(hash: Hex): Promise<{ status: "success" | "reverted"; transactionHash: Hex; blockNumber?: bigint } | null>;
+  getTransactionReceipt(
+    hash: Hex,
+  ): Promise<{ status: "success" | "reverted"; transactionHash: Hex; blockNumber?: bigint } | null>;
   /** Current chain head. Optional — used for confirmation-depth gating when configured. */
   getBlockNumber?(): Promise<bigint>;
 }
@@ -58,7 +83,14 @@ export interface ViemLike {
     stateOverrides?: { address: Address; code?: Hex; balance?: bigint }[];
   }): Promise<{ results: { status: "success" | "failure"; gasUsed: bigint; data: Hex }[] }>;
   call(args: { to: Address; data?: Hex; value?: bigint; stateOverride?: unknown }): Promise<{ data?: Hex }>;
-  estimateGas(args: { to: Address; data?: Hex; value?: bigint; account?: Address; stateOverride?: unknown; authorizationList?: unknown[] }): Promise<bigint>;
+  estimateGas(args: {
+    to: Address;
+    data?: Hex;
+    value?: bigint;
+    account?: Address;
+    stateOverride?: unknown;
+    authorizationList?: unknown[];
+  }): Promise<bigint>;
   getGasPrice(): Promise<bigint>;
   /** viem: tries `eth_maxPriorityFeePerGas`, else derives `gasPrice - baseFeePerGas` (clamped ≥ 0),
    *  and throws Eip1559FeesNotSupportedError when the chain reports no base fee. */
@@ -67,7 +99,9 @@ export interface ViemLike {
   readContract(args: ReadArgs): Promise<unknown>;
   getBalance(args: { address: Address }): Promise<bigint>;
   sendRawTransaction(args: { serializedTransaction: Hex }): Promise<Hex>;
-  getTransactionReceipt(args: { hash: Hex }): Promise<{ status: "success" | "reverted"; transactionHash: Hex; blockNumber?: bigint }>;
+  getTransactionReceipt(args: {
+    hash: Hex;
+  }): Promise<{ status: "success" | "reverted"; transactionHash: Hex; blockNumber?: bigint }>;
   getBlockNumber(): Promise<bigint>;
 }
 
@@ -89,15 +123,22 @@ export function createViemRpcClient(client: ViemLike): RpcClient {
     },
     async call(args) {
       const r = await client.call({
-        to: args.to, data: args.data, value: args.value,
+        to: args.to,
+        data: args.data,
+        value: args.value,
         stateOverride: args.stateOverrides,
       });
       return r.data ?? "0x";
     },
-    estimateGas: (args) => client.estimateGas({
-      to: args.to, data: args.data, value: args.value, account: args.from,
-      stateOverride: args.stateOverrides, authorizationList: args.authorizationList,
-    }),
+    estimateGas: (args) =>
+      client.estimateGas({
+        to: args.to,
+        data: args.data,
+        value: args.value,
+        account: args.from,
+        stateOverride: args.stateOverrides,
+        authorizationList: args.authorizationList,
+      }),
     getGasPrice: () => client.getGasPrice(),
     getBaseFeePerGas: async () => {
       const block = await client.getBlock({ blockTag: "latest" });

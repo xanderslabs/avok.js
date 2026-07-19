@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { simulateSolana, simulateSolanaMessage } from "../../src/solana/simulate.js";
 import { buildSolanaMessage } from "../../src/solana/build.js";
 
-const rpc = (err: unknown, units: bigint) => ({ simulateTransaction: async () => ({ err, unitsConsumed: units, logs: [] }) } as never);
+const rpc = (err: unknown, units: bigint) =>
+  ({ simulateTransaction: async () => ({ err, unitsConsumed: units, logs: [] }) }) as never;
 
 describe("simulateSolana", () => {
   it("maps a successful sim to success + computeUnits + exact confidence", async () => {

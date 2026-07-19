@@ -3,7 +3,17 @@
 // probe, the base `simulateSolana` variant, the priority-fee selection mechanics): those are reached via
 // deep imports inside this folder. Add a symbol here only when a cross-module consumer needs it. The
 // consent/decode surface is its own `@avokjs/core/decode` subpath, not re-exported from here.
-export type { Rail, SolanaExecutionContext, DecodedInstruction, FeeBreakdown, SolanaNativeFeeEstimate, SimulationConfidence, SimulationResult, ReceiptStatus, Receipt } from "./types.js";
+export type {
+  Rail,
+  SolanaExecutionContext,
+  DecodedInstruction,
+  FeeBreakdown,
+  SolanaNativeFeeEstimate,
+  SimulationConfidence,
+  SimulationResult,
+  ReceiptStatus,
+  Receipt,
+} from "./types.js";
 export { railFromContext } from "./types.js";
 export type { SolanaRpcClient, LatestBlockhash, SimResult } from "./rpc.js";
 export { createSolanaRpcClient } from "./rpc.js";

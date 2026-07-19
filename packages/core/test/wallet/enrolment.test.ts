@@ -1,7 +1,14 @@
 import { describe, expect, test } from "vitest";
 import { hexToBytes, type Address } from "viem";
 import { generateEphemeral, randomNonce, deriveSession } from "../../src/wallet/pairing.js";
-import { buildAck, openAck, createPasskeyCredential, sealWrap, openWrap, sealAccessSlot } from "../../src/wallet/enrolment.js";
+import {
+  buildAck,
+  openAck,
+  createPasskeyCredential,
+  sealWrap,
+  openWrap,
+  sealAccessSlot,
+} from "../../src/wallet/enrolment.js";
 import { decryptKeyBlob } from "../../src/wallet/crypto/blob.js";
 import { decryptSlotMeta } from "../../src/wallet/crypto/slot-meta.js";
 import { deriveSlotId, decodeUserHandle } from "../../src/wallet/passkey/label.js";
@@ -27,8 +34,12 @@ const enrollerPasskey = (captured: { handle?: Uint8Array } = {}) =>
         platform: { authenticatorAttachment: "platform" } as const,
       };
     },
-    async authenticate() { throw new Error("not used"); },
-    async discover() { throw new Error("not used"); },
+    async authenticate() {
+      throw new Error("not used");
+    },
+    async discover() {
+      throw new Error("not used");
+    },
   }) as unknown as PasskeyAdapter;
 
 /** Both halves of one SAS-confirmed session, exactly as the connection builds them. */
@@ -36,8 +47,20 @@ async function session() {
   const b = generateEphemeral();
   const a = generateEphemeral();
   const nonce = randomNonce();
-  const bs = await deriveSession({ myPrivate: b.privateKey, myPublic: b.publicKey, theirPublic: a.publicKey, iAmInitiator: true, nonce });
-  const as = await deriveSession({ myPrivate: a.privateKey, myPublic: a.publicKey, theirPublic: b.publicKey, iAmInitiator: false, nonce });
+  const bs = await deriveSession({
+    myPrivate: b.privateKey,
+    myPublic: b.publicKey,
+    theirPublic: a.publicKey,
+    iAmInitiator: true,
+    nonce,
+  });
+  const as = await deriveSession({
+    myPrivate: a.privateKey,
+    myPublic: a.publicKey,
+    theirPublic: b.publicKey,
+    iAmInitiator: false,
+    nonce,
+  });
   expect(as.sas).toBe(bs.sas); // both sides show the user the same 6 digits
   return { holder: as.key, enroller: bs.key, eph: a, nonce };
 }
@@ -62,7 +85,10 @@ describe("passkey enrolment (the one ceremony)", () => {
   test("createPasskeyCredential mints the credential and derives W — and never asks for K", async () => {
     const captured: { handle?: Uint8Array } = {};
     const slot = await createPasskeyCredential({
-      passkey: enrollerPasskey(captured), networkName: "independent.example", evm: EVM, anchorChainId: 10,
+      passkey: enrollerPasskey(captured),
+      networkName: "independent.example",
+      evm: EVM,
+      anchorChainId: 10,
     });
     expect(slot.rpId).toBe("independent.example");
     expect(slot.wrappingKey.length).toBe(32);
@@ -73,7 +99,10 @@ describe("passkey enrolment (the one ceremony)", () => {
   test("THE PROPERTY: K never appears in the wrap, and the sealed slot still opens with prf2", async () => {
     const { holder, enroller } = await session();
     const slot = await createPasskeyCredential({
-      passkey: enrollerPasskey(), networkName: "independent.example", evm: EVM, anchorChainId: 10,
+      passkey: enrollerPasskey(),
+      networkName: "independent.example",
+      evm: EVM,
+      anchorChainId: 10,
     });
     const wire = await sealWrap(enroller, slot);
 
@@ -93,7 +122,10 @@ describe("passkey enrolment (the one ceremony)", () => {
 
   test("the sealed slot carries metadata naming the ENROLLING domain (the roster, for free)", async () => {
     const slot = await createPasskeyCredential({
-      passkey: enrollerPasskey(), networkName: "independent.example", evm: EVM, anchorChainId: 10,
+      passkey: enrollerPasskey(),
+      networkName: "independent.example",
+      evm: EVM,
+      anchorChainId: 10,
     });
     const sealed = await sealAccessSlot({ container: K, evm: EVM, ...slot });
     expect(await decryptSlotMeta(K.key, sealed.slotId, sealed.encryptedMeta)).toEqual({ rpId: "independent.example" });
@@ -101,7 +133,10 @@ describe("passkey enrolment (the one ceremony)", () => {
 
   test("W is wiped once the blob is sealed — it is as secret as K", async () => {
     const slot = await createPasskeyCredential({
-      passkey: enrollerPasskey(), networkName: "independent.example", evm: EVM, anchorChainId: 10,
+      passkey: enrollerPasskey(),
+      networkName: "independent.example",
+      evm: EVM,
+      anchorChainId: 10,
     });
     await sealAccessSlot({ container: K, evm: EVM, ...slot });
     expect(slot.wrappingKey).toEqual(new Uint8Array(32));
@@ -111,7 +146,10 @@ describe("passkey enrolment (the one ceremony)", () => {
     const s1 = await session();
     const s2 = await session();
     const slot = await createPasskeyCredential({
-      passkey: enrollerPasskey(), networkName: "independent.example", evm: EVM, anchorChainId: 10,
+      passkey: enrollerPasskey(),
+      networkName: "independent.example",
+      evm: EVM,
+      anchorChainId: 10,
     });
     const wire = await sealWrap(s1.enroller, slot);
     await expect(openWrap(s2.holder, wire)).rejects.toThrow();

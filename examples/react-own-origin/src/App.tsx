@@ -40,10 +40,7 @@ function Shell() {
       {screen === "send" && <Send />}
       {screen === "account" && (
         <>
-          <Account
-            onOpenDevice={() => setScreen("device")}
-            onOpenAccess={() => setScreen("access")}
-          />
+          <Account onOpenDevice={() => setScreen("device")} onOpenAccess={() => setScreen("access")} />
           <div style={{ padding: "0 16px 16px" }}>
             <Button variant="ghost" onClick={() => logout()}>
               Log out

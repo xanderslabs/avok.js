@@ -9,7 +9,12 @@ const UNLIMITED_THRESHOLD = 2n ** 255n;
 
 // chainId → display name. The id is always shown too, so this is convenience, not trust.
 const CHAIN_NAMES: Record<number, string> = {
-  1: "Ethereum", 10: "Optimism", 8453: "Base", 42161: "Arbitrum", 56: "BNB Chain", 5042002: "Arc",
+  1: "Ethereum",
+  10: "Optimism",
+  8453: "Base",
+  42161: "Arbitrum",
+  56: "BNB Chain",
+  5042002: "Arc",
 };
 function chainLabel(id: number): string {
   const name = CHAIN_NAMES[id];
@@ -114,9 +119,16 @@ function solanaViewLines(view: SolanaConsentView): string[] {
 
 // SIWE field render order; absent keys skipped. resources handled separately.
 const SIWE_ORDER: [label: string, key: string][] = [
-  ["Domain", "domain"], ["URI", "uri"], ["Statement", "statement"], ["Chain", "chainId"],
-  ["Nonce", "nonce"], ["Issued", "issuedAt"], ["Expires", "expirationTime"], ["Not before", "notBefore"],
-  ["Scheme", "scheme"], ["Request id", "requestId"],
+  ["Domain", "domain"],
+  ["URI", "uri"],
+  ["Statement", "statement"],
+  ["Chain", "chainId"],
+  ["Nonce", "nonce"],
+  ["Issued", "issuedAt"],
+  ["Expires", "expirationTime"],
+  ["Not before", "notBefore"],
+  ["Scheme", "scheme"],
+  ["Request id", "requestId"],
 ];
 
 /** Pure: turns a decoded consent into plain human-readable lines. No gesture, no I/O. */

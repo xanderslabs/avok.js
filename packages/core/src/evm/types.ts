@@ -71,10 +71,7 @@ export interface ResolvedBatch {
 }
 
 export type SimulationConfidence = "exact" | "estimated" | "unsupported";
-export type SimMethod =
-  | "eth_simulateV1"
-  | "state-override"
-  | "fallback";
+export type SimMethod = "eth_simulateV1" | "state-override" | "fallback";
 
 export interface DecodedCall {
   to: Address;

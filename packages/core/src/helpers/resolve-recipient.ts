@@ -17,11 +17,7 @@ export type Rail = "evm" | "solana";
 
 export type ResolveResult = { address: string; resolvedFrom?: string } | { error: string };
 
-export async function resolveRecipient(
-  resolver: NameResolver,
-  input: string,
-  rail: Rail,
-): Promise<ResolveResult> {
+export async function resolveRecipient(resolver: NameResolver, input: string, rail: Rail): Promise<ResolveResult> {
   const value = input.trim();
   if (!value) return { error: "Enter a recipient address or name." };
 
@@ -42,7 +38,8 @@ export async function resolveRecipient(
 
   if (rail === "evm") {
     if (resolved.evm) return { address: resolved.evm, resolvedFrom: value };
-    if (resolved.solana) return { error: `${value} resolves to a Solana address — switch to the Solana rail to send to it.` };
+    if (resolved.solana)
+      return { error: `${value} resolves to a Solana address — switch to the Solana rail to send to it.` };
     return { error: `No EVM address found for ${value}.` };
   }
   if (resolved.solana) return { address: resolved.solana, resolvedFrom: value };

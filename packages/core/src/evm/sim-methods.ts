@@ -3,17 +3,33 @@ import { executeAbi, MODE_BATCH } from "@avokjs/contracts";
 import type { RpcClient } from "./rpc.js";
 import type { Call, ResolvedBatch } from "./types.js";
 
-export interface SimOutcome { success: boolean; gasUsed: bigint; revertReason?: string }
-export interface SimMethodArgs { address: Address; implementation: Address; calls: Call[] }
+export interface SimOutcome {
+  success: boolean;
+  gasUsed: bigint;
+  revertReason?: string;
+}
+export interface SimMethodArgs {
+  address: Address;
+  implementation: Address;
+  calls: Call[];
+}
 
-const CALLS_PARAM = [{
-  type: "tuple[]",
-  components: [{ name: "to", type: "address" }, { name: "value", type: "uint256" }, { name: "data", type: "bytes" }],
-}] as const;
+const CALLS_PARAM = [
+  {
+    type: "tuple[]",
+    components: [
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "data", type: "bytes" },
+    ],
+  },
+] as const;
 
 /** `execute(MODE_BATCH, abi.encode(Call[]))` calldata. */
 export function encodeExecuteBatch(calls: Call[]): Hex {
-  const executionData = encodeAbiParameters(CALLS_PARAM, [calls.map((c) => ({ to: c.to, value: c.value, data: c.data }))]);
+  const executionData = encodeAbiParameters(CALLS_PARAM, [
+    calls.map((c) => ({ to: c.to, value: c.value, data: c.data })),
+  ]);
   return encodeFunctionData({ abi: executeAbi, functionName: "execute", args: [MODE_BATCH, executionData] });
 }
 
@@ -31,7 +47,10 @@ function summarize(results: { status: "success" | "failure"; gasUsed: bigint; er
 /** Method 1: eth_simulateV1 of the batch as a self-call. */
 export async function simulateV1Method(rpc: RpcClient, args: SimMethodArgs): Promise<SimOutcome> {
   const data = encodeExecuteBatch(args.calls);
-  const results = await rpc.simulateCalls({ account: args.address, calls: [{ from: args.address, to: args.address, data }] });
+  const results = await rpc.simulateCalls({
+    account: args.address,
+    calls: [{ from: args.address, to: args.address, data }],
+  });
   return summarize(results);
 }
 

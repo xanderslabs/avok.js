@@ -16,7 +16,7 @@ import { estimateSolanaNativeFee, ATA_PROGRAM_ADDRESS, LAMPORTS_PER_SIGNATURE } 
  * an account that is not 165 bytes.
  */
 
-const USDC_DEVNET = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";  // classic  → 165B
+const USDC_DEVNET = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // classic  → 165B
 const PYUSD_DEVNET = "CXk2AMBfi3TwaEL2468s6zP8xq9NxTXjp9gjMgzeUynM"; // 2022     → 187B
 
 const RENT_BY_SIZE: Record<number, bigint> = {
@@ -88,7 +88,10 @@ describe("solana self-pay native fee", () => {
 
   it("prices the priority fee on the REQUESTED compute limit, which is what Solana charges", async () => {
     const est = await estimateSolanaNativeFee({
-      ...base, instructions: [TRANSFER_IX], computeUnitLimit: 1_000_000, computeUnitPrice: 2_000n,
+      ...base,
+      instructions: [TRANSFER_IX],
+      computeUnitLimit: 1_000_000,
+      computeUnitPrice: 2_000n,
     });
     expect(est.priorityFee).toBe(2_000n); // 1e6 CU x 2_000 / 1e6
   });
@@ -97,7 +100,12 @@ describe("solana self-pay native fee", () => {
     await expect(
       estimateSolanaNativeFee({
         ...base,
-        instructions: [{ programAddress: ATA_PROGRAM_ADDRESS, accounts: [{ address: "SomeUnknownMint1111111111111111111111111111" }] }],
+        instructions: [
+          {
+            programAddress: ATA_PROGRAM_ADDRESS,
+            accounts: [{ address: "SomeUnknownMint1111111111111111111111111111" }],
+          },
+        ],
       }),
     ).rejects.toThrow(/must not be guessed|no registry mint/i);
   });

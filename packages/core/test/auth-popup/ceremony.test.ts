@@ -31,8 +31,7 @@ function harness() {
     get closed() {
       return closed;
     },
-    emit: (data: unknown, origin: string) =>
-      listener?.({ data, origin, source: opener } as unknown as MessageEvent),
+    emit: (data: unknown, origin: string) => listener?.({ data, origin, source: opener } as unknown as MessageEvent),
     emitFrom: (source: unknown, data: unknown, origin: string) =>
       listener?.({ data, origin, source } as unknown as MessageEvent),
   };
@@ -88,7 +87,10 @@ describe("runAuthPopup", () => {
     runAuthPopup(deps({ win: h.win, signWith, view }));
     h.emit({ kind: "sign", request, credentialId: "cred-1" }, "https://dapp.example");
     await vi.waitFor(() =>
-      expect(h.posted).toContainEqual({ data: { kind: "sign", result: { signature: "0xsig" } }, origin: "https://dapp.example" }),
+      expect(h.posted).toContainEqual({
+        data: { kind: "sign", result: { signature: "0xsig" } },
+        origin: "https://dapp.example",
+      }),
     );
     expect(view.waitingForPasskey).toHaveBeenCalled();
     expect(signWith).toHaveBeenCalledWith(request, "cred-1");
@@ -102,7 +104,10 @@ describe("runAuthPopup", () => {
     runAuthPopup(deps({ win: h.win, signWith, view }));
     h.emit({ kind: "sign", request }, "https://dapp.example");
     await vi.waitFor(() =>
-      expect(h.posted).toContainEqual({ data: { kind: "sign", result: { error: "user_rejected" } }, origin: "https://dapp.example" }),
+      expect(h.posted).toContainEqual({
+        data: { kind: "sign", result: { error: "user_rejected" } },
+        origin: "https://dapp.example",
+      }),
     );
     expect(signWith).not.toHaveBeenCalled();
   });
@@ -122,7 +127,10 @@ describe("runAuthPopup", () => {
     runAuthPopup(deps({ win: h.win, signWith, view }));
     h.emit({ kind: "sign", request: { not: "a real request" } }, "https://dapp.example");
     await vi.waitFor(() =>
-      expect(h.posted).toContainEqual({ data: { kind: "sign", result: { error: "user_rejected" } }, origin: "https://dapp.example" }),
+      expect(h.posted).toContainEqual({
+        data: { kind: "sign", result: { error: "user_rejected" } },
+        origin: "https://dapp.example",
+      }),
     );
     expect(signWith).not.toHaveBeenCalled();
     expect(seen[0]?.rejectOnly).toBe(true);
@@ -144,7 +152,10 @@ describe("runAuthPopup", () => {
     runAuthPopup(deps({ win: h.win, signWith, view }));
     h.emit({ kind: "sign", request }, "https://dapp.example");
     await vi.waitFor(() =>
-      expect(h.posted).toContainEqual({ data: { kind: "sign", result: { signature: "0xretry" } }, origin: "https://dapp.example" }),
+      expect(h.posted).toContainEqual({
+        data: { kind: "sign", result: { signature: "0xretry" } },
+        origin: "https://dapp.example",
+      }),
     );
     expect(signWith).toHaveBeenCalledTimes(2);
     expect(errorsSeen).toEqual([undefined, "passkey dismissed"]); // second showConsent carried the error

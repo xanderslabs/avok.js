@@ -35,7 +35,9 @@ describe("remote Signer — Solana verbs", () => {
 
   it("omits cluster from the wire when no hint is given (backward-safe)", async () => {
     const msg = new Uint8Array([4, 5, 6]);
-    const open = vi.fn(async (): Promise<ChannelResult> => ({ kind: "sign", result: { signature: "Sig11", consent: {} } }));
+    const open = vi.fn(
+      async (): Promise<ChannelResult> => ({ kind: "sign", result: { signature: "Sig11", consent: {} } }),
+    );
     const signer = createRemoteSigner({ channel: { open }, credentialId: "s1" });
     await signer.signSolanaTransaction(msg);
     expect(open).toHaveBeenCalledWith({
@@ -49,6 +51,10 @@ describe("remote Signer — Solana verbs", () => {
     const open = vi.fn(async (): Promise<ChannelResult> => ({ kind: "sign", result: { signature: "Sig11" } }));
     const signer = createRemoteSigner({ channel: { open }, credentialId: "s1" });
     expect(await signer.signSolanaMessage("hello")).toEqual({ signature: "Sig11" });
-    expect(open).toHaveBeenCalledWith({ kind: "sign", credentialId: "s1", request: { op: "signSolanaMessage", message: "hello" } });
+    expect(open).toHaveBeenCalledWith({
+      kind: "sign",
+      credentialId: "s1",
+      request: { op: "signSolanaMessage", message: "hello" },
+    });
   });
 });

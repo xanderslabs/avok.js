@@ -58,16 +58,15 @@ export function Onboard() {
     return (
       <Screen title="Set up this device" onBack={() => setView("existing")}>
         <Text variant="label" tone="subtle" as="p" style={{ margin: "0 0 12px" }}>
-          Bring your wallet to this device from the one that already has it. This is the new-device half
-          of a two-part flow: on your other device open Settings → "Export to a device", then follow along
-          here. The two devices talk over an end-to-end-encrypted channel, and you'll compare a 6-digit
-          code on both screens before anything is granted.
+          Bring your wallet to this device from the one that already has it. This is the new-device half of a two-part
+          flow: on your other device open Settings → "Export to a device", then follow along here. The two devices talk
+          over an end-to-end-encrypted channel, and you'll compare a 6-digit code on both screens before anything is
+          granted.
         </Text>
         <Card style={{ marginBottom: 14 }}>
           <Text variant="label" tone="caution" as="p" style={{ margin: 0 }}>
-            This costs one on-chain transaction, paid by the wallet: this device gets its own encrypted
-            key copy stored on chain, and that copy is what lets it sign in later. A wallet with no funds
-            can't add a device yet.
+            This costs one on-chain transaction, paid by the wallet: this device gets its own encrypted key copy stored
+            on chain, and that copy is what lets it sign in later. A wallet with no funds can't add a device yet.
           </Text>
         </Card>
         {/* On success `complete()` populates the account and the shell swaps to the app; onDone just
@@ -139,12 +138,7 @@ export function Onboard() {
       <Text variant="display" as="h3" style={{ margin: "0 0 6px" }}>
         Welcome to Avok
       </Text>
-      <Text
-        variant="body"
-        tone="subtle"
-        as="p"
-        style={{ margin: "0 0 20px", maxWidth: "32ch", marginInline: "auto" }}
-      >
+      <Text variant="body" tone="subtle" as="p" style={{ margin: "0 0 20px", maxWidth: "32ch", marginInline: "auto" }}>
         Keys live on this device — no custodian holds your funds.
       </Text>
 

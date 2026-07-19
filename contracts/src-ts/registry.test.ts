@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
-  getChainProfile, getTokenProfile, getSolanaChainProfile, getSolanaTokenProfile,
-  getChainProfileById, listChains, listFeeTokens,
-  resolveAnchorChain, DEFAULT_ANCHOR_CHAIN_ID,
-  TOKEN_PROGRAM, TOKEN_2022_PROGRAM,
+  getChainProfile,
+  getTokenProfile,
+  getSolanaChainProfile,
+  getSolanaTokenProfile,
+  getChainProfileById,
+  listChains,
+  listFeeTokens,
+  resolveAnchorChain,
+  DEFAULT_ANCHOR_CHAIN_ID,
+  TOKEN_PROGRAM,
+  TOKEN_2022_PROGRAM,
   getEnsDeployment,
-  CHAIN_NAME_TO_ID, resolveChainByName, chainIdNumberByName, CHAIN_PROFILES,
+  CHAIN_NAME_TO_ID,
+  resolveChainByName,
+  chainIdNumberByName,
+  CHAIN_PROFILES,
 } from "./registry.js";
 
 describe("chain registry (§8)", () => {

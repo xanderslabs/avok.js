@@ -1,12 +1,6 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
 import { createOwnOriginConnection, createSharedOriginConnection, webStorage } from "../../src/index.js";
-import type {
-  SolanaTxOpts,
-  SolanaNamespace,
-  SolanaResolved,
-  SolanaSimulation,
-  FeeToken,
-} from "../../src/index.js";
+import type { SolanaTxOpts, SolanaNamespace, SolanaResolved, SolanaSimulation, FeeToken } from "../../src/index.js";
 
 describe("createOwnOriginConnection", () => {
   // Step 1 (TDD): failing test — own-origin entry point wires the web trio.
@@ -29,8 +23,12 @@ describe("createOwnOriginConnection", () => {
     const mem = new Map<string, string>();
     const storage = {
       get: (k: string) => mem.get(k) ?? null,
-      set: (k: string, v: string) => { mem.set(k, v); },
-      remove: (k: string) => { mem.delete(k); },
+      set: (k: string, v: string) => {
+        mem.set(k, v);
+      },
+      remove: (k: string) => {
+        mem.delete(k);
+      },
     };
     const conn = createOwnOriginConnection({ rpId: "qudi.fi", storage });
     expect(typeof conn.create).toBe("function");
@@ -45,9 +43,7 @@ describe("createSharedOriginConnection", () => {
   });
 
   it("matches the async function prototype", () => {
-    expect(Object.getPrototypeOf(createSharedOriginConnection)).toBe(
-      Object.getPrototypeOf(async function () {}),
-    );
+    expect(Object.getPrototypeOf(createSharedOriginConnection)).toBe(Object.getPrototypeOf(async function () {}));
   });
 });
 

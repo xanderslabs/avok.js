@@ -42,13 +42,11 @@ export function createBundler(opts: BundlerOptions): Bundler {
 
   return {
     estimateUserOperationGas: (userOp) =>
-      client.estimateUserOperationGas(
-        { ...userOp, entryPointAddress } as Parameters<typeof client.estimateUserOperationGas>[0],
-      ),
+      client.estimateUserOperationGas({ ...userOp, entryPointAddress } as Parameters<
+        typeof client.estimateUserOperationGas
+      >[0]),
     sendUserOperation: (userOp) =>
-      client.sendUserOperation(
-        { ...userOp, entryPointAddress } as Parameters<typeof client.sendUserOperation>[0],
-      ),
+      client.sendUserOperation({ ...userOp, entryPointAddress } as Parameters<typeof client.sendUserOperation>[0]),
     getUserOperationReceipt: async (hash) => {
       try {
         return await client.getUserOperationReceipt({ hash });

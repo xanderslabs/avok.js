@@ -108,9 +108,7 @@ export interface FullAvokClient extends UseOnlyAvokClient {
  * connection typed as `SelfCustodyConnection` (its factory already returns that)
  * to retain the full surface.
  */
-export type AvokClientFor<C extends Connection> = C extends SelfCustodyConnection
-  ? FullAvokClient
-  : UseOnlyAvokClient;
+export type AvokClientFor<C extends Connection> = C extends SelfCustodyConnection ? FullAvokClient : UseOnlyAvokClient;
 
 export function createAvokClient<C extends Connection>(config: ClientConfig<C>): AvokClientFor<C> {
   const { connection, deps } = config;
@@ -135,14 +133,18 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
     logout() {
       const r = connection.logout();
       if (r && typeof (r as Promise<void>).then === "function") {
-        return (r as Promise<void>).then(() => { notify(); });
+        return (r as Promise<void>).then(() => {
+          notify();
+        });
       }
       notify();
       return r;
     },
     subscribe(listener: () => void): () => void {
       listeners.add(listener);
-      return () => { listeners.delete(listener); };
+      return () => {
+        listeners.delete(listener);
+      };
     },
     account: () => connection.account(),
     status: () => connection.status(),
@@ -158,7 +160,6 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
       const code = await rpc.getCode(address);
       return isDelegatedTo(code, chain.canonicalImplementation);
     },
-
   };
 
   // Use-only (shared-origin) posture stops at the use-only surface.
@@ -179,7 +180,13 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
   const withBuffer = (cost: bigint): bigint => (cost * ENROLMENT_BUFFER_BPS) / 10_000n;
 
   const ERC20_BALANCE_ABI = [
-    { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] },
+    {
+      type: "function",
+      name: "balanceOf",
+      stateMutability: "view",
+      inputs: [{ name: "a", type: "address" }],
+      outputs: [{ type: "uint256" }],
+    },
   ] as const;
 
   function accessCtx(): AccessCtx {
@@ -302,7 +309,6 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
     listAccessSlots: () => sc.listAccessSlots(),
     accessSlotCount: () => sc.accessSlotCount(),
     removeAccessSlot: (slotId: Hex, o: { confirm: true }) => sc.removeAccessSlot(accessCtx(), slotId, o),
-
   }) as FullAvokClient;
 
   return full as AvokClientFor<C>;

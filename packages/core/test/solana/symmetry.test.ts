@@ -24,9 +24,7 @@ class FakePasskeyAdapter {
   async create(_label: string, _addr: string) {
     this.counter += 1;
     const credentialId = `fake-cred-${this.counter}`;
-    const prfOutput = new Uint8Array(
-      Array.from({ length: 32 }, (_, i) => (this.counter * 17 + i) % 256),
-    ).buffer;
+    const prfOutput = new Uint8Array(Array.from({ length: 32 }, (_, i) => (this.counter * 17 + i) % 256)).buffer;
     this.credentials.set(credentialId, { prfOutput });
     return {
       credentialId,
@@ -45,8 +43,12 @@ class FakePasskeyAdapter {
     return cred.prfOutput.slice(0); // fresh buffer per call: sandbox zeroes prfOutput (single-use contract)
   }
 
-  async discover(): Promise<never> { throw new Error("not needed"); }
-  async supportsLargeBlob(): Promise<boolean> { return true; }
+  async discover(): Promise<never> {
+    throw new Error("not needed");
+  }
+  async supportsLargeBlob(): Promise<boolean> {
+    return true;
+  }
 
   async writeLargeBlob(credentialId: string, _t: string[] | undefined, bytes: Uint8Array): Promise<boolean> {
     if (!this.credentials.has(credentialId)) return false;

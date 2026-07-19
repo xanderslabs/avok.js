@@ -12,8 +12,8 @@ export async function sendSolana(args: {
   message: unknown;
   lastValidBlockHeight: bigint;
   cluster: "mainnet" | "devnet";
-  rpc?: SolanaRpcClient;   // self-pay
-  kora?: KoraClient;       // sponsored — Kora is BOTH the fee payer and the submitter
+  rpc?: SolanaRpcClient; // self-pay
+  kora?: KoraClient; // sponsored — Kora is BOTH the fee payer and the submitter
 }): Promise<Receipt> {
   if (args.rail === "self-pay") {
     if (!args.rpc) throw new Error("self-pay requires an rpc");

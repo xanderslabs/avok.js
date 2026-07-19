@@ -20,8 +20,8 @@ const fail = (msg) => {
 if (!test.includes("pnpm typecheck")) {
   fail(
     "`test` no longer runs `pnpm typecheck`.\n" +
-    "  vitest does not typecheck. Without this, a type error in any test file is invisible to every\n" +
-    "  command anyone actually runs — which is exactly how 8 of them accrued before #10.",
+      "  vitest does not typecheck. Without this, a type error in any test file is invisible to every\n" +
+      "  command anyone actually runs — which is exactly how 8 of them accrued before #10.",
   );
 }
 
@@ -30,17 +30,17 @@ const typecheck = test.indexOf("pnpm typecheck");
 if (build < 0 || build > typecheck) {
   fail(
     "`test` must run `pnpm build` BEFORE `pnpm typecheck`.\n" +
-    "  Cross-package types resolve through built dist/: tsc --traceResolution shows sdk-core reading\n" +
-    "  @avokjs/evm-txengine from evm-txengine/dist/index.d.ts. There are no `paths` mappings, so the\n" +
-    "  build is load-bearing. Without it typecheck passes on a warm machine and fails on a fresh clone.",
+      "  Cross-package types resolve through built dist/: tsc --traceResolution shows sdk-core reading\n" +
+      "  @avokjs/evm-txengine from evm-txengine/dist/index.d.ts. There are no `paths` mappings, so the\n" +
+      "  build is load-bearing. Without it typecheck passes on a warm machine and fails on a fresh clone.",
   );
 }
 
 if (!test.includes("demos:typecheck")) {
   fail(
     "`test` no longer runs `demos:typecheck`.\n" +
-    "  #8 added it to `check`, and #10 collapsed `check` into `test` — so dropping it here silently\n" +
-    "  undoes #8 and lets the examples' types rot again.",
+      "  #8 added it to `check`, and #10 collapsed `check` into `test` — so dropping it here silently\n" +
+      "  undoes #8 and lets the examples' types rot again.",
   );
 }
 

@@ -53,13 +53,25 @@ describe("solana.buildSplTransfer — create-ATA payer per rail", () => {
 
   it("self-pay: the create-ATA rent payer is the user", async () => {
     const ns = createSolanaNamespace(fakeConfig());
-    const ix = await ns.buildSplTransfer({ mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: null });
+    const ix = await ns.buildSplTransfer({
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: null,
+    });
     expect(ataPayer(ix)).toBe(USER);
   });
 
   it("sponsored: the create-ATA rent payer is Kora's fee-payer signer", async () => {
     const ns = createSolanaNamespace(fakeConfig());
-    const ix = await ns.buildSplTransfer({ mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: USDC_DEVNET });
+    const ix = await ns.buildSplTransfer({
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: USDC_DEVNET,
+    });
     expect(ataPayer(ix)).toBe(KORA_SIGNER);
   });
 
@@ -72,14 +84,20 @@ describe("solana.buildSplTransfer — create-ATA payer per rail", () => {
     delete (cfg.deps as Record<string, unknown>).kora;
 
     const ns = createSolanaNamespace(cfg as never);
-    const ix = await ns.buildSplTransfer({ mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: USDC_DEVNET });
+    const ix = await ns.buildSplTransfer({
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: USDC_DEVNET,
+    });
     expect(ataPayer(ix)).toBe(USER);
   });
 
   it("throws on a mint the cluster registry does not know", async () => {
     const ns = createSolanaNamespace(fakeConfig());
-    await expect(
-      ns.buildSplTransfer({ mint: WSOL, to: RECIP, amount: 1n, cluster: "devnet" }),
-    ).rejects.toThrow(/unknown|not.*support|Unsupported/i);
+    await expect(ns.buildSplTransfer({ mint: WSOL, to: RECIP, amount: 1n, cluster: "devnet" })).rejects.toThrow(
+      /unknown|not.*support|Unsupported/i,
+    );
   });
 });

@@ -100,7 +100,7 @@ type SiweConsentParams = {
   domain: string;
   uri: string;
   /** Must be '1' — matches viem's SiweParams and the signed EIP-4361 message. */
-  version: '1';
+  version: "1";
   chainId: number;
   nonce: string;
   statement?: string | undefined;
@@ -215,9 +215,12 @@ function unwrapWalletBatch(data: Hex): { calls: RawCall[]; feeCalls: RawCall[] }
 /** Pure dispatcher — decodes any sign request into a human-readable consent summary. No gesture. */
 /** Decode a transaction into the consent view. Shared by `signTransaction` and the composite
  *  `signSend`, so the two can never show the user different things for the same bytes. */
-function decodeTxConsent(
-  tx: TransactionSerializable,
-): { chainId: number; calls: ConsentLine[]; fee?: ConsentLine; maxFeeWei?: bigint } {
+function decodeTxConsent(tx: TransactionSerializable): {
+  chainId: number;
+  calls: ConsentLine[];
+  fee?: ConsentLine;
+  maxFeeWei?: bigint;
+} {
   const chainId = tx.chainId ?? 0;
   const call: RawCall = {
     to: getAddress((tx.to ?? "0x0000000000000000000000000000000000000000") as Address),
@@ -311,7 +314,9 @@ export function decodeSignConsent(request: SignConsentRequest): SignConsent {
       const implementation = getAddress(
         (auth as { address?: Address }).address ??
           (auth as { contractAddress?: Address }).contractAddress ??
-          (() => { throw new Error("authorization must carry address or contractAddress"); })(),
+          (() => {
+            throw new Error("authorization must carry address or contractAddress");
+          })(),
       );
       return { op: "signAuthorization", chainId: auth.chainId, implementation };
     }

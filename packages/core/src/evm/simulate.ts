@@ -1,19 +1,8 @@
 import { type Hex, slice } from "viem";
 import type { EvmChainProfile } from "@avokjs/contracts";
 import type { RpcClient } from "./rpc.js";
-import {
-  simulateV1Method,
-  stateOverrideMethod,
-  type SimOutcome,
-} from "./sim-methods.js";
-import type {
-  Call,
-  DecodedCall,
-  ResolvedBatch,
-  SimMethod,
-  SimulationConfidence,
-  SimulationResult,
-} from "./types.js";
+import { simulateV1Method, stateOverrideMethod, type SimOutcome } from "./sim-methods.js";
+import type { Call, DecodedCall, ResolvedBatch, SimMethod, SimulationConfidence, SimulationResult } from "./types.js";
 
 export interface SimulateDeps {
   rpc: RpcClient;

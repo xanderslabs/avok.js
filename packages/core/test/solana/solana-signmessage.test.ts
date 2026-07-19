@@ -22,17 +22,37 @@ function fakeSolanaConnection(): Connection {
       return { signature: "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111" };
     },
     // Stub out other methods
-    async signMessage() { throw new Error("not implemented"); },
-    async signTypedData() { throw new Error("not implemented"); },
-    async signSiwe() { throw new Error("not implemented"); },
-    async signAuthorization() { throw new Error("not implemented"); },
-    async signTransaction() { throw new Error("not implemented"); },
-    async signSolanaTransaction() { throw new Error("not implemented"); },
-    async create() { throw new Error("not implemented"); },
-    async continue() { throw new Error("not implemented"); },
-    async export() { throw new Error("not implemented"); },
+    async signMessage() {
+      throw new Error("not implemented");
+    },
+    async signTypedData() {
+      throw new Error("not implemented");
+    },
+    async signSiwe() {
+      throw new Error("not implemented");
+    },
+    async signAuthorization() {
+      throw new Error("not implemented");
+    },
+    async signTransaction() {
+      throw new Error("not implemented");
+    },
+    async signSolanaTransaction() {
+      throw new Error("not implemented");
+    },
+    async create() {
+      throw new Error("not implemented");
+    },
+    async continue() {
+      throw new Error("not implemented");
+    },
+    async export() {
+      throw new Error("not implemented");
+    },
     async logout() {},
-    async addPasskey() { throw new Error("not implemented"); },
+    async addPasskey() {
+      throw new Error("not implemented");
+    },
     canExport: false,
   } as unknown as Connection;
 }
@@ -53,6 +73,8 @@ describe("own-origin signSolanaMessage byte-identity with encodeOffchainMessage"
     const { signature } = await conn.signSolanaMessage("gm");
     const sigBytes = base58.decode(signature);
     const pubkeyBytes = base58.decode(solana.address);
-    expect(ed25519.verify(sigBytes, encodeOffchainMessage({ message: "gm", rpId: "avok.test" }), pubkeyBytes)).toBe(true);
+    expect(ed25519.verify(sigBytes, encodeOffchainMessage({ message: "gm", rpId: "avok.test" }), pubkeyBytes)).toBe(
+      true,
+    );
   });
 });

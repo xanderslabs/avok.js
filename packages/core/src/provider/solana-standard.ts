@@ -89,14 +89,18 @@ export function registerAvokSolanaWallet(config: ClientConfig, opts: SolanaStand
         supportedTransactionVersions: SUPPORTED_TX_VERSIONS,
         signTransaction: (...inputs: { account: WalletAccount; transaction: Uint8Array; chain?: string }[]) =>
           Promise.all(
-            inputs.map(async (i) => ({ signedTransaction: await engine.signTransaction(i.transaction, toCluster(i.chain)) })),
+            inputs.map(async (i) => ({
+              signedTransaction: await engine.signTransaction(i.transaction, toCluster(i.chain)),
+            })),
           ),
       },
       "solana:signAndSendTransaction": {
         version: "1.0.0",
         supportedTransactionVersions: SUPPORTED_TX_VERSIONS,
         signAndSendTransaction: (...inputs: { account: WalletAccount; transaction: Uint8Array; chain: string }[]) =>
-          Promise.all(inputs.map(async (i) => ({ signature: await engine.signAndSend(i.transaction, toCluster(i.chain)) }))),
+          Promise.all(
+            inputs.map(async (i) => ({ signature: await engine.signAndSend(i.transaction, toCluster(i.chain)) })),
+          ),
       },
     },
   };

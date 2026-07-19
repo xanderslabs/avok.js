@@ -27,7 +27,10 @@ function fakeEngine() {
     chainId: 8453,
   });
   const status = vi.fn().mockImplementation(async (r: { [k: string]: unknown }) => ({ ...r, status: "confirmed" }));
-  return { send, status } as unknown as SendEngine & { send: ReturnType<typeof vi.fn>; status: ReturnType<typeof vi.fn> };
+  return { send, status } as unknown as SendEngine & {
+    send: ReturnType<typeof vi.fn>;
+    status: ReturnType<typeof vi.fn>;
+  };
 }
 
 test("wallet_sendCalls maps the batch to the engine and returns { id }", async () => {
@@ -35,7 +38,14 @@ test("wallet_sendCalls maps the batch to the engine and returns { id }", async (
   const p = createEip1193Provider(fakeConfig(), { defaultChainId: 8453, engine });
   const out = await p.request({
     method: "wallet_sendCalls",
-    params: [{ version: "2.0.0", from: ADDR, chainId: numberToHex(8453), calls: [{ to: TO, value: numberToHex(1000n), data: "0x" }] }],
+    params: [
+      {
+        version: "2.0.0",
+        from: ADDR,
+        chainId: numberToHex(8453),
+        calls: [{ to: TO, value: numberToHex(1000n), data: "0x" }],
+      },
+    ],
   });
   expect(out).toEqual({ id: "0xtxhash" });
   expect(engine.send).toHaveBeenCalledWith([{ to: TO, value: 1000n, data: "0x" }], { chainId: 8453 });

@@ -11,8 +11,7 @@ const K = hexToBytes("0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a
 function readerWith(entries: { slotId: Hex; addedAt: number; encryptedMeta?: Uint8Array }[]) {
   return {
     getAccessSlotIds: async (_a: Address) => entries.map((e) => e.slotId),
-    getAccessSlotAddedAt: async (_a: Address, slotId: Hex) =>
-      entries.find((e) => e.slotId === slotId)?.addedAt ?? 0,
+    getAccessSlotAddedAt: async (_a: Address, slotId: Hex) => entries.find((e) => e.slotId === slotId)?.addedAt ?? 0,
     getAccessSlotMeta: async (_a: Address, slotId: Hex) =>
       entries.find((e) => e.slotId === slotId)?.encryptedMeta ?? new Uint8Array(0),
   };
@@ -21,7 +20,10 @@ function readerWith(entries: { slotId: Hex; addedAt: number; encryptedMeta?: Uin
 describe("listAccessSlots", () => {
   test("lists access slots with their enrollment date", async () => {
     const slotId = deriveSlotId(ADDR, "Y3JlZC1hYWE");
-    const accessSlots = await listAccessSlots({ address: ADDR, reader: readerWith([{ slotId, addedAt: 1_700_000_000 }]) });
+    const accessSlots = await listAccessSlots({
+      address: ADDR,
+      reader: readerWith([{ slotId, addedAt: 1_700_000_000 }]),
+    });
     expect(accessSlots).toEqual([
       { slotId, addedAt: 1_700_000_000, encryptedMeta: new Uint8Array(0), isThisDevice: false },
     ]);
@@ -44,7 +46,10 @@ describe("listAccessSlots", () => {
     const b = deriveSlotId(ADDR, "Y3JlZC1iYmI");
     const accessSlots = await listAccessSlots({
       address: ADDR,
-      reader: readerWith([{ slotId: a, addedAt: 1 }, { slotId: b, addedAt: 2 }]),
+      reader: readerWith([
+        { slotId: a, addedAt: 1 },
+        { slotId: b, addedAt: 2 },
+      ]),
     });
     expect(accessSlots.map((d) => d.slotId)).toEqual([a, b]);
   });
@@ -52,7 +57,10 @@ describe("listAccessSlots", () => {
   test("carries each access slot's metadata as CIPHERTEXT — the listing never sees a plaintext rp-id", async () => {
     const slotId = deriveSlotId(ADDR, "Y3JlZC1hYWE");
     const encryptedMeta = await encryptSlotMeta(K, slotId, "lifeboat.example");
-    const [slot] = await listAccessSlots({ address: ADDR, reader: readerWith([{ slotId, addedAt: 1, encryptedMeta }]) });
+    const [slot] = await listAccessSlots({
+      address: ADDR,
+      reader: readerWith([{ slotId, addedAt: 1, encryptedMeta }]),
+    });
     expect(slot.encryptedMeta).toEqual(encryptedMeta);
     expect(new TextDecoder().decode(slot.encryptedMeta)).not.toContain("lifeboat");
   });
@@ -68,9 +76,16 @@ describe("readAccessSlotRpId", () => {
 
   test("returns null for an empty or unreadable metadata (never throws in a UI list)", async () => {
     const slotId = deriveSlotId(ADDR, "Y3JlZC1hYWE");
-    expect(await readAccessSlotRpId(K, { slotId, addedAt: 1, encryptedMeta: new Uint8Array(0), isThisDevice: false })).toBeNull();
     expect(
-      await readAccessSlotRpId(K, { slotId, addedAt: 1, encryptedMeta: new Uint8Array(META_BYTES), isThisDevice: false }),
+      await readAccessSlotRpId(K, { slotId, addedAt: 1, encryptedMeta: new Uint8Array(0), isThisDevice: false }),
+    ).toBeNull();
+    expect(
+      await readAccessSlotRpId(K, {
+        slotId,
+        addedAt: 1,
+        encryptedMeta: new Uint8Array(META_BYTES),
+        isThisDevice: false,
+      }),
     ).toBeNull();
   });
 });

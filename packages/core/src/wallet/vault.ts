@@ -1,7 +1,11 @@
 import { bytesToHex, encodeFunctionData, type Address, type Hex } from "viem";
 
 /** A single on-chain call. The Tx Engine assembles these into a batch. */
-export interface Call { to: Address; value: bigint; data: Hex }
+export interface Call {
+  to: Address;
+  value: bigint;
+  data: Hex;
+}
 
 /**
  * The access-slot vault this SDK consumes from the account contract (IPasskeyAccessVault).
@@ -12,28 +16,45 @@ export interface Call { to: Address; value: bigint; data: Hex }
  * control — see buildRemoveAccessSlotCall and the invariant in test/public-api.test.ts.
  */
 export const ACCESS_VAULT_ABI = [
-  { type: "function", name: "addAccessSlot", stateMutability: "nonpayable",
+  {
+    type: "function",
+    name: "addAccessSlot",
+    stateMutability: "nonpayable",
     inputs: [
       { name: "slotId", type: "bytes32" },
       { name: "encryptedBlob", type: "bytes" },
       { name: "encryptedMeta", type: "bytes" },
-    ], outputs: [] },
-  { type: "function", name: "getAccessSlotMeta", stateMutability: "view",
-    inputs: [{ name: "slotId", type: "bytes32" }], outputs: [{ type: "bytes" }] },
-  { type: "function", name: "getAccessSlot", stateMutability: "view",
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "getAccessSlotMeta",
+    stateMutability: "view",
+    inputs: [{ name: "slotId", type: "bytes32" }],
+    outputs: [{ type: "bytes" }],
+  },
+  {
+    type: "function",
+    name: "getAccessSlot",
+    stateMutability: "view",
     inputs: [{ name: "slotId", type: "bytes32" }],
     outputs: [
       { name: "encryptedBlob", type: "bytes" },
       { name: "active", type: "bool" },
       { name: "version", type: "uint64" },
       { name: "addedAt", type: "uint64" },
-    ] },
-  { type: "function", name: "getAccessSlotIds", stateMutability: "view",
-    inputs: [], outputs: [{ type: "bytes32[]" }] },
-  { type: "function", name: "removeAccessSlot", stateMutability: "nonpayable",
-    inputs: [{ name: "slotId", type: "bytes32" }], outputs: [] },
-  { type: "function", name: "accessSlotCount", stateMutability: "view",
-    inputs: [], outputs: [{ type: "uint256" }] },
+    ],
+  },
+  { type: "function", name: "getAccessSlotIds", stateMutability: "view", inputs: [], outputs: [{ type: "bytes32[]" }] },
+  {
+    type: "function",
+    name: "removeAccessSlot",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "slotId", type: "bytes32" }],
+    outputs: [],
+  },
+  { type: "function", name: "accessSlotCount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
 ] as const;
 
 /**

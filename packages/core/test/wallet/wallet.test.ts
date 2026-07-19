@@ -12,12 +12,26 @@ describe("wallet lifecycle", () => {
     // The live primary hands its container (K = the EVM key) to the enrolment; a secondary wraps it.
     const primary = await exportWallet({ state, passkey: a, confirmExport: true });
     const { slot, blob } = await addPasskey({
-      passkey: b, networkName: "Qudi", container: { key: hexToBytes(primary.evm) },
-      address: account.evm, solanaAddress: account.solana, anchorChainId: 10,
+      passkey: b,
+      networkName: "Qudi",
+      container: { key: hexToBytes(primary.evm) },
+      address: account.evm,
+      solanaAddress: account.solana,
+      anchorChainId: 10,
     });
     // Device B can now export the same wallet — both credentials recover identical keys.
-    const bState = { evmAddress: account.evm, solanaAddress: account.solana, slots: [slot], blobs: [{ credentialId: slot.credentialId, blob }] };
-    const exported = await exportWallet({ state: bState, passkey: b, credentialId: slot.credentialId, confirmExport: true });
+    const bState = {
+      evmAddress: account.evm,
+      solanaAddress: account.solana,
+      slots: [slot],
+      blobs: [{ credentialId: slot.credentialId, blob }],
+    };
+    const exported = await exportWallet({
+      state: bState,
+      passkey: b,
+      credentialId: slot.credentialId,
+      confirmExport: true,
+    });
     expect(exported.evm).toBe(primary.evm);
     expect(exported.solana).toBe(primary.solana);
   });
@@ -44,7 +58,14 @@ describe("wallet lifecycle", () => {
     const a = await createWallet({ passkey: pkA, networkName: "Qudi" });
     const keyA = (await exportWallet({ state: a.state, passkey: pkA, confirmExport: true })).evm;
     const pkSecA = new FakePasskeyAdapter();
-    const secA = await addPasskey({ passkey: pkSecA, networkName: "Qudi", container: { key: hexToBytes(keyA) }, address: a.account.evm, solanaAddress: a.account.solana, anchorChainId: 10 });
+    const secA = await addPasskey({
+      passkey: pkSecA,
+      networkName: "Qudi",
+      container: { key: hexToBytes(keyA) },
+      address: a.account.evm,
+      solanaAddress: a.account.solana,
+      anchorChainId: 10,
+    });
 
     // Correct handle (a.account.evm) + this secondary's PRF → the derived addresses match the wallet.
     const rebuilt = await reconstructWalletState({
@@ -61,12 +82,14 @@ describe("wallet lifecycle", () => {
     // A handle claiming a DIFFERENT wallet address cannot even decrypt the blob (the address is bound
     // into the AES key), so it is rejected — never silently trusted.
     const wrong = "0x000000000000000000000000000000000000dEaD" as const;
-    await expect(reconstructWalletState({
-      blob: secA.blob,
-      address: wrong,
-      credentialId: secA.slot.credentialId,
-      rpId: "Qudi",
-      prfOutput: await pkSecA.authenticate(secA.slot.credentialId),
-    })).rejects.toThrow();
+    await expect(
+      reconstructWalletState({
+        blob: secA.blob,
+        address: wrong,
+        credentialId: secA.slot.credentialId,
+        rpId: "Qudi",
+        prfOutput: await pkSecA.authenticate(secA.slot.credentialId),
+      }),
+    ).rejects.toThrow();
   });
 });

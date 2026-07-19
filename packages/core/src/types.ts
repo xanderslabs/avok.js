@@ -146,7 +146,6 @@ export interface Connection extends Signer {
    */
   logout(): Promise<void> | void;
 
-
   /**
    * Get the current account, or null if no account is active.
    */
@@ -220,8 +219,6 @@ export interface SelfCustodyConnection extends Connection {
   /** The chain-verified number of access slots in this wallet. THIS is the number behind "you have N ways
    *  into this wallet"; neither an orphan nor a PENDING access slot is one of them. */
   accessSlotCount(): Promise<number>;
-
-
 
   /**
    * PASSKEY ENROLMENT (Own-origin-only) — the one ceremony, three QR codes.

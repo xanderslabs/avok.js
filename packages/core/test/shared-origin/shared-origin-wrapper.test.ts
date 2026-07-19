@@ -5,7 +5,11 @@ import { makeFakeChannel } from "../client/fakes.js";
 
 describe("createSharedOriginConnection", () => {
   it("continue() runs the OIDC authorize flow and exposes the account", async () => {
-    const channel = makeFakeChannel({ address: "0xabc...", subname: "alice.qudi.fi", solanaAddress: "So1anaAddrBase58..." });
+    const channel = makeFakeChannel({
+      address: "0xabc...",
+      subname: "alice.qudi.fi",
+      solanaAddress: "So1anaAddrBase58...",
+    });
     const conn = createSharedOriginConnection({
       authOrigin: "https://auth.qudi.fi",
       channel,
@@ -16,7 +20,11 @@ describe("createSharedOriginConnection", () => {
   });
 
   it("account() maps the shared-origin session to { evm, solana }", async () => {
-    const channel = makeFakeChannel({ address: "0xabc...", subname: "alice.qudi.fi", solanaAddress: "So1anaAddrBase58..." });
+    const channel = makeFakeChannel({
+      address: "0xabc...",
+      subname: "alice.qudi.fi",
+      solanaAddress: "So1anaAddrBase58...",
+    });
     const conn = createSharedOriginConnection({
       authOrigin: "https://auth.qudi.fi",
       channel,
@@ -50,9 +58,7 @@ describe("createSharedOriginConnection", () => {
     // token pair. The BEHAVIOUR under test is unchanged: an account sdk-core cannot shape must be
     // purged, not thrown, or the app renders signed-in against something it will refuse to use.)
     function storageWithStaleSession(): NetStorage {
-      const map = new Map<string, string>([
-        ["avok.account", JSON.stringify({ evmAddress: "0xabc..." })],
-      ]);
+      const map = new Map<string, string>([["avok.account", JSON.stringify({ evmAddress: "0xabc..." })]]);
       return {
         get: (k) => map.get(k) ?? null,
         set: (k, v) => void map.set(k, v),

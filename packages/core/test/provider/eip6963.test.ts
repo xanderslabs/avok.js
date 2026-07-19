@@ -4,7 +4,12 @@ import { announceEip6963 } from "../../src/provider/eip6963.js";
 import type { Eip1193Provider } from "../../src/provider/eip1193.js";
 
 const provider = { request: async () => null, on: () => {}, removeListener: () => {} } as Eip1193Provider;
-const info = { uuid: "550e8400-e29b-41d4-a716-446655440000", name: "Avok", icon: "data:image/svg+xml;base64,x", rdns: "com.avok" };
+const info = {
+  uuid: "550e8400-e29b-41d4-a716-446655440000",
+  name: "Avok",
+  icon: "data:image/svg+xml;base64,x",
+  rdns: "com.avok",
+};
 
 test("announce fires once immediately on call", () => {
   const seen = vi.fn();

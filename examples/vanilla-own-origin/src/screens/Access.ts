@@ -146,7 +146,11 @@ export function Access(ctx: Ctx): HTMLElement {
       {},
       el("div", { class: "section-label" }, "The access slots"),
       s.accessSlots.length === 0
-        ? el("p", { style: { ...sub, margin: "0" } }, "No access slots are recorded on the anchor chain for this wallet.")
+        ? el(
+            "p",
+            { style: { ...sub, margin: "0" } },
+            "No access slots are recorded on the anchor chain for this wallet.",
+          )
         : el("div", {}, ...s.accessSlots.map(accessSlotNode)),
       s.error && el("div", { style: { marginTop: "10px" } }, ErrorNote(s.error)),
     );

@@ -7,7 +7,11 @@ import {
   serializeBlob,
   type VaultReader,
 } from "../../src/wallet/index.js";
-import { OrphanedCredentialError, SlotUnreachableError, materializeWalletState } from "../../src/auth-popup/sign/wallet-state.js";
+import {
+  OrphanedCredentialError,
+  SlotUnreachableError,
+  materializeWalletState,
+} from "../../src/auth-popup/sign/wallet-state.js";
 // FakePasskeyAdapter and FakeVaultReader live in wallet-core test helpers.
 import { FakePasskeyAdapter, FakeVaultReader } from "../wallet/fakes.js";
 

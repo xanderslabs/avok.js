@@ -52,7 +52,7 @@ export class MissingRpIdError extends Error {
     super(
       "OriginConfig.rpId is required and must be a non-empty string. The rpId scopes the passkey " +
         "PRF that IS the wallet key — it must be pinned explicitly by the operator, never inferred " +
-        "from a URL or hostname. Set config.rpId to your fixed, narrow RP-ID (e.g. \"wallet.example.com\").",
+        'from a URL or hostname. Set config.rpId to your fixed, narrow RP-ID (e.g. "wallet.example.com").',
     );
     this.name = "MissingRpIdError";
   }

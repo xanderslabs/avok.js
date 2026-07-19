@@ -35,12 +35,7 @@ export function ListRow({
       el("div", { class: danger ? "list-title is-danger" : "list-title" }, title),
       desc && el("div", { class: "list-desc" }, desc),
     ),
-    el(
-      "div",
-      { class: "list-end" },
-      end,
-      chevron && onClick && el("span", { class: "list-chevron" }, "›"),
-    ),
+    el("div", { class: "list-end" }, end, chevron && onClick && el("span", { class: "list-chevron" }, "›")),
   );
 }
 

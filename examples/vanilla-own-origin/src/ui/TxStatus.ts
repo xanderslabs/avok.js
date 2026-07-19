@@ -1,13 +1,7 @@
 import { el } from "../core/el.js";
 import type { TxState } from "@avokjs/core/helpers";
 
-export function TxStatus({
-  state,
-  explorerUrl,
-}: {
-  state: TxState;
-  explorerUrl?: string;
-}): HTMLElement | null {
+export function TxStatus({ state, explorerUrl }: { state: TxState; explorerUrl?: string }): HTMLElement | null {
   if (state === "idle") return null;
   const label: Record<Exclude<TxState, "idle">, string> = {
     signing: "Waiting for signature…",

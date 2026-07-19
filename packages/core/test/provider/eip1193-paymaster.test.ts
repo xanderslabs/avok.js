@@ -30,11 +30,13 @@ test("wallet_sendCalls with a paymasterService context token routes sponsored wi
 
   await p.request({
     method: "wallet_sendCalls",
-    params: [{
-      chainId: numberToHex(8453),
-      calls: [{ to: TO, value: numberToHex(1000n), data: "0x" }],
-      capabilities: { paymasterService: { url: "https://pm.test", context: { token: USDC } } },
-    }],
+    params: [
+      {
+        chainId: numberToHex(8453),
+        calls: [{ to: TO, value: numberToHex(1000n), data: "0x" }],
+        capabilities: { paymasterService: { url: "https://pm.test", context: { token: USDC } } },
+      },
+    ],
   });
 
   expect(engine.send).toHaveBeenCalledWith([{ to: TO, value: 1000n, data: "0x" }], { chainId: 8453, feeToken: USDC });
@@ -46,11 +48,13 @@ test("wallet_sendCalls with a single-token paymasterService (no context token) u
 
   await p.request({
     method: "wallet_sendCalls",
-    params: [{
-      chainId: numberToHex(8453),
-      calls: [{ to: TO, data: "0x" }],
-      capabilities: { paymasterService: { url: "https://pm.test" } },
-    }],
+    params: [
+      {
+        chainId: numberToHex(8453),
+        calls: [{ to: TO, data: "0x" }],
+        capabilities: { paymasterService: { url: "https://pm.test" } },
+      },
+    ],
   });
 
   expect(engine.send).toHaveBeenCalledWith([{ to: TO, value: 0n, data: "0x" }], { chainId: 8453, feeToken: USDC });

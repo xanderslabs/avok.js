@@ -5,12 +5,20 @@ import type { Connection, SelfCustodyConnection } from "../../src/types.js";
 function fakeSelf(): SelfCustodyConnection {
   let acct: unknown = null;
   let st = false;
-  const set = () => { acct = { evm: { address: "0xabc" }, solana: { address: "x" } }; st = true; return acct; };
+  const set = () => {
+    acct = { evm: { address: "0xabc" }, solana: { address: "x" } };
+    st = true;
+    return acct;
+  };
   return {
-    custody: "self", canExport: true,
+    custody: "self",
+    canExport: true,
     continue: async () => set(),
     create: async () => set(),
-    logout: () => { acct = null; st = false; },
+    logout: () => {
+      acct = null;
+      st = false;
+    },
     account: () => acct,
     status: () => st,
     export: async () => "0xkey",

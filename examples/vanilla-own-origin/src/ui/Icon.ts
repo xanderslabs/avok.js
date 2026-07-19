@@ -37,10 +37,7 @@ const PATHS: Record<IconName, () => SVGElement[]> = {
     svg("path", { d: "m8 11 4 4 4-4" }),
     svg("path", { d: "M20 21H4a2 2 0 0 1-2-2v-4" }),
   ],
-  device: () => [
-    svg("rect", { width: "14", height: "20", x: "5", y: "2", rx: "2" }),
-    svg("path", { d: "M12 18h.01" }),
-  ],
+  device: () => [svg("rect", { width: "14", height: "20", x: "5", y: "2", rx: "2" }), svg("path", { d: "M12 18h.01" })],
   accessSlot: () => [
     svg("rect", { width: "20", height: "5", x: "2", y: "3", rx: "1" }),
     svg("path", { d: "M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" }),

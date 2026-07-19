@@ -14,7 +14,10 @@ export function createViemVaultReader(rpc: RpcClient): VaultReader {
       let raw: readonly [Hex, boolean, bigint, bigint];
       try {
         raw = await rpc.readContract<readonly [Hex, boolean, bigint, bigint]>({
-          address, abi: ACCESS_VAULT_ABI, functionName: "getAccessSlot", args: [slotId],
+          address,
+          abi: ACCESS_VAULT_ABI,
+          functionName: "getAccessSlot",
+          args: [slotId],
         });
       } catch (e) {
         // ZERO DATA -> nothing to decode: the account is not delegated yet (every fresh wallet, until
@@ -34,7 +37,9 @@ export function createViemVaultReader(rpc: RpcClient): VaultReader {
     },
     async accessSlotCount(address: Address) {
       return rpc.readContract<bigint>({
-        address, abi: ACCESS_VAULT_ABI, functionName: "accessSlotCount",
+        address,
+        abi: ACCESS_VAULT_ABI,
+        functionName: "accessSlotCount",
       });
     },
   };

@@ -12,7 +12,13 @@ import { resolver } from "../resolver.js";
 import { Screen, Card, Field, Button, AddressText, ErrorNote } from "../ui/index.js";
 
 type Err = { kind: SendErrorKind; message: string } | null;
-const secLabel = { fontSize: "11px", textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text3)", marginBottom: "10px" };
+const secLabel = {
+  fontSize: "11px",
+  textTransform: "uppercase",
+  letterSpacing: ".06em",
+  color: "var(--text3)",
+  marginBottom: "10px",
+};
 
 /** Operator name = the auth origin's host — never a hardcoded operator brand. */
 function operatorName(authOrigin: string): string {
@@ -91,7 +97,13 @@ export function Account(ctx: Ctx): HTMLElement {
 
     return Screen(
       { title: "Account" },
-      el("p", { style: { fontSize: "12px", color: "var(--text3)", marginBottom: "14px" } }, "Managed by ", el("b", null, operator), " — export, access slots, and device management happen at the operator's app, not here."),
+      el(
+        "p",
+        { style: { fontSize: "12px", color: "var(--text3)", marginBottom: "14px" } },
+        "Managed by ",
+        el("b", null, operator),
+        " — export, access slots, and device management happen at the operator's app, not here.",
+      ),
 
       // Identity
       Card(
@@ -119,8 +131,16 @@ export function Account(ctx: Ctx): HTMLElement {
           ? el(
               "div",
               null,
-              el("p", { style: { fontSize: "12px", marginBottom: "10px", color: "var(--text2)" } }, `Add devices or export at ${operator}.`),
-              Button({ variant: "ghost", label: `Manage at ${operator}`, onClick: () => window.open(ctx.config.managementUrl, "_blank", "noopener") }),
+              el(
+                "p",
+                { style: { fontSize: "12px", marginBottom: "10px", color: "var(--text2)" } },
+                `Add devices or export at ${operator}.`,
+              ),
+              Button({
+                variant: "ghost",
+                label: `Manage at ${operator}`,
+                onClick: () => window.open(ctx.config.managementUrl, "_blank", "noopener"),
+              }),
             )
           : el(
               "p",
@@ -144,8 +164,18 @@ export function Account(ctx: Ctx): HTMLElement {
         el(
           "div",
           { style: { display: "flex", gap: "8px", marginBottom: "10px" } },
-          Button({ variant: "ghost", label: s.evmSigning ? "Signing…" : "Sign (EVM)", disabled: s.evmSigning, onClick: () => void handleSignEvm() }),
-          Button({ variant: "ghost", label: s.solSigning ? "Signing…" : "Sign (Solana)", disabled: s.solSigning, onClick: () => void handleSignSolana() }),
+          Button({
+            variant: "ghost",
+            label: s.evmSigning ? "Signing…" : "Sign (EVM)",
+            disabled: s.evmSigning,
+            onClick: () => void handleSignEvm(),
+          }),
+          Button({
+            variant: "ghost",
+            label: s.solSigning ? "Signing…" : "Sign (Solana)",
+            disabled: s.solSigning,
+            onClick: () => void handleSignSolana(),
+          }),
         ),
         s.signErr && ErrorNote(s.signErr),
         s.evmSig &&
@@ -176,7 +206,12 @@ export function Account(ctx: Ctx): HTMLElement {
             s.lookup = v;
           },
         }),
-        Button({ variant: "ghost", label: s.resolving ? "Resolving…" : "Resolve", disabled: s.resolving, onClick: () => void handleResolve() }),
+        Button({
+          variant: "ghost",
+          label: s.resolving ? "Resolving…" : "Resolve",
+          disabled: s.resolving,
+          onClick: () => void handleResolve(),
+        }),
         s.resolved !== undefined &&
           el(
             "div",
@@ -204,7 +239,12 @@ export function Account(ctx: Ctx): HTMLElement {
       // Disconnect
       Card(
         null,
-        Button({ variant: "ghost", label: s.loggingOut ? "Disconnecting…" : "Disconnect", disabled: s.loggingOut, onClick: () => void handleDisconnect() }),
+        Button({
+          variant: "ghost",
+          label: s.loggingOut ? "Disconnecting…" : "Disconnect",
+          disabled: s.loggingOut,
+          onClick: () => void handleDisconnect(),
+        }),
       ),
     );
   }

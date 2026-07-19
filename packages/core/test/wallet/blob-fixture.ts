@@ -9,8 +9,7 @@ import { base58 } from "@scure/base";
 import { encryptKeyBlob, serializeBlob } from "../../src/wallet/crypto/blob.js";
 import { produceSolanaKey, type SecretContainer } from "../../src/wallet/crypto/container.js";
 
-const FIXED_KEY =
-  "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;
+const FIXED_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;
 // base64url of "blob-fixture-cred-001"
 const FIXED_CRED_ID = "YmxvYi1maXh0dXJlLWNyZWQtMDAx";
 const FIXED_PRF = new Uint8Array(32).fill(0xab);

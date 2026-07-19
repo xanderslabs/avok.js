@@ -16,6 +16,10 @@ describe("FakePasskeyAdapter", () => {
   test("discover surfaces the handle it was created with", async () => {
     const pk = new FakePasskeyAdapter();
     await pk.create("Qudi Wallet · 1a2b…9f3c", encodeAccessHandle(ADDR, 10));
-    expect(decodeUserHandle((await pk.discover()).userHandle)).toEqual({ kind: "secondary", evm: ADDR, anchorChain: 10 });
+    expect(decodeUserHandle((await pk.discover()).userHandle)).toEqual({
+      kind: "secondary",
+      evm: ADDR,
+      anchorChain: 10,
+    });
   });
 });

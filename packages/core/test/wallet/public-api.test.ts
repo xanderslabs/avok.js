@@ -12,17 +12,37 @@ describe("public API", () => {
 
   test("exports the System-1 surface and none of the pruned names", () => {
     for (const name of [
-      "createWallet", "addPasskey", "exportWallet",
-      "withWalletKey", "withSolanaKey", "reconstructWalletState",
-      "signMessage", "signTypedData", "signSiwe",
-      "resolveBlob", "buildAddAccessSlotCall",
-      "deriveSlotId", "encodeAccessHandle", "decodeUserHandle",
-      "WebAuthnPasskeyAdapter", "createReactNativePasskeyAdapter",
-      "bytesToBase64Url", "base64UrlToBytes",
+      "createWallet",
+      "addPasskey",
+      "exportWallet",
+      "withWalletKey",
+      "withSolanaKey",
+      "reconstructWalletState",
+      "signMessage",
+      "signTypedData",
+      "signSiwe",
+      "resolveBlob",
+      "buildAddAccessSlotCall",
+      "deriveSlotId",
+      "encodeAccessHandle",
+      "decodeUserHandle",
+      "WebAuthnPasskeyAdapter",
+      "createReactNativePasskeyAdapter",
+      "bytesToBase64Url",
+      "base64UrlToBytes",
     ]) {
       expect(api).toHaveProperty(name);
     }
-    for (const gone of ["addressLabel", "importWallet", "authorizeWalletDelegation", "buildIntentTypedData", "signWalletIntent", "createKeySandbox", "beginDeviceProvisioning", "withWalletPrivateKey"]) {
+    for (const gone of [
+      "addressLabel",
+      "importWallet",
+      "authorizeWalletDelegation",
+      "buildIntentTypedData",
+      "signWalletIntent",
+      "createKeySandbox",
+      "beginDeviceProvisioning",
+      "withWalletPrivateKey",
+    ]) {
       expect(api).not.toHaveProperty(gone);
     }
   });
@@ -32,18 +52,29 @@ describe("public API", () => {
     // primitives (and the raw HKDF domain + PRF-salt constants) on a public subpath is a footgun. They
     // were deliberately dropped from the barrel; a re-add should trip this guard, not slip in silently.
     for (const internal of [
-      "encryptKeyBlob", "encryptKeyBlobWithWrappingKey", "deriveSlotWrappingKeyBits",
-      "encryptSlotMeta", "decryptSlotMeta", "computeSas",
-      "encodeFoundingHandle", "handleLabel",
-      "WALLET_INFO", "SLOT_META_INFO", "PAIRING_INFO_PREFIX", "getPrfSalt",
-      "BLOB_VERSION", "SUPPORTED_BLOB_VERSIONS", "WRAPPING_KEY_BYTES", "isSupportedBlobVersion",
-      "SLOT_META_VERSION", "NoPrfError",
+      "encryptKeyBlob",
+      "encryptKeyBlobWithWrappingKey",
+      "deriveSlotWrappingKeyBits",
+      "encryptSlotMeta",
+      "decryptSlotMeta",
+      "computeSas",
+      "encodeFoundingHandle",
+      "handleLabel",
+      "WALLET_INFO",
+      "SLOT_META_INFO",
+      "PAIRING_INFO_PREFIX",
+      "getPrfSalt",
+      "BLOB_VERSION",
+      "SUPPORTED_BLOB_VERSIONS",
+      "WRAPPING_KEY_BYTES",
+      "isSupportedBlobVersion",
+      "SLOT_META_VERSION",
+      "NoPrfError",
     ]) {
       expect(api).not.toHaveProperty(internal);
     }
   });
 });
-
 
 /**
  * REMOVING AN ACCESS SLOT IS AIMABLE — and it is HOUSEKEEPING, NOT A SECURITY CONTROL.

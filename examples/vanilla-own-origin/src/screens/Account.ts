@@ -13,7 +13,13 @@ import { Screen, Card, Field, Button, AddressText, ListRow, ErrorNote } from "..
 
 type Err = { kind: SendErrorKind; message: string } | null;
 const txt = (v: string): Text => document.createTextNode(v);
-const secLabel = { fontSize: "11px", textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text3)", marginBottom: "10px" };
+const secLabel = {
+  fontSize: "11px",
+  textTransform: "uppercase",
+  letterSpacing: ".06em",
+  color: "var(--text3)",
+  marginBottom: "10px",
+};
 
 export function Account(ctx: Ctx): HTMLElement {
   const account = ctx.client.account();
@@ -76,7 +82,11 @@ export function Account(ctx: Ctx): HTMLElement {
 
     return Screen(
       { title: "Account" },
-      el("p", { style: { fontSize: "12px", color: "var(--text3)", marginBottom: "14px" } }, "Managed on this device — keys and passkeys never leave this browser."),
+      el(
+        "p",
+        { style: { fontSize: "12px", color: "var(--text3)", marginBottom: "14px" } },
+        "Managed on this device — keys and passkeys never leave this browser.",
+      ),
 
       // Identity
       Card(
@@ -131,8 +141,18 @@ export function Account(ctx: Ctx): HTMLElement {
         el(
           "div",
           { style: { display: "flex", gap: "8px", marginBottom: "10px" } },
-          Button({ variant: "ghost", label: s.evmSigning ? "Signing…" : "Sign (EVM)", disabled: s.evmSigning, onClick: () => void handleSignEvm() }),
-          Button({ variant: "ghost", label: s.solSigning ? "Signing…" : "Sign (Solana)", disabled: s.solSigning, onClick: () => void handleSignSolana() }),
+          Button({
+            variant: "ghost",
+            label: s.evmSigning ? "Signing…" : "Sign (EVM)",
+            disabled: s.evmSigning,
+            onClick: () => void handleSignEvm(),
+          }),
+          Button({
+            variant: "ghost",
+            label: s.solSigning ? "Signing…" : "Sign (Solana)",
+            disabled: s.solSigning,
+            onClick: () => void handleSignSolana(),
+          }),
         ),
         s.signErr && ErrorNote(s.signErr),
         s.evmSig &&
@@ -196,7 +216,11 @@ export function Account(ctx: Ctx): HTMLElement {
             : el(
                 "div",
                 null,
-                el("p", { style: { fontSize: "12px", marginBottom: "10px", color: "var(--text2)" } }, "Reveals the raw recovery material for this wallet — high risk."),
+                el(
+                  "p",
+                  { style: { fontSize: "12px", marginBottom: "10px", color: "var(--text2)" } },
+                  "Reveals the raw recovery material for this wallet — high risk.",
+                ),
                 Button({ variant: "danger", label: "Export wallet", onClick: () => set({ exportStep: "confirm" }) }),
               ),
         s.exportErr && el("div", { style: { marginTop: "8px" } }, ErrorNote(s.exportErr)),

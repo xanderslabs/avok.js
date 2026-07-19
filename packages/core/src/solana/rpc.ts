@@ -9,16 +9,23 @@ import { selectPriorityFee, type PriorityFeePolicy } from "./priority-fee.js";
 
 // blockhash is the kit-branded Blockhash (not a bare string) so buildSolanaMessage can feed the
 // tx-lifetime helper without a cast — the brand is what the message builder requires.
-export interface LatestBlockhash { blockhash: Blockhash; lastValidBlockHeight: bigint }
-export interface SimResult { err: unknown; unitsConsumed?: bigint; logs: string[] | null }
+export interface LatestBlockhash {
+  blockhash: Blockhash;
+  lastValidBlockHeight: bigint;
+}
+export interface SimResult {
+  err: unknown;
+  unitsConsumed?: bigint;
+  logs: string[] | null;
+}
 
 export interface SolanaRpcClient {
   getLatestBlockhash(): Promise<LatestBlockhash>;
   simulateTransaction(base64Tx: string): Promise<SimResult>;
-  sendTransaction(base64Tx: string): Promise<string>;            // returns signature
+  sendTransaction(base64Tx: string): Promise<string>; // returns signature
   getSignatureStatus(signature: string): Promise<{ confirmationStatus: string | null; err: unknown } | null>;
   getAccountInfo(address: string): Promise<{ exists: boolean }>;
-  getRecentPrioritizationFee(): Promise<bigint>;                  // micro-lamports/CU
+  getRecentPrioritizationFee(): Promise<bigint>; // micro-lamports/CU
   /** Lamports needed to make an account of `space` bytes rent-exempt. Needed to price a create-ATA:
    *  on the self-pay rail the USER funds that rent, and at ~2,039,280 lamports it dwarfs the ~5,000
    *  base fee. An estimate that omitted it would understate the cost of the send by ~400x. */
@@ -46,16 +53,12 @@ export function createSolanaRpcClient(url: string, policy: PriorityFeePolicy = {
         .send()) as string;
     },
     async getSignatureStatus(signature) {
-      const { value } = await rpc
-        .getSignatureStatuses([signature as Signature])
-        .send();
+      const { value } = await rpc.getSignatureStatuses([signature as Signature]).send();
       const s = value[0];
       return s ? { confirmationStatus: s.confirmationStatus ?? null, err: s.err } : null;
     },
     async getAccountInfo(addr) {
-      const { value } = await rpc
-        .getAccountInfo(addr as Address, { encoding: "base64" })
-        .send();
+      const { value } = await rpc.getAccountInfo(addr as Address, { encoding: "base64" }).send();
       return { exists: value != null };
     },
     async getMinimumBalanceForRentExemption(space) {
@@ -71,6 +74,8 @@ export function createSolanaRpcClient(url: string, policy: PriorityFeePolicy = {
         policy,
       );
     },
-    async getBlockHeight() { return await rpc.getBlockHeight().send(); },
+    async getBlockHeight() {
+      return await rpc.getBlockHeight().send();
+    },
   };
 }

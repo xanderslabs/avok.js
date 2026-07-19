@@ -8,11 +8,7 @@
  */
 import { base64 } from "@scure/base";
 import { getSolanaTokenProfile } from "@avokjs/contracts";
-import {
-  decodeCompiledMessage,
-  classifySplTransfer,
-  type DecodedIx,
-} from "../../solana/decode.js";
+import { decodeCompiledMessage, classifySplTransfer, type DecodedIx } from "../../solana/decode.js";
 
 // ── Well-known program addresses (protocol constants) ─────────────────────────
 // Solana compute-budget program
@@ -31,8 +27,8 @@ export interface SolanaConsentLine {
    *  symbol/decimals are populated from the registry when a cluster hint is supplied AND the
    *  instruction is a TransferChecked (which encodes a mint); otherwise they are omitted. */
   token?: {
-    mint: string;       // "" for plain Transfer (no mint encoded); populated for TransferChecked
-    amount: string;     // base-unit value as string (bigint serialised)
+    mint: string; // "" for plain Transfer (no mint encoded); populated for TransferChecked
+    amount: string; // base-unit value as string (bigint serialised)
     destination: string;
     symbol?: string;
     decimals?: number;
@@ -43,7 +39,7 @@ export interface SolanaConsentLine {
   /** Present for kind:"system-transfer": security-critical native SOL transfer metadata.
    *  Surfacing lamports + destination prevents a native-SOL drain rendering as a bare label. */
   native?: {
-    lamports: string;   // base-unit value as string (bigint serialised; 1 SOL = 1e9 lamports)
+    lamports: string; // base-unit value as string (bigint serialised; 1 SOL = 1e9 lamports)
     destination: string;
   };
   /** Present for kind:"raw": base64-encoded instruction data */
@@ -151,10 +147,7 @@ function lineFor(ix: DecodedIx, cluster?: string): SolanaConsentLine {
  *   TransferChecked lines are enriched with the registry token symbol/decimals; a missing
  *   cluster falls back to the unenriched render (backward-safe).
  */
-export function decodeSolanaConsent(
-  messageBytes: Uint8Array,
-  opts?: { cluster?: string },
-): SolanaConsentView {
+export function decodeSolanaConsent(messageBytes: Uint8Array, opts?: { cluster?: string }): SolanaConsentView {
   const { feePayer, instructions } = decodeCompiledMessage(messageBytes);
   return {
     cluster: opts?.cluster,

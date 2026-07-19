@@ -49,12 +49,28 @@ export function Connect(ctx: Ctx): HTMLElement {
       el("div", { style: { display: "flex", justifyContent: "center", marginBottom: "16px" } }, BrandMark(50)),
       el(
         "h3",
-        { style: { fontSize: "19px", fontWeight: "700", letterSpacing: "-.02em", color: "var(--text)", margin: "0 0 6px" } },
+        {
+          style: {
+            fontSize: "19px",
+            fontWeight: "700",
+            letterSpacing: "-.02em",
+            color: "var(--text)",
+            margin: "0 0 6px",
+          },
+        },
         `Continue with ${operator}`,
       ),
       el(
         "p",
-        { style: { fontSize: "13px", color: "var(--text3)", lineHeight: "1.5", margin: "0 auto 20px", maxWidth: "32ch" } },
+        {
+          style: {
+            fontSize: "13px",
+            color: "var(--text3)",
+            lineHeight: "1.5",
+            margin: "0 auto 20px",
+            maxWidth: "32ch",
+          },
+        },
         `Sign in to ${operator} to use the same wallet here. Keys stay at ${operator} — this app only receives signatures.`,
       ),
       Button({
@@ -80,14 +96,30 @@ export function Connect(ctx: Ctx): HTMLElement {
         }),
         el(
           "p",
-          { style: { fontSize: "11.5px", color: "var(--text3)", lineHeight: "1.5", margin: "8px auto 0", maxWidth: "34ch" } },
+          {
+            style: {
+              fontSize: "11.5px",
+              color: "var(--text3)",
+              lineHeight: "1.5",
+              margin: "8px auto 0",
+              maxWidth: "34ch",
+            },
+          },
           `Creating and managing a wallet happens in ${operator}'s own app — this app only signs in.`,
         ),
         !ctx.config.managementUrl &&
-          el("p", { style: { fontSize: "11px", color: "var(--danger)", marginTop: "6px" } }, "Sign-up isn't currently available for this app."),
+          el(
+            "p",
+            { style: { fontSize: "11px", color: "var(--danger)", marginTop: "6px" } },
+            "Sign-up isn't currently available for this app.",
+          ),
       ),
 
-      el("div", { style: { fontSize: "11px", color: "var(--text3)", marginTop: "16px", fontFamily: "var(--font-mono)" } }, `Shared-origin · opens ${operator}`),
+      el(
+        "div",
+        { style: { fontSize: "11px", color: "var(--text3)", marginTop: "16px", fontFamily: "var(--font-mono)" } },
+        `Shared-origin · opens ${operator}`,
+      ),
     );
   }
 

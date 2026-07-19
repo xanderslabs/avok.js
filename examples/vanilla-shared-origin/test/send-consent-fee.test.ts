@@ -24,7 +24,8 @@ import type { Ctx } from "../src/core/app.js";
 function fakeCtx() {
   const request = vi.fn(async ({ method }: { method: string; params?: unknown[] }) => {
     if (method === "wallet_sendCalls") return { id: "0xbundle" };
-    if (method === "wallet_getCallsStatus") return { status: 200, receipts: [{ status: "0x1", transactionHash: "0xhash" }] };
+    if (method === "wallet_getCallsStatus")
+      return { status: 200, receipts: [{ status: "0x1", transactionHash: "0xhash" }] };
     return null;
   });
   const client = {
@@ -94,7 +95,8 @@ describe("shared-origin: EVM Send drives the standard provider (the wallet owns 
     confirm!.click();
 
     await vi.waitFor(() => {
-      if (!request.mock.calls.some((c) => (c[0] as { method: string }).method === "wallet_sendCalls")) throw new Error("not sent");
+      if (!request.mock.calls.some((c) => (c[0] as { method: string }).method === "wallet_sendCalls"))
+        throw new Error("not sent");
     });
     const sent = request.mock.calls.find((c) => (c[0] as { method: string }).method === "wallet_sendCalls")!;
     const req = (sent[0] as { params: [{ calls: unknown[]; from: string }] }).params[0];
@@ -103,7 +105,8 @@ describe("shared-origin: EVM Send drives the standard provider (the wallet owns 
 
     // It TRACKS the bundle — it never rounds a still-pending send up to success.
     await vi.waitFor(() => {
-      if (!request.mock.calls.some((c) => (c[0] as { method: string }).method === "wallet_getCallsStatus")) throw new Error("not tracked");
+      if (!request.mock.calls.some((c) => (c[0] as { method: string }).method === "wallet_getCallsStatus"))
+        throw new Error("not tracked");
     });
   });
 });

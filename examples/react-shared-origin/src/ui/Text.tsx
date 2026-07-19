@@ -43,8 +43,7 @@ export function Text({
         lineHeight: "line" in t ? t.line : undefined,
         letterSpacing: "tracking" in t ? t.tracking : undefined,
         fontFamily: mono ? "var(--font-mono)" : undefined,
-        fontVariantNumeric:
-          variant === "display" || variant === "amount" ? "tabular-nums" : undefined,
+        fontVariantNumeric: variant === "display" || variant === "amount" ? "tabular-nums" : undefined,
         color: tones[tone],
         ...style,
       }}

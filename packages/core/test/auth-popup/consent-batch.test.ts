@@ -162,7 +162,12 @@ describe("self-pay discloses the fee ceiling the signature commits to", () => {
 describe("signUserOp consent unwraps the UserOp callData and discloses delegation", () => {
   const WALLET = "0xcB994f2B438e19C9e444A77c95A8D649F047A180" as const;
   const userOpReq = (data: Hex, authorization?: { chainId: number; address: Hex; nonce: number }) =>
-    ({ op: "signUserOp", userOp: { sender: WALLET, callData: data }, chainId: ARC, authorization } as unknown as SignConsentRequest);
+    ({
+      op: "signUserOp",
+      userOp: { sender: WALLET, callData: data },
+      chainId: ARC,
+      authorization,
+    }) as unknown as SignConsentRequest;
 
   it("shows the recipient and amount from the UserOp batch, not raw calldata", () => {
     const data = executeBatch([{ to: USDC_ARC, value: 0n, data: ERC20_TRANSFER }]);

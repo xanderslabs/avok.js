@@ -12,7 +12,11 @@ export function railFromContext(ctx: SolanaExecutionContext): Rail {
   return ctx.feeToken ? "sponsored" : "self-pay";
 }
 
-export interface DecodedInstruction { programAddress: string; accountCount: number; label?: string }
+export interface DecodedInstruction {
+  programAddress: string;
+  accountCount: number;
+  label?: string;
+}
 
 /**
  * The exact, bounded fee a SPONSORED transaction pays in an SPL token — the number the user consents to
@@ -26,7 +30,8 @@ export interface DecodedInstruction { programAddress: string; accountCount: numb
  * back `fee_too_low`. The self-pay estimate is a different animal and says so: `SolanaNativeFeeEstimate`.
  */
 export interface FeeBreakdown {
-  feeToken: string; amount: bigint;
+  feeToken: string;
+  amount: bigint;
   /** Lamports the fee covers (Kora reports this as `fee_in_lamports`). */
   lamportsTotal: bigint;
 }
@@ -41,19 +46,24 @@ export interface FeeBreakdown {
  * hidden inside a "network fee" nor left out.
  */
 export interface SolanaNativeFeeEstimate {
-  baseFee: bigint; priorityFee: bigint; rent: bigint;
+  baseFee: bigint;
+  priorityFee: bigint;
+  rent: bigint;
   /** baseFee + priorityFee + rent — the total SOL the wallet is out. */
   lamports: bigint;
 }
 
 export type SimulationConfidence = "exact" | "unsupported";
 export interface SimulationResult {
-  success: boolean; computeUnits: bigint;
+  success: boolean;
+  computeUnits: bigint;
   /** Sponsored only — the exact fee, signed, paid in an SPL token. */
   fee?: FeeBreakdown;
   /** Self-pay only — the ESTIMATED SOL cost. Never signed. */
   nativeFee?: SolanaNativeFeeEstimate;
-  decodedInstructions: DecodedInstruction[]; confidence: SimulationConfidence; error?: string;
+  decodedInstructions: DecodedInstruction[];
+  confidence: SimulationConfidence;
+  error?: string;
 }
 
 // "failed" = the tx landed and reverted (do not resend). "expired" = the blockhash lifetime lapsed
@@ -61,8 +71,12 @@ export interface SimulationResult {
 // and resend. Kept distinct because they drive opposite retry decisions.
 export type ReceiptStatus = "pending" | "submitted" | "confirmed" | "failed" | "expired";
 export interface Receipt {
-  id: string; rail: Rail; status: ReceiptStatus;
-  signature?: string; cluster: "mainnet" | "devnet"; lastValidBlockHeight?: bigint;
+  id: string;
+  rail: Rail;
+  status: ReceiptStatus;
+  signature?: string;
+  cluster: "mainnet" | "devnet";
+  lastValidBlockHeight?: bigint;
   /** Why the relayer could not submit it. A bare "Failed" is undiagnosable from the app. */
   error?: string;
 }

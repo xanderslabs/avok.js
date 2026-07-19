@@ -4,9 +4,12 @@ import { txReduce, type TxState } from "../../src/helpers/tx-status.js";
 describe("txReduce", () => {
   it("drives the happy path idle→signing→pending→confirmed", () => {
     let s: TxState = "idle";
-    s = txReduce(s, "submit"); expect(s).toBe("signing");
-    s = txReduce(s, "signed"); expect(s).toBe("pending");
-    s = txReduce(s, "mined");  expect(s).toBe("confirmed");
+    s = txReduce(s, "submit");
+    expect(s).toBe("signing");
+    s = txReduce(s, "signed");
+    expect(s).toBe("pending");
+    s = txReduce(s, "mined");
+    expect(s).toBe("confirmed");
   });
   it("goes to failed on revert while pending", () => {
     expect(txReduce("pending", "revert")).toBe("failed");

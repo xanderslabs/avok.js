@@ -21,11 +21,13 @@ export function encodeOffchainMessage({ message, rpId }: { message: string; rpId
   const format = isPrintableAscii(msg) ? 0 : 2;
   const out = new Uint8Array(SIGNING_DOMAIN.length + 1 + 32 + 1 + 2 + msg.length);
   let o = 0;
-  out.set(SIGNING_DOMAIN, o); o += SIGNING_DOMAIN.length;
+  out.set(SIGNING_DOMAIN, o);
+  o += SIGNING_DOMAIN.length;
   out[o++] = OFFCHAIN_MESSAGE_VERSION; // envelope version (wallet-standard v0)
-  out.set(appDomain, o); o += 32;     // application domain
-  out[o++] = format;                  // message format
-  out[o++] = msg.length & 0xff;       // length u16 LE
+  out.set(appDomain, o);
+  o += 32; // application domain
+  out[o++] = format; // message format
+  out[o++] = msg.length & 0xff; // length u16 LE
   out[o++] = (msg.length >> 8) & 0xff;
   out.set(msg, o);
   return out;

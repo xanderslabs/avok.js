@@ -10,8 +10,7 @@ import { secureStoreStorage } from "../src/native-storage.js";
 function makeFakeSecureStore() {
   const map = new Map<string, string>();
   return {
-    getItemAsync: async (key: string): Promise<string | null> =>
-      map.get(key) ?? null,
+    getItemAsync: async (key: string): Promise<string | null> => map.get(key) ?? null,
     setItemAsync: async (key: string, value: string): Promise<void> => {
       map.set(key, value);
     },

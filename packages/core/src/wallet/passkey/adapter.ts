@@ -1,5 +1,10 @@
-export interface PasskeyPrfProfile { extension: "prf"; saltVersion: "v0" }
-export interface PasskeyPlatformMetadata { authenticatorAttachment: "platform" }
+export interface PasskeyPrfProfile {
+  extension: "prf";
+  saltVersion: "v0";
+}
+export interface PasskeyPlatformMetadata {
+  authenticatorAttachment: "platform";
+}
 
 /** Result of creating a passkey credential. `prfOutput` never leaves the device boundary. */
 export interface PasskeyRegistration {

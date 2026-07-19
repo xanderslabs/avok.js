@@ -1,4 +1,7 @@
-import { createOwnOriginConnection as sdkCreateOwnOrigin, createSharedOriginConnection as sdkSharedOrigin } from "./engine.js";
+import {
+  createOwnOriginConnection as sdkCreateOwnOrigin,
+  createSharedOriginConnection as sdkSharedOrigin,
+} from "./engine.js";
 import type { StorageAdapter, Connection, SelfCustodyConnection } from "./engine.js";
 import type { ChainId } from "@avokjs/contracts";
 import { buildWebPasskeyAdapter } from "./web/web-platform.js";
@@ -8,7 +11,20 @@ import { webStorage } from "./web/web-storage.js";
 // wallet on construction (VISION §6 Surface 1). See provider-wiring.ts.
 export { createAvokClient } from "./web/provider-wiring.js";
 export type { WiredAvokClient, WalletInfo } from "./web/provider-wiring.js";
-export type { StorageAdapter, Connection, SelfCustodyConnection, Account, ClientConfig, FullAvokClient, UseOnlyAvokClient, AvokClientFor, CreateOpts, ContinueOpts, TxOpts, EvmFeeToken } from "./engine.js";
+export type {
+  StorageAdapter,
+  Connection,
+  SelfCustodyConnection,
+  Account,
+  ClientConfig,
+  FullAvokClient,
+  UseOnlyAvokClient,
+  AvokClientFor,
+  CreateOpts,
+  ContinueOpts,
+  TxOpts,
+  EvmFeeToken,
+} from "./engine.js";
 export type {
   SolanaTxOpts,
   SolanaNamespace,

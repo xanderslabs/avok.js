@@ -75,14 +75,17 @@ async function boot(): Promise<void> {
   }
 
   try {
-    const client = createAvokClient({
-      connection,
-      rpcUrls: config.rpcUrls,
-      paymasterUrl: config.paymasterUrl,
-      bundlerUrl: config.bundlerUrl,
-      koraUrl: config.koraUrl,
-      managementUrl: config.managementUrl,
-    }, { name: "Avok Demo", rdns: "js.avok.demo" }) as UseOnlyAvokClient;
+    const client = createAvokClient(
+      {
+        connection,
+        rpcUrls: config.rpcUrls,
+        paymasterUrl: config.paymasterUrl,
+        bundlerUrl: config.bundlerUrl,
+        koraUrl: config.koraUrl,
+        managementUrl: config.managementUrl,
+      },
+      { name: "Avok Demo", rdns: "js.avok.demo" },
+    ) as UseOnlyAvokClient;
 
     const ctx = createCtx(client);
     mountApp(root, ctx, { connect: Connect, home: Home, send: Send, account: Account });

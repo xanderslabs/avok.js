@@ -81,7 +81,11 @@ test("solana:signAndSendTransaction delegates to the engine and returns { signat
     signAndSendTransaction(input: { account: unknown; transaction: Uint8Array; chain: string }): Promise<unknown[]>;
   };
   const wire = new Uint8Array([1, 2, 3]);
-  const out = await feature.signAndSendTransaction({ account: registered[0].accounts[0], transaction: wire, chain: "solana:devnet" });
+  const out = await feature.signAndSendTransaction({
+    account: registered[0].accounts[0],
+    transaction: wire,
+    chain: "solana:devnet",
+  });
   expect(signAndSend).toHaveBeenCalledWith(wire, "devnet");
   expect(out).toEqual([{ signature: new Uint8Array([5, 5]) }]);
 });

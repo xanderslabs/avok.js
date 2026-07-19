@@ -3,7 +3,10 @@ import { custom, numberToHex, type Address, type Hex } from "viem";
 import { entryPoint08Address } from "viem/account-abstraction";
 import { createPaymaster7677 } from "../../src/evm/paymaster-7677.js";
 
-interface RpcCall { method: string; params: readonly unknown[] }
+interface RpcCall {
+  method: string;
+  params: readonly unknown[];
+}
 
 const PAYMASTER = "0x00000000000000000000000000000000000000Pm".replace("Pm", "01") as Address;
 

@@ -28,13 +28,7 @@ describe("types", () => {
   });
 
   it("SelfCustodyConnection carries the custody-management verbs (import + canImport gone; addPasskey writes on chain)", () => {
-    const keys: (keyof SelfCustodyConnection)[] = [
-      "create",
-      "export",
-      "addPasskey",
-      "canExport",
-      "passkeyCount",
-    ];
+    const keys: (keyof SelfCustodyConnection)[] = ["create", "export", "addPasskey", "canExport", "passkeyCount"];
     expect(keys.length).toBe(5);
   });
 

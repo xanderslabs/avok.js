@@ -35,9 +35,7 @@ describe("decodeCompiledMessage", () => {
     const destination = "Vote111111111111111111111111111111111111111";
     const authority = "Sysvar1111111111111111111111111111111111111";
     const amount = 1_234_567n;
-    const data = new Uint8Array(
-      getTransferCheckedInstructionDataEncoder().encode({ amount, decimals: 6 }),
-    );
+    const data = new Uint8Array(getTransferCheckedInstructionDataEncoder().encode({ amount, decimals: 6 }));
 
     const ix = { programAddress: TOKEN_2022_PROGRAM_ADDRESS, accounts: [source, mint, destination, authority], data };
 

@@ -6,13 +6,20 @@ import { config } from "./config.js";
 /** Memoized OWN-ORIGIN client (WebAuthn passkey in-browser). Reads src/config.ts only. */
 export function useAvokClient(): FullAvokClient {
   return useMemo(() => {
-    const connection = createOwnOriginConnection({ rpId: config.rpId, operatorName: config.operatorName, anchorChainId: config.anchorChainId });
-    return createAvokClient({
-      connection,
-      rpcUrls: config.rpcUrls,
-      paymasterUrl: config.paymasterUrl,
-      bundlerUrl: config.bundlerUrl,
-      koraUrl: config.koraUrl,
-    }, { name: "Avok Demo", rdns: "js.avok.demo" }) as FullAvokClient;
+    const connection = createOwnOriginConnection({
+      rpId: config.rpId,
+      operatorName: config.operatorName,
+      anchorChainId: config.anchorChainId,
+    });
+    return createAvokClient(
+      {
+        connection,
+        rpcUrls: config.rpcUrls,
+        paymasterUrl: config.paymasterUrl,
+        bundlerUrl: config.bundlerUrl,
+        koraUrl: config.koraUrl,
+      },
+      { name: "Avok Demo", rdns: "js.avok.demo" },
+    ) as FullAvokClient;
   }, []);
 }

@@ -61,7 +61,11 @@ describe("solana sponsored: the quoted fee reaches the consent screen", () => {
   it("simulate() surfaces the fee — it is not left undefined", async () => {
     const sol = createSolanaNamespace(fakeConfig());
     const ix = await sol.buildSplTransfer({
-      mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: USDC_DEVNET,
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: USDC_DEVNET,
     });
     const sim = await sol.simulate(ix as never, { cluster: "devnet", feeToken: USDC_DEVNET });
 
@@ -85,7 +89,11 @@ describe("solana sponsored: the quoted fee reaches the consent screen", () => {
   it("discloses Kora's quote verbatim, with no locally re-derived split", async () => {
     const sol = createSolanaNamespace(fakeConfig());
     const ix = await sol.buildSplTransfer({
-      mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: USDC_DEVNET,
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: USDC_DEVNET,
     });
     const sim = await sol.simulate(ix as never, { cluster: "devnet", feeToken: USDC_DEVNET });
     const fee = sim.fee!;
@@ -106,7 +114,11 @@ describe("solana sponsored: the quoted fee reaches the consent screen", () => {
   it("pays Kora's payment_address, and Kora's signer is the fee payer", async () => {
     const sol = createSolanaNamespace(fakeConfig());
     const ix = await sol.buildSplTransfer({
-      mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: USDC_DEVNET,
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: USDC_DEVNET,
     });
     const sim = await sol.simulate(ix as never, { cluster: "devnet", feeToken: USDC_DEVNET });
     expect(sim.resolved.rail).toBe("sponsored");
@@ -131,7 +143,11 @@ describe("solana sponsored: rail selection", () => {
 
     const sol = createSolanaNamespace(cfg as never);
     const ix = await sol.buildSplTransfer({
-      mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: USDC_DEVNET,
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: USDC_DEVNET,
     });
     const sim = await sol.simulate(ix as never, { cluster: "devnet", feeToken: USDC_DEVNET });
     expect(sim.resolved.rail).toBe("self-pay");
@@ -140,7 +156,11 @@ describe("solana sponsored: rail selection", () => {
   it("no fee token is self-pay even when a Kora is configured", async () => {
     const sol = createSolanaNamespace(fakeConfig());
     const ix = await sol.buildSplTransfer({
-      mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: null,
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: null,
     });
     const sim = await sol.simulate(ix as never, { cluster: "devnet" });
     expect(sim.resolved.rail).toBe("self-pay");
@@ -177,7 +197,11 @@ describe("solana: one address yields ONE signer instance", () => {
     const sol = createSolanaNamespace(fakeConfig());
 
     const ix = await sol.buildSplTransfer({
-      mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: null,
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: null,
     });
 
     // The transfer instruction's authority signer must be the very same object the client will use as
@@ -187,7 +211,11 @@ describe("solana: one address yields ONE signer instance", () => {
     expect(authority).toBeDefined();
 
     const again = await sol.buildSplTransfer({
-      mint: USDC_DEVNET, to: RECIP, amount: 1_000_000n, cluster: "devnet", feeToken: null,
+      mint: USDC_DEVNET,
+      to: RECIP,
+      amount: 1_000_000n,
+      cluster: "devnet",
+      feeToken: null,
     });
     const transfer2 = (again as { accounts?: { address: string; signer?: unknown }[] }[]).at(-1)!;
     const authority2 = transfer2.accounts?.find((a) => a.signer !== undefined)?.signer;

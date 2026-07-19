@@ -1,8 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import {
-  createAuthorizeController,
-  createSetupController,
-} from "../src/pairing/controller.js";
+import { createAuthorizeController, createSetupController } from "../src/pairing/controller.js";
 import type { FullAvokClient } from "@avokjs/react";
 
 type Pairing = FullAvokClient["pairing"];

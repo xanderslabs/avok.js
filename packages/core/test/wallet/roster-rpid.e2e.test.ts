@@ -28,8 +28,12 @@ const fakePasskey = (credentialId: string, rpId: string, prfFill: number) =>
         platform: { authenticatorAttachment: "platform" } as const,
       };
     },
-    async authenticate() { throw new Error("not used"); },
-    async discover() { throw new Error("not used"); },
+    async authenticate() {
+      throw new Error("not used");
+    },
+    async discover() {
+      throw new Error("not used");
+    },
   }) as unknown as PasskeyAdapter;
 
 describe("the roster names the domains that hold the key", () => {

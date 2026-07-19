@@ -27,7 +27,8 @@ function capturingVault() {
     },
     hasSlot: async (slotId: Hex) => store.has(slotId.toLowerCase()),
     assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
+    ...ACCESS_SLOT_WRITER,
     getAccessSlot: async (_address: Address, slotId: Hex) => store.get(slotId.toLowerCase()) ?? null,
   };
 }
@@ -40,8 +41,13 @@ describe("own-origin connection recovery from the on-chain slot (secondary path)
 
     // Enrol a secondary; the write lands in the fake anchor vault.
     const vault = capturingVault();
-    const { passkeyCount } = await conn1.addPasskey({ submit: vault.submit, hasSlot: vault.hasSlot, assertCanAffordAccessSlot: async () => {},
-    ...ACCESS_SLOT_WRITER, ...ACCESS_SLOT_WRITER });
+    const { passkeyCount } = await conn1.addPasskey({
+      submit: vault.submit,
+      hasSlot: vault.hasSlot,
+      assertCanAffordAccessSlot: async () => {},
+      ...ACCESS_SLOT_WRITER,
+      ...ACCESS_SLOT_WRITER,
+    });
     expect(passkeyCount).toBe(2);
 
     // Fresh device: the synced passkey can still discover(), but present the SECONDARY credential
@@ -53,6 +59,8 @@ describe("own-origin connection recovery from the on-chain slot (secondary path)
     expect(recovered.evm.address.toLowerCase()).toBe(acc.evm.address.toLowerCase());
     // The recovered secondary decrypts the SAME K, so it signs to the same address.
     const sig = await conn2.signMessage({ message: "recovered secondary" });
-    expect(await verifyMessage({ address: acc.evm.address, message: "recovered secondary", signature: sig })).toBe(true);
+    expect(await verifyMessage({ address: acc.evm.address, message: "recovered secondary", signature: sig })).toBe(
+      true,
+    );
   });
 });
