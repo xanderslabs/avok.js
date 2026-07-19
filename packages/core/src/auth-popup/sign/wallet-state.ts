@@ -15,8 +15,9 @@ import { getChainProfile } from "@avokjs/contracts";
  * A secondary credential's encrypted blob lives on chain. If we cannot read it, the wallet is fine
  * and the network is not — never conflate the two. This is distinct from "no wallet found": a
  * secondary whose vault read fails is unreachable, not gone, and the caller should retry, not
- * despair. Defined here (not imported) because auth-origin does not depend on sdk-core, where the
- * own-origin connection defines an identically-named error for the same reason.
+ * despair. Defined here (not imported from own-origin, which has an identically-named error for the
+ * same reason) to keep the INLINED popup bundle from pulling own-origin's whole graph in — the popup
+ * renders this in its own UI and never crosses it back to the opener as a typed error.
  */
 export class SlotUnreachableError extends Error {
   constructor() {

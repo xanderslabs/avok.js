@@ -49,7 +49,9 @@ if (typeof raw.authOrigin !== "string" || !raw.authOrigin.startsWith("https://")
 
 /** Mirrors src/app/branding.ts's resolveAppConfig — the shape the popup's readConfig() expects. */
 const appConfig = {
-  operatorName: raw.branding?.operatorName ?? "Avok",
+  // Default to the operator's own rpId, never a hardcoded "Avok" (white-label). Kept in sync with
+  // resolveAppConfig; this is the build-time copy of the same default.
+  operatorName: raw.branding?.operatorName ?? raw.rpId,
   authOrigin: raw.authOrigin,
   rpId: raw.rpId,
   defaultChainId: Number(String(raw.anchorChainId ?? "eip155:10").replace("eip155:", "")),
