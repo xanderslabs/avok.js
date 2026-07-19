@@ -1,4 +1,4 @@
-// Public surface of @avokjs/provider — the standard dapp providers over an Avok connection.
+// Public surface of @avokjs/core/provider — the standard dapp providers over an Avok connection.
 
 export { createEip1193Provider } from "./eip1193.js";
 export type { Eip1193Provider, Eip1193Options } from "./eip1193.js";
