@@ -33,8 +33,7 @@ export type { BuildUserOpArgs } from "./userop.js";
 export { buildUserOp, getAvokUserOpHash } from "./userop.js";
 
 // Pipeline
-export type { ResolveArgs } from "./resolve.js";
-export { resolveBatch, isDelegatedTo } from "./resolve.js";
+export { isDelegatedTo } from "./resolve.js";
 export type { SimulateDeps } from "./simulate.js";
 export { simulateResolved } from "./simulate.js";
 export { buildSelfPayCalldata } from "./sim-methods.js";

@@ -3,6 +3,14 @@ import type { SharedAccount } from "./types.js";
 /**
  * StorageAdapter defines a minimal key-value storage interface.
  * Implementations can use browser localStorage, sessionStorage, memory, etc.
+ *
+ * DELIBERATELY SYNC, and deliberately distinct from the root `../storage.js` StorageAdapter (which is
+ * Promise-capable for React Native's async SecureStore on the own-origin/RN rail). The shared-origin
+ * channel is browser-only today (native shared-origin is a follow-on — see VISION §8), and its
+ * `account()`/`status()` are synchronous surface, so its persistence (`loadAccount`) must read
+ * synchronously. Unifying the two would either break RN storage (forcing root sync) or make the
+ * shared-origin client's `status()`/`account()` async (a public-API regression). Revisit if/when the
+ * native shared-origin channel ships and this rail needs async storage.
  */
 export interface StorageAdapter {
   get(key: string): string | null;

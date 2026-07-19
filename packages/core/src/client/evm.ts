@@ -212,7 +212,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
    *   sign()      → key, no IO   (seal + sign inside the caller's single scope)
    *   broadcast() → IO, no key
    *
-   * Self-pay is exactly equivalent: `resolveBatch`'s only IO is getCode/getTransactionCount, neither of
+   * Self-pay is exactly equivalent: `leanResolve`'s only IO is getCode/getTransactionCount, neither of
    * which reads `userCalls` — they are copied verbatim into the batch. Sponsored estimates gas over the
    * calldata, which is the same length either way; any residual drift lands inside the relayer's
    * existing tolerance band.

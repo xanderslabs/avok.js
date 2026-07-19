@@ -17,9 +17,20 @@ export type {
   FeeToken,
 } from "./engine.js";
 
-// The named error thrown when a fee token is not supported on the target chain (chain-specific
-// fee-token addresses). Exported as a value so apps can `instanceof`-narrow it.
-export { UnsupportedFeeTokenError } from "./engine.js";
+// The catchable runtime error types, exported as values so apps can `instanceof`-narrow them:
+// UnsupportedFeeTokenError (fee token not supported on the target chain), UserRejectedError (the user
+// pressed Reject in the signing popup), NoPrfError (the passkey provider lacks PRF), KoraRejectedError
+// (the Solana paymaster refused), EnrolmentUnaffordableError (the wallet can't pay for the access-slot
+// write), VaultUnreadableError (the chain did not answer — retryable). MissingRpIdError is intentionally
+// not here: it is a fail-fast config error, not a condition to catch.
+export {
+  UnsupportedFeeTokenError,
+  UserRejectedError,
+  NoPrfError,
+  KoraRejectedError,
+  EnrolmentUnaffordableError,
+  VaultUnreadableError,
+} from "./engine.js";
 
 // Re-export webStorage so callers can supply the same adapter to other seams.
 export { webStorage } from "./web/web-storage.js";

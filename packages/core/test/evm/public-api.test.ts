@@ -3,7 +3,7 @@ import * as api from "../../src/evm/index.js";
 
 test("public surface exposes the pipeline verbs and adapters", () => {
   for (const name of [
-    "resolveBatch", "simulateResolved", "getReceiptStatus",
+    "simulateResolved", "getReceiptStatus",
     "createViemRpcClient", "createViemVaultReader",
     "estimateNativeFee",
     "railFromContext", "getChainProfile",
@@ -22,6 +22,8 @@ test("does NOT re-export gas-model internals or the unused viem smart-account wr
     "BASE_TX_GAS", "AUTH_7702_GAS", "SELF_PAY_FEE_MUL", "SELF_PAY_TIP_MUL",
     "selfPayEffectiveGasPrice", "selfPayGasEstimate",
     "decodeCalls", "toAvokSmartAccount",
+    // resolveBatch was dead (only leanResolve is used, in client/); deleted.
+    "resolveBatch",
   ]) {
     expect(api).not.toHaveProperty(internal);
   }

@@ -18,6 +18,16 @@ export type { TxOpts, EvmNamespace, EvmFeeToken } from "./client/evm.js";
 export type { SolanaNamespace, SolanaTxOpts, SolanaResolved, SolanaSimulation, FeeToken } from "./client/solana.js";
 export { UnsupportedFeeTokenError } from "./client/fee-token-error.js";
 
+// Catchable error types — the runtime errors a consumer handles BY TYPE (matching
+// UnsupportedFeeTokenError above), surfaced on the main barrel even though the low-level subpaths keep
+// them off their own surface. MissingRpIdError is deliberately NOT here: it is a fail-fast
+// construction/config error (fix the rpId), not a condition to catch and recover from.
+export { NoPrfError } from "./wallet/passkey/adapter.js";
+export { VaultUnreadableError } from "./wallet/index.js";
+export { UserRejectedError } from "./channel/index.js";
+export { KoraRejectedError } from "./solana/index.js";
+export { EnrolmentUnaffordableError } from "./own-origin/connection.js";
+
 export { createOwnOriginConnection } from "./own-origin/connection.js";
 export { createSharedOriginConnection } from "./shared-origin/connection.js";
 
