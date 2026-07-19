@@ -9,10 +9,11 @@ export type { NonceAllocator } from "./nonce.js";
 
 export type { Account, CreateOpts, ContinueOpts, Connection, SelfCustodyConnection, ClientConfig } from "./types.js";
 
-export type { PlatformAdapter, SigningChannel, PasskeyAdapter } from "./platform-adapter.js";
+export type { SigningChannel } from "./channel/index.js";
+export type { PasskeyAdapter } from "./wallet/index.js";
 
 export { createAvokClient } from "./client/client.js";
-export type { AvokClient, AvokClientFor, UseOnlyAvokClient, FullAvokClient } from "./client/client.js";
+export type { AvokClientFor, UseOnlyAvokClient, FullAvokClient } from "./client/client.js";
 export type { TxOpts, EvmNamespace, EvmFeeToken } from "./client/evm.js";
 export type { SolanaNamespace, SolanaTxOpts, SolanaResolved, SolanaSimulation, FeeToken } from "./client/solana.js";
 export { UnsupportedFeeTokenError } from "./client/fee-token-error.js";
@@ -24,8 +25,8 @@ export { createSharedOriginConnection } from "./shared-origin/connection.js";
 export * from "./provider/index.js";
 
 // Wallet primitives the framework facades wire into a connection (platform passkey adapters + the
-// state/signer types they pass through). PasskeyAdapter is already re-exported above via
-// platform-adapter, so it is not repeated here.
+// state/signer types they pass through). PasskeyAdapter is already re-exported above (from wallet),
+// so it is not repeated here.
 export { WebAuthnPasskeyAdapter, createReactNativePasskeyAdapter } from "./wallet/index.js";
 export type {
   WalletState,

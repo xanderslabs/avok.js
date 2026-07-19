@@ -8,7 +8,7 @@ import { webStorage } from "./web/web-storage.js";
 // wallet on construction (VISION §6 Surface 1). See provider-wiring.ts.
 export { createAvokClient } from "./web/provider-wiring.js";
 export type { WiredAvokClient } from "./web/provider-wiring.js";
-export type { StorageAdapter, Connection, SelfCustodyConnection, Account, ClientConfig, FullAvokClient, UseOnlyAvokClient, AvokClientFor, AvokClient, CreateOpts, ContinueOpts, TxOpts, EvmFeeToken } from "./engine.js";
+export type { StorageAdapter, Connection, SelfCustodyConnection, Account, ClientConfig, FullAvokClient, UseOnlyAvokClient, AvokClientFor, CreateOpts, ContinueOpts, TxOpts, EvmFeeToken } from "./engine.js";
 export type {
   SolanaTxOpts,
   SolanaNamespace,

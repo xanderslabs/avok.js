@@ -33,5 +33,5 @@ export {
 } from "@avokjs/core";
 
 // ─── Types (re-exported from @avokjs/core so the published .d.ts is self-contained) ───
-export type { AvokClient, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, Account, CreateOpts, ContinueOpts, TxOpts, ClientConfig, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/core";
+export type { UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, Account, CreateOpts, ContinueOpts, TxOpts, ClientConfig, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/core";
 export { UnsupportedFeeTokenError } from "@avokjs/core";

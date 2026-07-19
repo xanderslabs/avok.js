@@ -23,7 +23,7 @@ import { secureStoreStorage } from "./native-storage.js";
 // ─── Re-exports ───────────────────────────────────────────────────────────────
 
 export { createAvokClient } from "@avokjs/core/engine";
-export type { StorageAdapter, Connection, Account, ClientConfig, CreateOpts, ContinueOpts, AvokClient, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, TxOpts, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/core/engine";
+export type { StorageAdapter, Connection, Account, ClientConfig, CreateOpts, ContinueOpts, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, TxOpts, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/core/engine";
 export { UnsupportedFeeTokenError } from "@avokjs/core/engine";
 
 export type { ReactNativePasskeyLike, ReactNativePasskeyCreateResult, ReactNativePasskeyGetResult } from "@avokjs/core/wallet";

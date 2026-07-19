@@ -7,14 +7,14 @@ import { render, screen, act, cleanup } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { afterEach, describe, it, expect, vi } from "vitest";
-import type { AvokClient } from "@avokjs/core";
+import type { FullAvokClient } from "@avokjs/core";
 import { AvokProvider, useAccount, useCreate } from "./index.js";
 
 afterEach(cleanup);
 
-// ─── Fake AvokClient ─────────────────────────────────────────────────────────
+// ─── Fake FullAvokClient ─────────────────────────────────────────────────────────
 
-function makeFakeClient(): AvokClient {
+function makeFakeClient(): FullAvokClient {
   let _account: {
     evm: { address: `0x${string}`; subname?: string };
     solana: { address: string };
@@ -68,7 +68,7 @@ function makeFakeClient(): AvokClient {
       isDelegated: async (_chainId?: number) => false,
       passkeyCount: () => 0,
     },
-  } as unknown as AvokClient;
+  } as unknown as FullAvokClient;
 }
 
 // ─── useAccount ───────────────────────────────────────────────────────────────

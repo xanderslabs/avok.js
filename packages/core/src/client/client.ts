@@ -112,9 +112,6 @@ export type AvokClientFor<C extends Connection> = C extends SelfCustodyConnectio
   ? FullAvokClient
   : UseOnlyAvokClient;
 
-/** @deprecated back-compat alias; prefer AvokClientFor<C>. Equals FullAvokClient. */
-export type AvokClient = FullAvokClient;
-
 export function createAvokClient<C extends Connection>(config: ClientConfig<C>): AvokClientFor<C> {
   const { connection, deps } = config;
   const evmAll = createEvmNamespace(config);

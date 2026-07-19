@@ -9,13 +9,13 @@ import {
   useLogin,
   useLogout,
 } from "./index.js";
-import type { AvokClient } from "@avokjs/core";
+import type { FullAvokClient } from "@avokjs/core";
 
 afterEach(cleanup);
 
-// ─── Fake AvokClient ─────────────────────────────────────────────────────────
+// ─── Fake FullAvokClient ─────────────────────────────────────────────────────────
 
-function makeFakeClient(): AvokClient {
+function makeFakeClient(): FullAvokClient {
   let _account: {
     evm: { address: `0x${string}`; subname?: string };
     solana: { address: string };
@@ -46,7 +46,7 @@ function makeFakeClient(): AvokClient {
     },
     account: () => _account,
     status: () => _status,
-  } as unknown as AvokClient;
+  } as unknown as FullAvokClient;
 }
 
 // ─── useAccount reflects status after create() ───────────────────────────────
