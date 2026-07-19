@@ -42,7 +42,7 @@ describe("the popup's config", () => {
 // and the shipped bundle carries no eval — the guarantees that license enforcing Trusted Types.
 
 const POPUP_SRC = resolve(process.cwd(), "src/auth-popup");
-const APP_SRC = resolve(process.cwd(), "auth-popup/app/src");
+const APP_SRC = resolve(process.cwd(), "auth-page/app/src");
 
 /**
  * TRUSTED TYPES, ENFORCED.
@@ -79,7 +79,7 @@ describe("the popup enforces Trusted Types", () => {
    * broken wallet — so fail here first.
    */
   it("the built popup bundle contains no eval / new Function", () => {
-    const path = join(process.cwd(), "auth-popup", "app-inlined", "index.html");
+    const path = join(process.cwd(), "auth-page", "app-inlined", "index.html");
     if (!existsSync(path)) return; // not built in this environment
     const html = readFileSync(path, "utf8");
     expect(html, "index.html must not contain eval()").not.toMatch(/[^.\w]eval\(/);

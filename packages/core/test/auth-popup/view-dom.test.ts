@@ -5,7 +5,7 @@ import { createDomView } from "../../src/auth-popup/view-dom.js";
 // jsdom reflects programmatic `el.style.x = …` into a `style` attribute on the LIVE element, so we do
 // not assert "no style attribute" here (that would fail on a testing artifact). The real CSP guarantee
 // — that the SERVED html carries no inline styles the CSP must admit — is enforced on the emitted page
-// by auth-popup/scripts/verify-inlined.mjs (Task 4). These tests cover the view's BEHAVIOR.
+// by auth-page/scripts/verify-inlined.mjs (Task 4). These tests cover the view's BEHAVIOR.
 describe("createDomView", () => {
   it("connecting / waitingForPasskey / failure render their text", () => {
     const root = document.createElement("div");

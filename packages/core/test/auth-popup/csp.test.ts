@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 
 // These read the BUILT output. `pnpm build:app` must have run — the suite says so loudly rather
 // than silently passing on a stale or absent build.
-const OUT = resolve(process.cwd(), "auth-popup/app-inlined");
+const OUT = resolve(process.cwd(), "auth-page/app-inlined");
 const built = existsSync(resolve(OUT, "csp-headers.txt"));
 const csp = () => readFileSync(resolve(OUT, "csp-headers.txt"), "utf8");
 

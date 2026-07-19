@@ -69,4 +69,7 @@ legibility and trust there first.
 - Type: title 15/600, body 14/400, amount 20/600 mono, value 13 (mono for
   addresses/amounts/hashes), label 12, micro 10 uppercase.
 
-See [components.md](./components.md) for the primitive component specs.
+See [components.md](./components.md) for the primitive component specs, and
+[reference.md](./reference.md) for the reconstruction reference — the CSS-variable names, the shared
+popup stylesheet, the inline Lucide icon SVGs, and the favicon (the parts that were *code* in the
+deleted `@avokjs/design` package, kept verbatim so this folder rebuilds the whole system on its own).

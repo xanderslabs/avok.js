@@ -78,8 +78,8 @@
   "scripts": {
     "build": "tsup && pnpm run emit:auth-page",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json && tsc -p auth-popup/app/tsconfig.json",
-    "emit:auth-page": "node auth-popup/scripts/build-app.mjs && node auth-popup/scripts/inline-app.mjs && node auth-popup/scripts/verify-inlined.mjs"
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json && tsc -p auth-page/app/tsconfig.json",
+    "emit:auth-page": "node auth-page/scripts/build-app.mjs && node auth-page/scripts/inline-app.mjs && node auth-page/scripts/verify-inlined.mjs"
   },
   "engines": {
     "node": ">=22.5.0"
