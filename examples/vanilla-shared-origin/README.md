@@ -8,7 +8,7 @@ with the shared-origin custody deltas.
 
 Screens: Connect (sign in with the operator) → Home → Send (EVM + Solana, self-pay or sponsored)
 → Account (sign, resolve a name, link to the operator's management app, disconnect). There is
-**no** create / export / addPasskey / pairing / subname-register here — those
+**no** create / export / access-slot enrollment / pairing / name registration here — those
 are the operator's (Own-origin) actions.
 
 ## Quickstart
@@ -24,8 +24,8 @@ pnpm --filter @avok-demo/vanilla-shared-origin dev
 
 - **VITE_AUTH_ORIGIN** — the operator origin where keys live and signing popups run.
 - **VITE_MANAGEMENT_URL** — the operator's own-origin wallet app (create / manage / back up there).
-- Shared EVM/Solana/sponsored/subname vars match `vanilla-own-origin` (Arc testnet `5042002` + Solana
-  `devnet` defaults).
+- Shared EVM/Solana/sponsored vars match `vanilla-own-origin` (Arc testnet `5042002` + Solana
+  `devnet` defaults). Name **resolution** is always on and needs no config.
 
 ## Architecture (framework-free, shared-origin)
 
@@ -46,26 +46,23 @@ Trimmed excerpts of the real screens (`src/screens/*.ts`).
 ```ts
 import { createAvokClient, createSharedOriginConnection } from "@avokjs/core";
 
-const connection = await createSharedOriginConnection({
-  authOrigin: config.authOrigin,     // operator origin — keys live here
-  redirectUri: config.redirectUri,
-  clientId: config.clientId,
-  scopes: config.scopes,
-});
-const client = createAvokClient({ connection, /* …chain/fee/subname… */, managementUrl: config.managementUrl });
+// No OIDC config — redirectUri / clientId / scopes were removed in #8; the popup postMessages the
+// account back over the channel, which pins the origin and the exact window it opened.
+const connection = await createSharedOriginConnection({ authOrigin: config.authOrigin });
+const client = createAvokClient({ connection, managementUrl: config.managementUrl /* + paymaster/bundler/kora */ });
 
 // Connect screen: the sign-in ceremony runs in the operator's popup.
-await client.continue();             // only signatures cross back — no key material
+await client.login();                // only the account crosses back — no key material
 ```
 
 ### EVM + Solana send — `src/screens/Send.ts`
 
 ```ts
-// Identical to vanilla-own-origin — the use-only client signs via the shared-origin channel. The fee token
-// is chain-specific: read the supported ones for the target chain/cluster from the registry
+// Identical to vanilla-own-origin — the use-only client signs via the shared-origin popup. The fee token
+// is chain-specific: read the supported ones for the target chain/cluster from the client
 // (client.evm.feeTokens / client.solana.feeTokens) and pass the picked one (null = self-pay).
-const receipt = await client.evm.send([call], { chainId, feeToken });          // null = self-pay
-const receipt = await client.solana.send(ix, { cluster, feeToken });
+const evmReceipt = await client.evm.send(await client.evm.simulate([call], { chainId, feeToken }), { chainId, feeToken });
+const solReceipt = await client.solana.send(await client.solana.simulate(ix, { cluster, feeToken }), { cluster, feeToken });
 ```
 
 ### Sign a message — `src/screens/Account.ts`
@@ -75,11 +72,11 @@ const evmSig = await client.evm.signMessage({ message });
 const { signature: solSig } = await client.solana.signMessage(message);
 ```
 
-### Subname resolve (resolve-only) — `src/screens/Account.ts`
+### Names — resolve only — `src/screens/Account.ts`
 
 ```ts
-// Shared-origin is use-only: look-ups only, no register/mint (that's an operator action).
-// The client facade resolves any ENS/SNS name by suffix (.sol→SNS, else→ENS):
+// Avok does no name registration anywhere — only resolution, which is read-only and needs no config.
+// The resolver (built from @avokjs/core/helpers) dispatches any name by suffix (.sol→SNS, else→ENS):
 const hit = await resolver.resolveForward("alice.eth"); // → { evm?, solana? } | null
 ```
 
@@ -104,8 +101,9 @@ await client.logout();                                   // disconnect this sess
 
 ## Clone into your product
 
-> Needs an operator origin (`VITE_AUTH_ORIGIN`) — run `_nodes` locally or point at a deployed URL.
-> For `.test`-domain testing, see [`examples/TESTING.md`](../TESTING.md) and `pnpm demos:domain prepare`.
+> Needs an operator origin (`VITE_AUTH_ORIGIN`) — the operator's hosted auth-popup page (built with
+> `pnpm emit:auth-page`), point at a deployed URL. For `.test`-domain testing, see
+> [`examples/TESTING.md`](../TESTING.md) and `pnpm demos:domain prepare`.
 
 Depends only on **published** packages — `@avokjs/core` + `@avokjs/contracts` —
 plus public `viem` / `@solana/kit` / `@solana-program/system` and its own local `src/`. No
@@ -113,7 +111,7 @@ plus public `viem` / `@solana/kit` / `@solana-program/system` and its own local 
 
 1. **Copy the directory** — `examples/vanilla-shared-origin/` → your app's location.
 2. **Edit config** — `src/config.ts` reads `VITE_*`; set `VITE_AUTH_ORIGIN` / `VITE_MANAGEMENT_URL`
-   to your operator, plus the shared chain / fee / subname vars.
+   to your operator, plus the shared chain / fee (paymaster / bundler / Kora) vars.
 3. **Reskin** — swap the brand values in `src/theme/tokens.css` and `src/ui/ui.css`, then delete
    `src/features.ts` (the parity-harness manifest — no runtime purpose).
 4. **Install** — `pnpm install` pulls the published `@avokjs/core` + `@avokjs/contracts`.
