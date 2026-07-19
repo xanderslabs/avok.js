@@ -7,11 +7,12 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { createAvokClient, createSharedOriginConnection } from "@avokjs/core";
-import type { UseOnlyAvokClient } from "@avokjs/core";
+import type { UseOnlyAvokClient, WalletInfo } from "@avokjs/core";
 import { AvokProvider } from "./provider.js";
 
 export function SharedOrigin({
   auth,
+  wallet,
   paymasterUrl,
   bundlerUrl,
   koraUrl,
@@ -22,6 +23,8 @@ export function SharedOrigin({
 }: {
   /** The operator's auth origin — the popup to open, and the ONLY origin whose replies are trusted. */
   auth: string;
+  /** This wallet's identity in dapp pickers (EIP-6963 + Solana Wallet Standard) — operator-provided. */
+  wallet: WalletInfo;
   paymasterUrl?: string;
   bundlerUrl?: string;
   koraUrl?: string;
@@ -39,7 +42,7 @@ export function SharedOrigin({
     void (async () => {
       try {
         const connection = await createSharedOriginConnection({ authOrigin: auth });
-        const c = createAvokClient({ connection, paymasterUrl, bundlerUrl, koraUrl, managementUrl });
+        const c = createAvokClient({ connection, paymasterUrl, bundlerUrl, koraUrl, managementUrl }, wallet);
         if (live) setClient(c);
       } catch (e) {
         if (live) onError?.(e instanceof Error ? e : new Error(String(e)));

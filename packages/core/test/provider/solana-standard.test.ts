@@ -24,13 +24,14 @@ function fakeEngine(over: Partial<SolanaEngine> = {}): SolanaEngine {
 }
 
 const config = { connection: {} } as unknown as ClientConfig;
+const BRAND = { name: "Test Wallet", icon: "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" } as const;
 
 beforeEach(() => {
   registered.length = 0;
 });
 
 test("registers a Wallet Standard wallet with the Solana feature set", () => {
-  registerAvokSolanaWallet(config, { engine: fakeEngine() });
+  registerAvokSolanaWallet(config, { ...BRAND, engine: fakeEngine() });
   expect(registered).toHaveLength(1);
   const w = registered[0];
   expect(w.version).toBe("1.0.0");
@@ -48,7 +49,7 @@ test("registers a Wallet Standard wallet with the Solana feature set", () => {
 });
 
 test("accounts reflect the connection's active Solana account", () => {
-  registerAvokSolanaWallet(config, { engine: fakeEngine() });
+  registerAvokSolanaWallet(config, { ...BRAND, engine: fakeEngine() });
   const w = registered[0];
   expect(w.accounts).toHaveLength(1);
   expect(w.accounts[0].address).toBe(ADDR);
@@ -57,13 +58,13 @@ test("accounts reflect the connection's active Solana account", () => {
 });
 
 test("no accounts when logged out", () => {
-  registerAvokSolanaWallet(config, { engine: fakeEngine({ account: () => null }) });
+  registerAvokSolanaWallet(config, { ...BRAND, engine: fakeEngine({ account: () => null }) });
   expect(registered[0].accounts).toEqual([]);
 });
 
 test("solana:signMessage delegates to the engine", async () => {
   const signMessage = vi.fn().mockResolvedValue({ signedMessage: new Uint8Array([1]), signature: new Uint8Array([2]) });
-  registerAvokSolanaWallet(config, { engine: fakeEngine({ signMessage }) });
+  registerAvokSolanaWallet(config, { ...BRAND, engine: fakeEngine({ signMessage }) });
   const feature = registered[0].features["solana:signMessage"] as {
     signMessage(input: { account: unknown; message: Uint8Array }): Promise<unknown[]>;
   };
@@ -75,7 +76,7 @@ test("solana:signMessage delegates to the engine", async () => {
 
 test("solana:signAndSendTransaction delegates to the engine and returns { signature }", async () => {
   const signAndSend = vi.fn().mockResolvedValue(new Uint8Array([5, 5]));
-  registerAvokSolanaWallet(config, { engine: fakeEngine({ signAndSend }) });
+  registerAvokSolanaWallet(config, { ...BRAND, engine: fakeEngine({ signAndSend }) });
   const feature = registered[0].features["solana:signAndSendTransaction"] as {
     signAndSendTransaction(input: { account: unknown; transaction: Uint8Array; chain: string }): Promise<unknown[]>;
   };
@@ -86,6 +87,6 @@ test("solana:signAndSendTransaction delegates to the engine and returns { signat
 });
 
 test("returns an unregister disposer", () => {
-  const off = registerAvokSolanaWallet(config, { engine: fakeEngine() });
+  const off = registerAvokSolanaWallet(config, { ...BRAND, engine: fakeEngine() });
   expect(typeof off).toBe("function");
 });

@@ -31,7 +31,7 @@ export function useSharedOriginClient(): State {
           bundlerUrl: config.bundlerUrl,
           koraUrl: config.koraUrl,
           managementUrl: config.managementUrl,
-        });
+        }, { name: "Avok Demo", rdns: "js.avok.demo" });
         if (live) setState({ client, loading: false, error: null });
       } catch (e) {
         if (live) setState({ client: null, loading: false, error: e instanceof Error ? e.message : String(e) });

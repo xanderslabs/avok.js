@@ -7,7 +7,7 @@ import { webStorage } from "./web/web-storage.js";
 // The client factory, wrapped to announce the EIP-1193 provider + register the Solana Wallet Standard
 // wallet on construction (VISION §6 Surface 1). See provider-wiring.ts.
 export { createAvokClient } from "./web/provider-wiring.js";
-export type { WiredAvokClient } from "./web/provider-wiring.js";
+export type { WiredAvokClient, WalletInfo } from "./web/provider-wiring.js";
 export type { StorageAdapter, Connection, SelfCustodyConnection, Account, ClientConfig, FullAvokClient, UseOnlyAvokClient, AvokClientFor, CreateOpts, ContinueOpts, TxOpts, EvmFeeToken } from "./engine.js";
 export type {
   SolanaTxOpts,

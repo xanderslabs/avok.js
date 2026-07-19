@@ -7,9 +7,12 @@ const SOLANA_CHAINS = ["solana:mainnet", "solana:devnet"] as const;
 const ACCOUNT_FEATURES = ["solana:signMessage", "solana:signTransaction", "solana:signAndSendTransaction"] as const;
 // Legacy + v0 versioned transactions.
 const SUPPORTED_TX_VERSIONS = ["legacy", 0] as const;
-const ICON: WalletIcon = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=";
 
 export interface SolanaStandardOptions {
+  /** The OPERATOR's wallet name shown in `@solana/wallet-adapter` pickers — never hardcoded (white-label). */
+  name: string;
+  /** Data-URI wallet icon shown alongside the name (`data:image/...;base64,...`). */
+  icon: string;
   /** Test/advanced seam: override the Solana engine (defaults to `createSolanaEngine(config)`). */
   engine?: SolanaEngine;
   /** The client's reactive seam; the facade passes `client.subscribe` so `standard:events` fires on login/logout. */
@@ -34,7 +37,7 @@ function toCluster(chain: string | undefined): SolanaCluster {
  * Note there is no fee-token capability to expose here: unlike EIP-5792's `paymasterService`, the Solana
  * Wallet Standard has no slot through which a dapp could name one.
  */
-export function registerAvokSolanaWallet(config: ClientConfig, opts: SolanaStandardOptions = {}): () => void {
+export function registerAvokSolanaWallet(config: ClientConfig, opts: SolanaStandardOptions): () => void {
   const engine = opts.engine ?? createSolanaEngine(config);
   const changeListeners = new Set<(props: { accounts: readonly WalletAccount[] }) => void>();
 
@@ -53,8 +56,8 @@ export function registerAvokSolanaWallet(config: ClientConfig, opts: SolanaStand
 
   const wallet: Wallet = {
     version: "1.0.0",
-    name: "Avok",
-    icon: ICON,
+    name: opts.name,
+    icon: opts.icon as WalletIcon, // operator-supplied data URI; WalletIcon is a branded data:image/... string
     chains: SOLANA_CHAINS,
     get accounts() {
       return accounts();

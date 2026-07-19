@@ -28,7 +28,7 @@ describe("<SharedOrigin>", () => {
     createAvokClient.mockReturnValue(client);
 
     render(
-      <SharedOrigin auth="https://auth.acme.com" fallback={<p>connecting…</p>}>
+      <SharedOrigin auth="https://auth.acme.com" wallet={{ name: "Test Wallet", rdns: "com.test" }} fallback={<p>connecting…</p>}>
         <p>dapp</p>
       </SharedOrigin>,
     );
@@ -43,7 +43,7 @@ describe("<SharedOrigin>", () => {
     const onError = vi.fn();
 
     render(
-      <SharedOrigin auth="https://auth.acme.com" fallback={<p>connecting…</p>} onError={onError}>
+      <SharedOrigin auth="https://auth.acme.com" wallet={{ name: "Test Wallet", rdns: "com.test" }} fallback={<p>connecting…</p>} onError={onError}>
         <p>dapp</p>
       </SharedOrigin>,
     );

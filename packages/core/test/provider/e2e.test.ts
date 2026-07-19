@@ -116,11 +116,11 @@ test("stock Wallet Standard: getWallets() discovers the Avok Solana wallet and i
   } as unknown as SolanaEngine;
   const config = { connection: {} } as unknown as ClientConfig;
 
-  registerAvokSolanaWallet(config, { engine });
+  registerAvokSolanaWallet(config, { engine, name: "Test Wallet", icon: "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" });
 
   const avok = getWallets()
     .get()
-    .find((w) => w.name === "Avok");
+    .find((w) => w.name === "Test Wallet");
   expect(avok).toBeDefined();
   expect(avok!.chains).toContain("solana:mainnet");
   expect(Object.keys(avok!.features)).toEqual(

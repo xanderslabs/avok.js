@@ -183,6 +183,12 @@ Avok's visual identity (tokens, popup styling rules, icon language) is a **refer
 — not a package. The auth-popup styles its DOM programmatically so nothing external loads; facades and
 examples carry their own token CSS.
 
+**White-label identity (the wallet is the operator's, not Avok's).** The name / icon / rdns a dapp
+discovers in its wallet picker — EIP-6963 for EVM and the Solana Wallet Standard — is the **operator's**
+brand, supplied at wiring time (`createAvokClient(config, wallet)`), never a hardcoded "Avok". Avok is a
+white-label SDK (§1): the operator ships *their* wallet on it. `wallet.icon` is optional (a neutral blank
+placeholder is used until they provide one); `wallet.name` / `wallet.rdns` are required.
+
 ## History
 
 An earlier `VISION-AND-STRUCTURE.md` was meant to be the canonical, tracked source of

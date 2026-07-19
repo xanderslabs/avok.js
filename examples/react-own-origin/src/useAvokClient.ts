@@ -13,6 +13,6 @@ export function useAvokClient(): FullAvokClient {
       paymasterUrl: config.paymasterUrl,
       bundlerUrl: config.bundlerUrl,
       koraUrl: config.koraUrl,
-    }) as FullAvokClient;
+    }, { name: "Avok Demo", rdns: "js.avok.demo" }) as FullAvokClient;
   }, []);
 }
