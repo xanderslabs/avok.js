@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { decodeFunctionData, numberToHex, type Address, type Hex } from "viem";
+import { decodeFunctionData, type Address, type Hex } from "viem";
 import { getUserOperationHash, entryPoint08Address } from "viem/account-abstraction";
 import { executeAbi, MODE_BATCH } from "@avokjs/contracts";
 import type { Call } from "../../src/wallet/index.js";

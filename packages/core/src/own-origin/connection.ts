@@ -55,7 +55,6 @@ import { encodeOffchainMessage } from "../solana/index.js";
 import { getAvokUserOpHash, type AvokUserOperation } from "../evm/index.js";
 import { resolveAnchorChain, getChainProfile, DEFAULT_ANCHOR_CHAIN_ID, type ChainId } from "@avokjs/contracts";
 import {
-  bytesToHex,
   type Address,
   type Hex,
   type TypedDataDefinition,

@@ -1,6 +1,6 @@
 import { type Address, type Hex, bytesToHex } from "viem";
 import { encryptKeyBlob, decryptKeyBlob, type EncryptedKeyBlob } from "./crypto/blob.js";
-import { assertContainerComplete, produceEvmKey, produceSolanaKey, type SecretContainer } from "./crypto/container.js";
+import { produceEvmKey, produceSolanaKey, type SecretContainer } from "./crypto/container.js";
 import { deriveWalletKey } from "./crypto/derive-wallet.js";
 import { encryptSlotMeta } from "./crypto/slot-meta.js";
 import { evmAddress, solanaAddressFromSecret } from "./crypto/derive.js";

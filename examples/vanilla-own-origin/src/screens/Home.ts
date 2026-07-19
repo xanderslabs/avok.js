@@ -15,14 +15,6 @@ import { Card, ChainSwitcher, TokenRow, AddressText, EmptyState, Button, Icon } 
 const DEFAULT_CHAIN = selectableChains[0]?.id ?? 8453;
 const CLUSTERS: SolanaCluster[] = ["devnet", "mainnet"];
 
-const secLabel = {
-  fontSize: "11px",
-  textTransform: "uppercase",
-  letterSpacing: ".06em",
-  color: "var(--text3)",
-  marginBottom: "8px",
-};
-
 export function Home(ctx: Ctx): HTMLElement {
   const account = ctx.client.account();
   const root = el("div");

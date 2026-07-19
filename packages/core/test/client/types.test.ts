@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { Connection, SelfCustodyConnection, Account, ClientConfig } from "../../src/types.js";
+import type { Connection, SelfCustodyConnection, ClientConfig } from "../../src/types.js";
 
 describe("types", () => {
   it("Connection is the use-only surface: Signer verbs + continue/logout/account/status/custody", () => {

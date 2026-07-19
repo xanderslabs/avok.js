@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { hexToBytes } from "viem";
 import { createWallet } from "../../src/wallet/wallet.js";
 import { withSolanaKey } from "../../src/wallet/sandbox.js";
 import { FakePasskeyAdapter } from "./fakes.js";

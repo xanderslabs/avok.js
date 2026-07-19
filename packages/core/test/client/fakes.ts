@@ -171,44 +171,6 @@ export function makeFakeRpc(opts: {
 // FakeChannel — implements SigningChannel for shared-origin connection tests.
 // ---------------------------------------------------------------------------
 
-/** Encodes a plain ASCII string to base64url (no padding). */
-function base64url(s: string): string {
-  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-/** Encodes raw bytes to base64url (no padding). */
-function bytesToBase64url(bytes: Uint8Array): string {
-  let s = "";
-  for (const b of bytes) s += String.fromCharCode(b);
-  return base64url(s);
-}
-
-// A lazily-created ES256 signer + JWKS, so the fake /token issues id_tokens the client will verify
-// against the fake /jwks (mirrors the origin's real ES256 signing). Cached across calls.
-let _testSigner: { jwks: { keys: JsonWebKey[] }; sign(p: Record<string, unknown>): Promise<string> } | null = null;
-async function getTestSigner() {
-  if (_testSigner) return _testSigner;
-  const { privateKey, publicKey } = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
-    "sign",
-    "verify",
-  ])) as CryptoKeyPair;
-  const jwk = (await crypto.subtle.exportKey("jwk", publicKey)) as JsonWebKey & { kid?: string };
-  jwk.kid = "test-kid";
-  _testSigner = {
-    jwks: { keys: [jwk] },
-    async sign(payload) {
-      const enc = new TextEncoder();
-      const header = base64url(JSON.stringify({ alg: "ES256", kid: "test-kid" }));
-      const body = base64url(JSON.stringify(payload));
-      const sig = new Uint8Array(
-        await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privateKey, enc.encode(`${header}.${body}`)),
-      );
-      return `${header}.${body}.${bytesToBase64url(sig)}`;
-    },
-  };
-  return _testSigner;
-}
-
 export type FakeChannel = SigningChannel;
 
 /**

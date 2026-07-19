@@ -2,7 +2,7 @@ import { createPublicClient, http, erc20Abi, type Address } from "viem";
 import { createSolanaRpc, address as solanaAddress } from "@solana/kit";
 import { findAssociatedTokenPda } from "@solana-program/token";
 import { evmRpcUrl, getSolanaChainProfile, solanaRpcUrl, type RpcOverrides } from "@avokjs/contracts";
-import { getChain, type ChainInfo, type SolanaCluster } from "./chains.js";
+import { getChain, type SolanaCluster } from "./chains.js";
 import { formatAmount } from "./amount.js";
 
 /** The shape `getMultipleAccounts({encoding:"jsonParsed"})` returns for an SPL token account. */

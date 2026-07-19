@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { hexToBytes, toHex } from "viem";
+import { toHex } from "viem";
 import { ContractFunctionExecutionError, ContractFunctionZeroDataError, HttpRequestError } from "viem";
 import { VaultUnreadableError } from "../../src/wallet/index.js";
 import { createViemVaultReader } from "../../src/evm/vault-reader.js";

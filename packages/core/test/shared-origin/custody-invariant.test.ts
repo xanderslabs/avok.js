@@ -11,7 +11,6 @@
  */
 import { describe, it, expect } from "vitest";
 import type { Call } from "../../src/evm/index.js";
-import type { Hex } from "viem";
 import { createOwnOriginConnection } from "../../src/own-origin/connection.js";
 import { createSharedOriginConnection } from "../../src/shared-origin/connection.js";
 import { makeFakePasskey, makeFakeChannel, ACCESS_SLOT_WRITER } from "../client/fakes.js";

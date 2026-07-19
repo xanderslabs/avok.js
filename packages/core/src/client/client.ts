@@ -1,4 +1,4 @@
-import { type Address, type Hex } from "viem";
+import { type Hex } from "viem";
 import { type AccessSlotEntry } from "../wallet/index.js";
 import { isDelegatedTo, createViemVaultReader } from "../evm/index.js";
 import { evmRpcUrl } from "@avokjs/contracts";
@@ -15,7 +15,6 @@ import type { Call } from "../evm/index.js";
 import { EnrolmentUnaffordableError } from "../own-origin/connection.js";
 import { buildAddAccessSlotCall } from "../wallet/index.js";
 import type { AccessCtx, ScopedSigner } from "../types.js";
-import { createSolanaNamespace } from "./solana.js";
 import type { ClientConfig, Account, CreateOpts, ContinueOpts, Connection, SelfCustodyConnection } from "../types.js";
 
 export type { TxOpts } from "./evm.js";
@@ -115,7 +114,6 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
   const evmAll = createEvmNamespace(config);
   // __accessSlot is internal plumbing for AccessCtx — it must NOT reach the public client surface.
   const { __accessSlot: _accessSlot, ...evm } = evmAll;
-  const solana = createSolanaNamespace(config);
 
   // State-change fan-out. Fired after any verb that can move account()/status().
   const listeners = new Set<() => void>();

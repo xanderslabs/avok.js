@@ -18,7 +18,7 @@ function fakeSolanaConnection(): Connection {
       solana: { address: USER_ADDR },
     }),
     status: () => true,
-    async signSolanaMessage(message: string) {
+    async signSolanaMessage(_message: string) {
       return { signature: "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111" };
     },
     // Stub out other methods

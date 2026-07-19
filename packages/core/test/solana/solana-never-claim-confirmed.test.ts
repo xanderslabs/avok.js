@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createSolanaNamespace } from "../../src/client/solana.js";
 import type { Receipt } from "../../src/solana/index.js";
 

@@ -1,4 +1,4 @@
-import type { Account, FullAvokClient } from "../index.js";
+import type { FullAvokClient } from "../index.js";
 
 /** Thrown by a transport when the camera can't be acquired (permission denied or no camera). The app
  *  renders a retry state; the ceremony hook narrows on it to offer "camera blocked → retry". Defined

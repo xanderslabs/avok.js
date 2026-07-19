@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import type { Address, Hex } from "viem";
 import { createViemRpcClient, type ViemLike } from "../../src/evm/rpc.js";
 

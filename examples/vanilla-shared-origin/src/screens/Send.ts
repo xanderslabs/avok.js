@@ -418,8 +418,7 @@ export function Send(ctx: Ctx): HTMLElement {
   }
 
   function reviewView(): Node {
-    const { chain, decimals, symbol, effectiveFeeMode, selectedFeeToken } = derive();
-    const amountBase = amountBaseFor(decimals);
+    const { chain, symbol, effectiveFeeMode, selectedFeeToken } = derive();
     // A consent screen is READ, not skimmed: plain facts, in the user's own units. No chain ids, no
     // token addresses, no gas units — a user cannot consent to what they cannot read.
     //

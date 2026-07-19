@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   address,
-  createNoopSigner,
   createTransactionMessage,
   compileTransaction,
   getTransactionEncoder,

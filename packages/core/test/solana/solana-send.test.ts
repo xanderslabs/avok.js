@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import type { Address } from "viem";
 import type { Connection } from "../../src/types.js";
 import type { SolanaRpcClient, LatestBlockhash, KoraClient } from "../../src/solana/index.js";
