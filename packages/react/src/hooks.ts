@@ -98,8 +98,6 @@ export function useLogin(): {
   return { login: call, pending, error };
 }
 
-
-
 /** Logout and clear session. */
 export function useLogout(): {
   logout: () => Promise<void>;

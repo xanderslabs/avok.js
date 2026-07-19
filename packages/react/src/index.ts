@@ -33,5 +33,18 @@ export {
 } from "@avokjs/core";
 
 // ─── Types (re-exported from @avokjs/core so the published .d.ts is self-contained) ───
-export type { UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, Account, CreateOpts, ContinueOpts, TxOpts, ClientConfig, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/core";
-export { UnsupportedFeeTokenError } from "@avokjs/core";
+export type { UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, Account, CreateOpts, ContinueOpts, TxOpts, ClientConfig, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken, WalletInfo } from "@avokjs/core";
+
+// ─── Catchable error types (re-exported as values so a react app can `instanceof`-narrow them without
+//     a second import of @avokjs/core). MissingRpIdError is intentionally absent (fail-fast config error). ───
+export {
+  UnsupportedFeeTokenError,
+  UserRejectedError,
+  NoPrfError,
+  KoraRejectedError,
+  EnrolmentUnaffordableError,
+  VaultUnreadableError,
+  OrphanedCredentialError,
+  SlotUnreachableError,
+  EnrolmentBlockedError,
+} from "@avokjs/core";
