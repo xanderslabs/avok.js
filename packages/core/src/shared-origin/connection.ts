@@ -4,8 +4,8 @@ import type { Address, Hex } from "viem";
 import type { Connection, Account } from "../types.js";
 
 /**
- * createSharedOriginConnection wraps `@avokjs/shared-origin`'s `createSharedOriginConnection`
- * and adapts it to sdk-core's USE-ONLY `Connection` surface.
+ * createSharedOriginConnection wraps the channel's `createSharedOriginConnection` (`../channel`)
+ * and adapts it to core's USE-ONLY `Connection` surface.
  *
  * Shared-origin connections are relying-party / use-only custody: they can authorize and
  * transact but MUST NOT expose custody-management verbs. `create`, `import`, `export`,
@@ -57,7 +57,9 @@ export function createSharedOriginConnection(opts: {
     const a = net.account();
     if (!a) return null;
     if (!a.solanaAddress) {
-      console.warn(`${MISSING_SOLANA} — signing out; sign in again to get a session with the claim.`);
+      // Drop the unusable session silently — no SDK console noise. logout() (not a bare return null)
+      // clears it from storage so status() agrees and it is not re-read/re-rejected on every mount;
+      // it self-heals on the next sign-in, which returns a session that carries the address.
       net.logout();
       return null;
     }
