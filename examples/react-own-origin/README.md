@@ -5,9 +5,9 @@ passkeys held in-browser, no custodian, no server-side account. It's also the **
 for building a real product on Avok (e.g. Qudi's beta): copy the directory, swap the brand
 tokens, edit config, and go.
 
-Screens: Onboard (create / continue / set up this device) → Home → Send (EVM + Solana, self-pay or
-sponsored) → Account (sign, export) → Subname (register / resolve) → Device
-(add a passkey, SAS pairing).
+Screens: Onboard (create / log in / set up this device) → Home → Send (EVM + Solana, self-pay or
+sponsored; recipient accepts an ENS/SNS name) → Account (sign, export) → Access (the trust surface —
+who can reach this wallet) → Device (add an access slot, SAS cross-device pairing).
 
 ## Quickstart
 
@@ -21,24 +21,25 @@ pnpm --filter @avok-demo/react-own-origin dev
 
 - **EVM**: Arc testnet, chain id `5042002` (Circle's stablechain; native gas is USDC).
 - **Solana**: `devnet` cluster.
-- Sponsored sends ("sponsored"), Subname (ENS registrar/parent) are opt-in — set the
-  relevant `VITE_*` vars in `.env` to enable them.
+- Sponsored sends (the "sponsored" rail) are opt-in — set the relevant `VITE_*` vars (paymaster /
+  bundler / Kora) in `.env` to enable them. (Name **resolution** — sending to `alice.eth` / `alice.sol`
+  — is always on and needs no config; Avok does no name registration.)
 
 ## Per-feature snippets
 
 These are trimmed excerpts of the real screens (`src/screens/*.tsx`) — see those files for
 the full component.
 
-### Create / continue — `src/screens/Onboard.tsx`
+### Create / log in — `src/screens/Onboard.tsx`
 
 ```tsx
-import { useCreate, useContinue } from "@avokjs/react";
+import { useCreate, useLogin } from "@avokjs/react";
 
 const { create, pending: creating, error: createError } = useCreate();
-const { continue: continueAccount, pending: continuing, error: continueError } = useContinue();
+const { login, pending: loggingIn, error: loginError } = useLogin();
 
-await create();          // new passkey + account
-await continueAccount(); // existing passkey on this device
+await create(); // new passkey + account
+await login();  // existing passkey on this device
 ```
 
 There is no import: the wallet key is derived from a WebAuthn PRF evaluation, not a seed you can
@@ -46,24 +47,27 @@ type in, so there's nothing to import from.
 
 ### EVM send — self-pay + sponsored — `src/screens/Send.tsx`
 
+Sending and signing are **not** framework hooks (VISION §6). An own-origin app owns its wallet UX, so
+it drives the SDK client's `evm` / `solana` namespaces directly (`useAvok()` returns that client);
+sending through the announced EIP-1193 provider + wagmi is the *shared-origin* dapp path instead.
+
 ```tsx
-import { useSimulate, useSend } from "@avokjs/react";
+import { useAvok } from "@avokjs/react";
 import { encodeFunctionData, erc20Abi } from "viem";
 
-const { simulate: evmSimulate } = useSimulate();
-const { send: evmSend } = useSend();
+const client = useAvok();
 
 const call = {
   to: evmToken.address,
   value: 0n,
   data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [to, amountBase] }),
 };
-// Fee tokens are chain-specific — read the supported ones for THIS chain from the registry and let
-// the user pick. `useFeeTokens().feeTokens(chainId)` mirrors `useSolanaFeeTokens` for the EVM side.
-const { feeTokens } = useFeeTokens();
-const selectedFeeToken = effectiveFeeMode === "sponsored" ? (feeTokens(chain.id)[feeTokenIdx]?.address ?? null) : null;
-const sim = await evmSimulate([call], { chainId: chain.id, feeToken: selectedFeeToken }); // null = self-pay
-const receipt = await evmSend(sim, { chainId: chain.id, feeToken: selectedFeeToken });
+// Fee tokens are chain-specific — read the supported ones for THIS chain from the client and let the
+// user pick.
+const feeTokens = client.evm.feeTokens(chain.id);
+const selectedFeeToken = feeMode === "sponsored" ? (feeTokens[feeTokenIdx]?.address ?? null) : null;
+const sim = await client.evm.simulate([call], { chainId: chain.id, feeToken: selectedFeeToken }); // null = self-pay
+const receipt = await client.evm.send(sim, { chainId: chain.id, feeToken: selectedFeeToken });
 ```
 
 `feeToken: null` pays gas from the account's own balance (self-pay); passing a fee-token **address
@@ -73,11 +77,8 @@ chain-specific, so it comes from `client.evm.feeTokens(chainId)`, never from a g
 ### Solana send — `src/screens/Send.tsx`
 
 ```tsx
-import { useSolanaSimulate, useSolanaSend } from "@avokjs/react";
+const client = useAvok();
 import { getTransferSolInstruction } from "@solana-program/system";
-
-const { simulate: solSimulate } = useSolanaSimulate();
-const { send: solSend } = useSolanaSend();
 
 const ix = [
   getTransferSolInstruction({
@@ -86,23 +87,30 @@ const ix = [
     amount: amountBase,
   }),
 ];
-// Same pattern on Solana: the fee MINT is cluster-specific — read it from the registry and pick.
-const { feeTokens: solanaFeeTokens } = useSolanaFeeTokens();
-const selectedFeeMint = effectiveFeeMode === "sponsored" ? (solanaFeeTokens(config.solanaCluster)[feeTokenIdx]?.mint ?? null) : null;
-const sim = await solSimulate(ix, { cluster: config.solanaCluster, feeToken: selectedFeeMint });
-const receipt = await solSend(sim, { cluster: config.solanaCluster, feeToken: selectedFeeMint });
+// Same pattern on Solana: the fee MINT is cluster-specific — read it from the client and pick.
+const feeTokens = client.solana.feeTokens(config.solanaCluster);
+const selectedFeeMint = feeMode === "sponsored" ? (feeTokens[feeTokenIdx]?.mint ?? null) : null;
+const sim = await client.solana.simulate(ix, { cluster: config.solanaCluster, feeToken: selectedFeeMint });
+const receipt = await client.solana.send(sim, { cluster: config.solanaCluster, feeToken: selectedFeeMint });
 ```
 
-### Sign a message — `src/screens/Account.tsx`
+### Sign a message + export the key — `src/screens/Account.tsx`
+
+Own-origin IS the wallet, so it signs in-page via the client's `evm` / `solana` namespaces, and can
+export the raw key (needs the self-custody client):
 
 ```tsx
-import { useSign, useSolanaSign } from "@avokjs/react";
+import { useAvok, useSelfCustody } from "@avokjs/react";
 
-const { signMessage: signEvm } = useSign();
-const { signMessage: signSolana } = useSolanaSign();
+const client = useAvok();
+const evmSig = await client.evm.signMessage({ message });        // hex signature
+const { signature: solSig } = await client.solana.signMessage(message);
 
-const evmSig = await signEvm({ message });
-const { signature: solSig } = await signSolana(message);
+// Export — exportEvmKey is the ROOT key (alone it restores the whole wallet, both chains, VISION §5);
+// exportSolanaKey is the leaf. Only a self-custody connection exposes these.
+const custody = useSelfCustody();
+const evmKey = await custody.exportEvmKey();
+const solanaKey = await custody.exportSolanaKey();
 ```
 
 ### Send to a name anywhere — `@avokjs/core/helpers`
@@ -117,37 +125,42 @@ if ("error" in rr) show(rr.error);
 else simulate([transferTo(rr.address)]); // rr.resolvedFrom is the name it came from
 ```
 
-### Add a passkey + cross-device pairing — `src/screens/Device.tsx`, `src/pairing/controller.ts`
+### Add an access slot + cross-device pairing — `src/screens/Device.tsx`, `src/pairing/controller.ts`
 
-Two distinct operations:
+Both operations enrol an **access slot** (a per-origin passkey that can reach the wallet key, §3), via
+one verb with two forms:
 
-- **`addPasskey`** — enrol a second credential on the SAME device (a different provider, or a
-  hardware key). One call, one funded transaction.
-- **Cross-device pairing** — provision the wallet onto a DIFFERENT device. It's inherently
-  two-part, so the verbs split by side: `pairing.exportToDevice.*` runs on the existing device,
-  `pairing.importToDevice.*` on the new one.
+- **`client.enrollAccessSlot()`** — enrol a second credential on the SAME device (a different provider,
+  or a hardware key). One call, one funded transaction.
+- **`client.enrollAccessSlot.viaPairing`** — provision the wallet onto a DIFFERENT device. It's
+  inherently two-part, so the verbs split by side: `.holder` runs on the existing device (it holds the
+  wallet and pays), `.enroller` on the new one. React devs can skip this wiring entirely and use the
+  `usePairingCeremony()` hook / `<PairDevice>` from `@avokjs/react`.
 
 ```tsx
 import { useSelfCustody } from "@avokjs/react";
 
 const client = useSelfCustody();
-const { passkeyCount } = await client.addPasskey(); // enroll a new passkey on this device
+const { passkeyCount } = await client.enrollAccessSlot(); // new access slot on this device
 ```
 
-Pairing another device is a SAS-confirmed handshake — `grant()`/`complete()` only fire after
-an explicit user confirmation (`confirm()`), never automatically:
+Pairing another device is a SAS-confirmed handshake — the writes that assert `sasConfirmed: true` only
+fire after the user compares the code on both devices; the wallet key never travels (an encrypted blob
+does), and the holder pays for the on-chain write:
 
 ```ts
-// existing device (A) — exportToDevice
-const { qr: ackQr, sas } = await pairing.exportToDevice.authorize({ qr: requestQr });
-// user compares `sas` on both devices, then:
-const { qr: grantQr } = await pairing.exportToDevice.grant({ sasConfirmed: true });
+const pairing = client.enrollAccessSlot.viaPairing;
 
-// new device (B) — importToDevice
-const { qr: requestQr } = await pairing.importToDevice.begin();
-const { sas } = await pairing.importToDevice.receiveAck(ackQr);
+// new device (B) — enroller: begin → receive ack → (SAS) → enroll
+const { qr: requestQr } = await pairing.enroller.begin();
+const { sas } = await pairing.enroller.receiveAck(ackQr);
+// user compares `sas` on both devices, then:
+const { qr: wrapQr } = await pairing.enroller.enroll({ sasConfirmed: true });
+
+// existing device (A) — holder: authorize → (SAS) → complete (writes the access slot, and pays)
+const { qr: ackQr, sas } = await pairing.holder.authorize({ qr: requestQr });
 // user compares `sas`, then:
-const account = await pairing.importToDevice.complete({ qr: grantQr, sasConfirmed: true });
+await pairing.holder.complete({ qr: wrapQr, sasConfirmed: true });
 ```
 
 ## Clone into your product
@@ -162,7 +175,7 @@ private/workspace-only packages. To reuse it as the base for a real product:
 
 1. **Copy the directory** — `examples/react-own-origin/` → your app's location (e.g. `apps/app`).
 2. **Edit config** — `src/config.ts` reads `VITE_*` env vars; update `.env` (VITE_RP_ID, the anchor chain
-   NAME, paymaster/relayer URLs, subname ENS/SNS registrar + parent) for your deployment. Chain
+   NAME, paymaster / bundler / Kora URLs for the sponsored rail) for your deployment. Chain
    details and fee tokens come from the registry, not env.
 3. **Reskin** — swap the brand values in `src/theme/tokens.ts` (`palette`, `radius`, `space`,
    `font`, `type`), then **delete `src/features.ts`** — it's the parity-harness manifest used
