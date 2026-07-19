@@ -14,7 +14,7 @@
  * No DOM imports in this graph.
  */
 import { createOwnOriginConnection as sdkCreateOwnOrigin } from "@avokjs/core/engine";
-import type { StorageAdapter, Connection, SelfCustodyConnection } from "@avokjs/core/engine";
+import type { StorageAdapter, SelfCustodyConnection } from "@avokjs/core/engine";
 import type { ChainId } from "@avokjs/contracts";
 import type { ReactNativePasskeyLike } from "@avokjs/core/wallet";
 import { buildNativePasskeyAdapter } from "./native-platform.js";
