@@ -172,7 +172,7 @@ public. `@avokjs/contracts` is published for the addresses / ABIs / EIP-712 type
 | Package | Single purpose |
 |---|---|
 | **`@avokjs/core`** | **Public.** The framework-agnostic SDK **and** the plain-JS/browser SDK. Engine, client, provider (Surface 1), shared-origin channel, name resolution, and the auth-popup mountable. Plain-JS devs use it directly. Subpaths: `/engine` (platform-agnostic, no browser globals — the RN base), `/wallet`, `/evm`, `/solana`, `/channel`, `/provider`, `/helpers` (name resolution + utils), `/qr` (browser QR transport), `/auth-popup` (`mountAuthPopup` + hardened-page emitter), `/decode`. |
-| **`@avokjs/react`** | React lifecycle hooks + components over `@avokjs/core`: `AvokProvider` + account/lifecycle hooks, `<AuthPopup>`, `<SharedOrigin>` / `useAvokConnect()`, `usePairingCeremony()` / `<PairDevice>`. |
+| **`@avokjs/react`** | React lifecycle hooks + components over `@avokjs/core`: `AvokProvider` + account/lifecycle hooks, management hooks (`useEnroll` / `useExport` / `useAccessSlots`), `<AuthPopup>`, `<SharedOrigin>` / `useAvokConnect()`, `usePairingCeremony()` / `<PairDevice>`. |
 | **`@avokjs/react-native`** | RN lifecycle hooks + native platform adapter (native passkey + SecureStore) over `@avokjs/core/engine`. Pairing: `usePairingCeremony()` + `createExpoCameraTransport()` (camera injected). Never statically imports `react-native`/`expo-*`. Native shared-origin channel is a follow-on, not shipped. |
 | `contracts` *(`@avokjs/contracts`)* | Published addresses + ABIs + EIP-712 types the SDK consumes (`contracts/src-ts/`). Not the Solidity. |
 

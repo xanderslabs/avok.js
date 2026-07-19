@@ -111,3 +111,102 @@ export function useLogout(): {
   );
   return { logout: call, pending, error };
 }
+
+// ─── Management-verb hooks (own-origin / self-custody only) ─────────────────────
+// Types are taken from the client's own verbs (Awaited<ReturnType<…>>) so no extra @avokjs/core imports
+// are needed and the shapes cannot drift from FullAvokClient.
+
+type EnrollResult = Awaited<ReturnType<FullAvokClient["enrollAccessSlot"]>>;
+type ExportedKey = Awaited<ReturnType<FullAvokClient["exportEvmKey"]>>;
+type AccessSlot = Awaited<ReturnType<FullAvokClient["listAccessSlots"]>>[number];
+type RemoveResult = Awaited<ReturnType<FullAvokClient["removeAccessSlot"]>>;
+
+/**
+ * Enroll a NEW passkey as an access slot on THIS device (a secondary), atomically writing its encrypted
+ * blob on chain in one funded transaction. For the cross-device / cross-domain QR ceremony, use
+ * `usePairingCeremony`.
+ */
+export function useEnroll(): {
+  enroll: () => Promise<EnrollResult>;
+  pending: boolean;
+  error: Error | null;
+} {
+  const client = useSelfCustody();
+  const { call, pending, error } = useMutation(() => client.enrollAccessSlot(), [client]);
+  return { enroll: call, pending, error };
+}
+
+/**
+ * Reveal the wallet's RAW private keys. The EVM key is the root (Solana derives from it — see VISION §5),
+ * so `exportEvmKey` restores the whole wallet on both chains. Each call runs a passkey gesture and
+ * returns raw hex, never a seed phrase. Gate this behind an explicit "reveal keys" confirmation.
+ */
+export function useExport(): {
+  exportEvmKey: () => Promise<ExportedKey>;
+  exportSolanaKey: () => Promise<ExportedKey>;
+  pending: boolean;
+  error: Error | null;
+} {
+  const client = useSelfCustody();
+  const evm = useMutation(() => client.exportEvmKey(), [client]);
+  const sol = useMutation(() => client.exportSolanaKey(), [client]);
+  return {
+    exportEvmKey: evm.call,
+    exportSolanaKey: sol.call,
+    pending: evm.pending || sol.pending,
+    error: evm.error ?? sol.error,
+  };
+}
+
+/**
+ * The "who can reach my wallet" settings surface (§6.4). `refresh()` reads the roster from chain and
+ * decrypts each slot's enrolling domain — ONE passkey gesture, because the rp-id metadata is encrypted
+ * under the wallet key — and reads the chain-verified `count`. It is therefore NOT automatic: `slots`
+ * and `count` are `null` until the first `refresh()`.
+ *
+ * `remove(slotId, { confirm: true })` frees a slot (one gesture — a self-pay tx) and updates local state
+ * WITHOUT a second gesture (re-listing would re-decrypt every slot). Removal is HOUSEKEEPING, not a
+ * security control — a device that ever signed had the key in memory. To secure a compromised wallet,
+ * move the funds.
+ */
+export function useAccessSlots(): {
+  slots: AccessSlot[] | null;
+  count: number | null;
+  refresh: () => Promise<void>;
+  remove: (slotId: ExportedKey, opts: { confirm: true }) => Promise<RemoveResult>;
+  pending: boolean;
+  error: Error | null;
+} {
+  const client = useSelfCustody();
+  const [slots, setSlots] = useState<AccessSlot[] | null>(null);
+  const [count, setCount] = useState<number | null>(null);
+
+  const doRefresh = useCallback(async () => {
+    // listAccessSlots costs the gesture (metadata decrypt); accessSlotCount is a plain chain read.
+    const [list, n] = await Promise.all([client.listAccessSlots(), client.accessSlotCount()]);
+    setSlots(list);
+    setCount(n);
+  }, [client]);
+
+  const refreshMut = useMutation(doRefresh, [doRefresh]);
+  const removeMut = useMutation(
+    async (slotId: ExportedKey, opts: { confirm: true }): Promise<RemoveResult> => {
+      const r = await client.removeAccessSlot(slotId, opts);
+      // Optimistic local update — the slot is gone, count drops by one — so removal costs one gesture,
+      // not two.
+      setSlots((prev) => prev?.filter((s) => s.slotId.toLowerCase() !== slotId.toLowerCase()) ?? null);
+      setCount((c) => (c != null ? c - 1 : null));
+      return r;
+    },
+    [client],
+  );
+
+  return {
+    slots,
+    count,
+    refresh: refreshMut.call,
+    remove: removeMut.call,
+    pending: refreshMut.pending || removeMut.pending,
+    error: refreshMut.error ?? removeMut.error,
+  };
+}

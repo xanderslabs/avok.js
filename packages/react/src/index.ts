@@ -13,6 +13,10 @@ export {
   useCreate,
   useLogin,
   useLogout,
+  // Management-verb hooks (own-origin / self-custody).
+  useEnroll,
+  useExport,
+  useAccessSlots,
 } from "./hooks.js";
 
 // ─── Shared-origin connect (the WalletConnect-style trigger) ──────────────────
