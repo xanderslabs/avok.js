@@ -1,5 +1,4 @@
 export * from "./chains.js";
-export * from "./name.js";
 export * from "./name-port.js";
 export * from "./ens-reader.js";
 export * from "./ens-resolver.js";

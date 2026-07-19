@@ -26,35 +26,35 @@ const FRIENDLY: Record<SendErrorKind, string> = {
   rejected: "Passkey prompt cancelled or timed out.",
   "insufficient-funds": "Not enough balance to cover the amount plus fees.",
   "wrong-chain": "This chain isn't configured for the wallet.",
-  "sponsored-unavailable": "Sponsored gas is unavailable — check the paymaster/relayer + fee-token config.",
+  "sponsored-unavailable": "Sponsored gas is unavailable — check the paymaster + fee-token config.",
   unknown: "Something went wrong.",
 };
 
 /**
- * What the RELAYER said, in words a person can act on.
+ * What the PAYMASTER said, in words a person can act on.
  *
  * The paymaster refuses an intent with a precise machine reason, and it used to be thrown away twice
  * over: the client discarded the 400's JSON body, and this classifier then replaced whatever detail
  * survived with a generic "Fronted is unavailable — check the config". Every fronted failure looked
- * identical and undiagnosable. It is the relayer TELLING US what is wrong; say it.
+ * identical and undiagnosable. It is the paymaster TELLING US what is wrong; say it.
  */
-const RELAYER_REASON: Record<string, string> = {
-  fee_too_low: "The fee you signed is below what the relayer now requires — gas prices moved. Try again.",
-  no_fee: "The transaction carried no fee payment, so the relayer has nothing to be repaid with.",
-  wrong_fee_recipient: "The fee was paid to the wrong address — the app and the relayer disagree on who fronts.",
-  unsupported_token: "The relayer does not accept that fee token on this chain.",
-  unsupported_chain: "The relayer is not configured for this chain.",
-  bad_signature: "The relayer could not verify your signature over this transaction.",
-  expired: "The transaction's deadline passed before the relayer got it. Try again.",
-  sim_reverted: "The transaction would fail on chain, so the relayer refused to pay for it.",
-  fronter_unavailable: "The relayer's own balance is below its safety threshold — the fronter needs topping up.",
-  not_fronted: "The relayer only accepts fronted transactions, and this one was not one.",
-  rate_limited: "The relayer is rate-limiting this app. Wait and retry.",
-  bad_request: "The relayer rejected the shape of the request.",
+const PAYMASTER_REASON: Record<string, string> = {
+  fee_too_low: "The fee you signed is below what the paymaster now requires — gas prices moved. Try again.",
+  no_fee: "The transaction carried no fee payment, so the paymaster has nothing to be repaid with.",
+  wrong_fee_recipient: "The fee was paid to the wrong address — the app and the paymaster disagree on who fronts.",
+  unsupported_token: "The paymaster does not accept that fee token on this chain.",
+  unsupported_chain: "The paymaster is not configured for this chain.",
+  bad_signature: "The paymaster could not verify your signature over this transaction.",
+  expired: "The transaction's deadline passed before the paymaster got it. Try again.",
+  sim_reverted: "The transaction would fail on chain, so the paymaster refused to pay for it.",
+  fronter_unavailable: "The paymaster's own balance is below its safety threshold — the fronter needs topping up.",
+  not_fronted: "The paymaster only accepts fronted transactions, and this one was not one.",
+  rate_limited: "The paymaster is rate-limiting this app. Wait and retry.",
+  bad_request: "The paymaster rejected the shape of the request.",
 };
 
 /** `PaymasterRejectedError` formats as "Paymaster refused the transaction: <reason> (HTTP 400)". */
-function relayerReason(detail: string): string | undefined {
+function paymasterReason(detail: string): string | undefined {
   const m = /paymaster refused the transaction:\s*([a-z_]+)/i.exec(detail);
   return m?.[1];
 }
@@ -81,17 +81,20 @@ export function classifySendError(err: unknown): { kind: SendErrorKind; message:
     kind = "insufficient-funds";
   } else if (raw.includes("unsupported chain") || raw.includes("not configured") || raw.includes("wrong chain")) {
     kind = "wrong-chain";
-  } else if (raw.includes("paymaster") || raw.includes("relayer") || raw.includes("sponsored") || raw.includes("fronted") || raw.includes("fee token")) {
+  } else if (
+    // Incoming error text may come from any source and use either word — match both defensively.
+    raw.includes("paymaster") || raw.includes("relayer") || raw.includes("sponsored") || raw.includes("fronted") || raw.includes("fee token")
+  ) {
     kind = "sponsored-unavailable";
   }
 
   const detail = messageOf(err);
 
-  // If the relayer told us WHY, say that — never bury it under the generic line. A reason we do not
+  // If the paymaster told us WHY, say that — never bury it under the generic line. A reason we do not
   // recognise is still shown verbatim: an unknown reason is far more useful than no reason.
-  const reason = relayerReason(detail);
+  const reason = paymasterReason(detail);
   if (reason) {
-    return { kind: "sponsored-unavailable", message: RELAYER_REASON[reason] ?? `The relayer refused this transaction: ${reason}.` };
+    return { kind: "sponsored-unavailable", message: PAYMASTER_REASON[reason] ?? `The paymaster refused this transaction: ${reason}.` };
   }
 
   const message = kind === "unknown" ? `${FRIENDLY.unknown} (${detail})` : FRIENDLY[kind];
