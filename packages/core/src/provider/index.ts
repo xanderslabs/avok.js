@@ -8,3 +8,7 @@ export type { Eip6963ProviderInfo } from "./eip6963.js";
 
 export { registerAvokSolanaWallet } from "./solana-standard.js";
 export type { SolanaStandardOptions } from "./solana-standard.js";
+
+// The operator's wallet identity (name/icon/rdns) both wirings announce. Lives here — not in web/ —
+// so the RN facade can share it via @avokjs/core/engine.
+export type { WalletInfo } from "./wallet-info.js";

@@ -22,9 +22,25 @@ import { secureStoreStorage } from "./native-storage.js";
 
 // ─── Re-exports ───────────────────────────────────────────────────────────────
 
-export { createAvokClient } from "@avokjs/core/engine";
-export type { StorageAdapter, Connection, Account, ClientConfig, CreateOpts, ContinueOpts, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, TxOpts, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken } from "@avokjs/core/engine";
-export { UnsupportedFeeTokenError } from "@avokjs/core/engine";
+// createAvokClient is the RN provider-wiring (symmetric with @avokjs/react): takes the operator's
+// WalletInfo and exposes getEip1193Provider(). The browser-only announce is window-gated inside.
+export { createAvokClient } from "./provider-wiring.js";
+export type { WiredAvokClient } from "./provider-wiring.js";
+export type { StorageAdapter, Connection, Account, ClientConfig, CreateOpts, ContinueOpts, UseOnlyAvokClient, FullAvokClient, AvokClientFor, SelfCustodyConnection, TxOpts, SolanaTxOpts, SolanaSimulation, FeeToken, EvmFeeToken, WalletInfo } from "@avokjs/core/engine";
+
+// Catchable error types (values, so an app can `instanceof`-narrow without a second import). Mirrors
+// @avokjs/react. MissingRpIdError is intentionally absent (fail-fast config error, not runtime-catchable).
+export {
+  UnsupportedFeeTokenError,
+  UserRejectedError,
+  NoPrfError,
+  KoraRejectedError,
+  EnrolmentUnaffordableError,
+  VaultUnreadableError,
+  OrphanedCredentialError,
+  SlotUnreachableError,
+  EnrolmentBlockedError,
+} from "@avokjs/core/engine";
 
 export type { ReactNativePasskeyLike, ReactNativePasskeyCreateResult, ReactNativePasskeyGetResult } from "@avokjs/core/wallet";
 
@@ -40,6 +56,10 @@ export {
   useCreate,
   useLogin,
   useLogout,
+  // Management-verb hooks (own-origin / self-custody).
+  useEnroll,
+  useExport,
+  useAccessSlots,
 } from "./hooks.js";
 
 // ─── Device pairing (QR ceremony — headless; transport injected) ──────────────
