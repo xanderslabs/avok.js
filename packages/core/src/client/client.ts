@@ -173,14 +173,14 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
   // through evm.send, and `hasSlot` reads the same chain for idempotency so it can't false-no-op on
   // a mismatch. Shared by addPasskey AND pairing.holder.complete — both write an access slot, whose recovery
   // depends on its slot landing on chain, so both must write through the identical path.
-/** 25% over the simulated cost. The gate must be ABOVE the true cost: we would rather tell a user to
- *  top up and be slightly conservative than mint them a passkey that opens nothing. */
-const ENROLMENT_BUFFER_BPS = 12_500n;
-const withBuffer = (cost: bigint): bigint => (cost * ENROLMENT_BUFFER_BPS) / 10_000n;
+  /** 25% over the simulated cost. The gate must be ABOVE the true cost: we would rather tell a user to
+   *  top up and be slightly conservative than mint them a passkey that opens nothing. */
+  const ENROLMENT_BUFFER_BPS = 12_500n;
+  const withBuffer = (cost: bigint): bigint => (cost * ENROLMENT_BUFFER_BPS) / 10_000n;
 
-const ERC20_BALANCE_ABI = [
-  { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] },
-] as const;
+  const ERC20_BALANCE_ABI = [
+    { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] },
+  ] as const;
 
   function accessCtx(): AccessCtx {
     return {

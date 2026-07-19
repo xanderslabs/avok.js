@@ -1,7 +1,7 @@
 import { type Address, type Hex, encodeAbiParameters, encodeFunctionData } from "viem";
 import { executeAbi, MODE_BATCH } from "@avokjs/contracts";
 import type { RpcClient } from "./rpc.js";
-import type { Call } from "./types.js";
+import type { Call, ResolvedBatch } from "./types.js";
 
 export interface SimOutcome { success: boolean; gasUsed: bigint; revertReason?: string }
 export interface SimMethodArgs { address: Address; implementation: Address; calls: Call[] }
@@ -15,6 +15,11 @@ const CALLS_PARAM = [{
 export function encodeExecuteBatch(calls: Call[]): Hex {
   const executionData = encodeAbiParameters(CALLS_PARAM, [calls.map((c) => ({ to: c.to, value: c.value, data: c.data }))]);
   return encodeFunctionData({ abi: executeAbi, functionName: "execute", args: [MODE_BATCH, executionData] });
+}
+
+/** self-pay: the wallet EOA's own type-4 tx calls execute(MODE_BATCH, executionData). Fee calls first. */
+export function buildSelfPayCalldata(batch: ResolvedBatch): Hex {
+  return encodeExecuteBatch([...batch.feeCalls, ...batch.userCalls]);
 }
 
 function summarize(results: { status: "success" | "failure"; gasUsed: bigint; error?: string }[]): SimOutcome {

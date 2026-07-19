@@ -42,7 +42,7 @@ export type { ResolveArgs } from "./resolve.js";
 export { resolveBatch, isDelegatedTo } from "./resolve.js";
 export type { SimulateDeps } from "./simulate.js";
 export { simulateResolved, decodeCalls } from "./simulate.js";
-export { buildSelfPayCalldata } from "./send-builders.js";
+export { buildSelfPayCalldata } from "./sim-methods.js";
 export type { TrackDeps } from "./track.js";
 export { getReceiptStatus } from "./track.js";
 

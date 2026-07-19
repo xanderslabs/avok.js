@@ -95,16 +95,12 @@ function resolveCluster(cluster?: string): "mainnet" | "devnet" {
   return cluster;
 }
 
-function feeTokenProgram(cluster: "mainnet" | "devnet", mint: string): string {
+/** The token profile for a supported fee mint, or throw. One lookup; callers pick the fields they need
+ *  (tokenProgram / decimals) — replaces the per-field helpers that each re-did the profile lookup. */
+function requireSolanaToken(cluster: "mainnet" | "devnet", mint: string) {
   const p = getSolanaTokenProfile(cluster, mint);
   if (!p) throw new Error(`Unsupported fee token ${mint} on solana:${cluster}`);
-  return p.tokenProgram;
-}
-
-function feeTokenDecimals(cluster: "mainnet" | "devnet", mint: string): number {
-  const p = getSolanaTokenProfile(cluster, mint);
-  if (!p) throw new Error(`Unsupported fee token ${mint} on solana:${cluster}`);
-  return p.decimals;
+  return p;
 }
 
 export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
@@ -255,6 +251,7 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
     });
     const probeB64 = getBase64EncodedWireTransaction(compileTransaction(probe.message as never) as never);
 
+    const feeTokenProfile = requireSolanaToken(cluster, feeToken);
     const { instructions: feeIx, quote } = await buildKoraFeePayment({
       kora,
       rpc,
@@ -262,8 +259,8 @@ export function createSolanaNamespace(config: ClientConfig): SolanaNamespace {
       feeToken,
       from: userAddr,
       authority: signer as never,
-      tokenProgram: feeTokenProgram(cluster, feeToken),
-      decimals: feeTokenDecimals(cluster, feeToken),
+      tokenProgram: feeTokenProfile.tokenProgram,
+      decimals: feeTokenProfile.decimals,
     });
 
     // The fee transfer goes FIRST: a reader of the signed message should see what they are paying
