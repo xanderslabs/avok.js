@@ -8,15 +8,15 @@ const receipt = (sig?: string, lvbh?: bigint) => ({ id: sig ?? "x", rail: "self-
 
 describe("getReceiptStatus", () => {
   it("confirmed when the signature is finalized", async () => {
-    expect(await getReceiptStatus({ rpc: rpc("finalized", null, 100n), receipt: receipt("sig", 200n) })).toBe("confirmed");
+    expect((await getReceiptStatus(receipt("sig", 200n), { rpc: rpc("finalized", null, 100n) })).status).toBe("confirmed");
   });
   it("failed when the signature has an error", async () => {
-    expect(await getReceiptStatus({ rpc: rpc("processed", { x: 1 }, 100n), receipt: receipt("sig", 200n) })).toBe("failed");
+    expect((await getReceiptStatus(receipt("sig", 200n), { rpc: rpc("processed", { x: 1 }, 100n) })).status).toBe("failed");
   });
   it("expired (not failed) when unconfirmed past lastValidBlockHeight — safe to rebuild + resend", async () => {
-    expect(await getReceiptStatus({ rpc: rpc(null, null, 300n), receipt: receipt("sig", 200n) })).toBe("expired");
+    expect((await getReceiptStatus(receipt("sig", 200n), { rpc: rpc(null, null, 300n) })).status).toBe("expired");
   });
   it("pending when unconfirmed and not yet expired", async () => {
-    expect(await getReceiptStatus({ rpc: rpc(null, null, 100n), receipt: receipt("sig", 200n) })).toBe("pending");
+    expect((await getReceiptStatus(receipt("sig", 200n), { rpc: rpc(null, null, 100n) })).status).toBe("pending");
   });
 });

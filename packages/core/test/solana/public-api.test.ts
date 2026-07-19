@@ -9,7 +9,7 @@ describe("public API exports", () => {
       "buildSplTransfer",
       "estimateSolanaNativeFee",
       "buildSolanaMessage",
-      "simulateSolana",
+      "simulateSolanaMessage",
       "sendSolana",
       "createKora",
       "buildKoraFeePayment",
@@ -20,6 +20,19 @@ describe("public API exports", () => {
     ];
     for (const name of expected) {
       expect(api, `missing export: ${name}`).toHaveProperty(name);
+    }
+  });
+
+  // Low-level internals stay off the /solana subpath: the per-signature/rent constants, the ATA-exists
+  // probe, the base simulateSolana variant, the priority-fee selection mechanics, the off-chain version
+  // discriminant, and the decode surface (which is its own /decode subpath). A re-add should trip this.
+  it("does NOT re-export the low-level internals or the decode surface", () => {
+    for (const name of [
+      "LAMPORTS_PER_SIGNATURE", "ATA_PROGRAM_ADDRESS", "ataExists", "simulateSolana",
+      "selectPriorityFee", "DEFAULT_PRIORITY_FEE_PERCENTILE", "OFFCHAIN_MESSAGE_VERSION",
+      "decodeCompiledMessage", "classifySplTransfer", "TOKEN_2022_PROGRAM_ADDRESS",
+    ]) {
+      expect(api, `internal leaked to the barrel: ${name}`).not.toHaveProperty(name);
     }
   });
 

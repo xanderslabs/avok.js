@@ -1,11 +1,9 @@
 /**
- * decode.ts — shared compiled-message decode core.
+ * decode.ts — compiled-message decode core for the shared-origin CONSENT view.
  *
- * Extracts the chain-truth decode (compiled message bytes → feePayer + instructions)
- * and a shared SPL-transfer classifier so the origin consent view and the relayer
- * fee-matcher read the SAME bytes with identical semantics.
- *
- * Exported as the subpath @avokjs/solana-txengine/decode — builder-free,
+ * Extracts the chain-truth decode (compiled message bytes → feePayer + instructions) and an
+ * SPL-transfer classifier, so the consent screen reads exactly the bytes the user is about to sign and
+ * shows the real destination + amount. Published as the `@avokjs/core/decode` subpath — builder-free,
  * no RPC calls, pure decode.
  *
  * Decode chain:
@@ -42,10 +40,10 @@ export function decodeCompiledMessage(messageBytes: Uint8Array): { feePayer: str
   const compiled = getCompiledTransactionMessageDecoder().decode(messageBytes);
   // Reject Address Lookup Table (v0) messages. Their instruction accounts are indices into
   // on-chain lookup tables that CANNOT be resolved from the message bytes alone — decompiling
-  // without fetching the tables would yield missing/placeholder addresses, so both the consent
-  // view and the relayer fee-matcher could misread the real destination. Avok's own builder never
-  // emits lookups, so this only rejects externally-supplied (e.g. shared-origin) messages that would
-  // otherwise be signed/fee-matched blind. Fail loud rather than decode a message we can't trust.
+  // without fetching the tables would yield missing/placeholder addresses, so the consent view could
+  // misread the real destination. Avok's own builder never emits lookups, so this only rejects
+  // externally-supplied (e.g. shared-origin) messages that would otherwise be signed blind. Fail loud
+  // rather than decode a message we can't trust.
   const lookups = (compiled as { addressTableLookups?: readonly unknown[] }).addressTableLookups;
   if (lookups && lookups.length > 0) {
     throw new Error(
@@ -73,8 +71,7 @@ const SPL_PROGRAMS = new Set<string>([TOKEN_PROGRAM_ADDRESS, TOKEN_2022_PROGRAM_
  * Classify an instruction as an SPL token Transfer or TransferChecked (on classic SPL or
  * Token-2022), or return null if the instruction is not a recognised token transfer.
  *
- * Shared by the origin's consent view and the relayer's fee matcher so that transfer amounts
- * and destinations agree without duplication.
+ * Used by the consent view to name the transfer's amount and destination from the exact bytes signed.
  */
 export function classifySplTransfer(
   ix: DecodedIx,

@@ -64,7 +64,7 @@ export async function estimateSolanaNativeFee(args: {
  * Self-pay only now: it is the user who funds a new account, and this is what tells them so. (Sponsored
  * rent is Kora's problem — it pays it and prices it into its own quote.)
  */
-export async function rentForCreateAtas(args: {
+async function rentForCreateAtas(args: {
   rpc: SolanaRpcClient;
   cluster: "mainnet" | "devnet";
   instructions: readonly {
@@ -102,19 +102,17 @@ async function rentForOne(
  * `numSignatures` is a real input, not a constant: a transaction is charged per signature, and assuming
  * 1 under-quotes anything signed more than once.
  */
-export async function solanaFeeInputs(args: {
+async function solanaFeeInputs(args: {
   rpc: SolanaRpcClient;
   cluster: "mainnet" | "devnet";
   instructions: readonly { programAddress: string; accounts?: readonly ({ address: string } | string)[] }[];
   numSignatures: bigint;
   computeUnitLimit: number | bigint;
   computeUnitPrice: bigint;
-  /** Rent already known (the relayer decodes it from the signed tx); otherwise it is derived. */
-  rent?: bigint;
 }): Promise<{ baseFee: bigint; priorityFee: bigint; rent: bigint }> {
   const baseFee = LAMPORTS_PER_SIGNATURE * args.numSignatures;
   // Solana charges the priority fee on the compute limit REQUESTED, not the units consumed.
   const priorityFee = (BigInt(args.computeUnitLimit) * args.computeUnitPrice) / 1_000_000n;
-  const rent = args.rent ?? (await rentForCreateAtas(args));
+  const rent = await rentForCreateAtas(args);
   return { baseFee, priorityFee, rent };
 }

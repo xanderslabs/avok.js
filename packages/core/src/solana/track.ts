@@ -1,19 +1,25 @@
 import type { SolanaRpcClient } from "./rpc.js";
-import type { Receipt, ReceiptStatus } from "./types.js";
+import type { Receipt } from "./types.js";
 
-export async function getReceiptStatus(args: { rpc: SolanaRpcClient; receipt: Receipt }): Promise<ReceiptStatus> {
-  const sig = args.receipt.signature;
-  if (!sig) return args.receipt.status;
-  const s = await args.rpc.getSignatureStatus(sig);
-  if (s) {
-    if (s.err != null) return "failed";
-    if (s.confirmationStatus === "confirmed" || s.confirmationStatus === "finalized") return "confirmed";
+export interface TrackDeps {
+  rpc: SolanaRpcClient;
+}
+
+/** Poll a Solana receipt to its next status. Mirrors the EVM rail's `getReceiptStatus`
+ *  (`(receipt, deps) => Receipt`), so both rails advance a receipt the same way. */
+export async function getReceiptStatus(receipt: Receipt, deps: TrackDeps): Promise<Receipt> {
+  const sig = receipt.signature;
+  if (!sig) return receipt;
+  const s = await deps.rpc.getSignatureStatus(sig);
+  if (s?.err != null) return { ...receipt, status: "failed" };
+  if (s && (s.confirmationStatus === "confirmed" || s.confirmationStatus === "finalized")) {
+    return { ...receipt, status: "confirmed" };
   }
   // unconfirmed: expired if the chain has advanced past the blockhash validity window. Distinct from
   // "failed" — the tx never landed, so the caller may safely rebuild on a fresh blockhash and resend.
-  if (args.receipt.lastValidBlockHeight != null) {
-    const height = await args.rpc.getBlockHeight();
-    if (height > args.receipt.lastValidBlockHeight) return "expired";
+  if (receipt.lastValidBlockHeight != null) {
+    const height = await deps.rpc.getBlockHeight();
+    if (height > receipt.lastValidBlockHeight) return { ...receipt, status: "expired" };
   }
-  return "pending";
+  return { ...receipt, status: "pending" };
 }
