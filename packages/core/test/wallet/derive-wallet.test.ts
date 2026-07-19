@@ -10,7 +10,7 @@ import {
   SLOT_META_INFO,
 } from "../../src/wallet/crypto/derive-wallet.js";
 import { PAIRING_INFO_PREFIX } from "../../src/wallet/pairing.js";
-import { getPrfSalt } from "../../src/wallet/passkey/web.js";
+import { getPrfSalt } from "../../src/wallet/crypto/derive-wallet.js";
 import { encryptKeyBlob } from "../../src/wallet/crypto/blob.js";
 import { deriveSlotId } from "../../src/wallet/passkey/label.js";
 import { bytesToArrayBuffer } from "../../src/wallet/encoding.js";

@@ -1,24 +1,17 @@
+// This barrel is the internal API boundary for non-wallet core code AND the public `@avokjs/core/wallet`
+// subpath. It intentionally does NOT re-export the low-level crypto primitives (blob/slot-meta seal-open,
+// the HKDF domain/salt constants, per-credential key derivation): those are wallet-internal, reached via
+// deep imports inside this folder, and exposing key-derivation on a public subpath is a footgun. Add a
+// symbol here only when a cross-module consumer needs it.
 export { bytesToBase64Url, base64UrlToBytes, bytesToArrayBuffer } from "./encoding.js";
 export type { UserHandle } from "./passkey/label.js";
-export { deriveSlotId, encodeFoundingHandle, encodeAccessHandle, decodeUserHandle, handleLabel } from "./passkey/label.js";
+export { deriveSlotId, encodeAccessHandle, decodeUserHandle } from "./passkey/label.js";
 
 export type { EncryptedKeyBlob, BlobVersion } from "./crypto/blob.js";
-export {
-  encryptKeyBlob,
-  decryptKeyBlob,
-  serializeBlob,
-  deserializeBlob,
-  encryptKeyBlobWithWrappingKey,
-  deriveSlotWrappingKeyBits,
-  isSupportedBlobVersion,
-  BLOB_BYTES,
-  BLOB_VERSION,
-  SUPPORTED_BLOB_VERSIONS,
-  WRAPPING_KEY_BYTES,
-} from "./crypto/blob.js";
+export { decryptKeyBlob, serializeBlob, deserializeBlob, BLOB_BYTES } from "./crypto/blob.js";
 
-export { deriveWalletKey, WALLET_INFO, SLOT_META_INFO } from "./crypto/derive-wallet.js";
-export { encryptSlotMeta, decryptSlotMeta, META_BYTES, SLOT_META_VERSION } from "./crypto/slot-meta.js";
+export { deriveWalletKey } from "./crypto/derive-wallet.js";
+export { META_BYTES } from "./crypto/slot-meta.js";
 
 export type {
   PasskeyAdapter,
@@ -28,15 +21,14 @@ export type {
   PasskeyPrfProfile,
   PasskeyPlatformMetadata,
 } from "./passkey/adapter.js";
-export { NoPrfError } from "./passkey/adapter.js";
 
 export type { WalletState, SolanaSigner } from "./sandbox.js";
-export { withDiscoveredWalletKey, withDiscoveredSolanaKey, withDiscoveredKeys, withWalletKey, withWalletKeyAndContainer, withWalletKeyAndEvidence, withSolanaKey, withDecryptedContainer } from "./sandbox.js";
+export { withDiscoveredKeys, withWalletKey, withWalletKeyAndContainer, withSolanaKey, withDecryptedContainer } from "./sandbox.js";
 // The provisioning channel. NOTE what is NOT here: sealContainer / unsealContainer / PairGrant. The
 // ceremony that shipped K to the new device is gone; K never travels. See enrolment.ts.
 export {
   generateEphemeral, randomNonce, buildRequest, encodePayload, decodePayload,
-  deriveSession, computeSas, PAIRING_INFO_PREFIX,
+  deriveSession,
   type PairEphemeral, type PairRequest, type PairAck,
 } from "./pairing.js";
 
@@ -70,18 +62,11 @@ export type { SiweParams } from "./signing.js";
 export { signMessage, signTypedData, signSiwe } from "./signing.js";
 
 
-export { WebAuthnPasskeyAdapter, MissingRpIdError, getPrfSalt } from "./passkey/web.js";
+export { MissingRpIdError } from "./passkey/adapter.js";
+export { WebAuthnPasskeyAdapter } from "./passkey/web.js";
 export type {
   ReactNativePasskeyLike,
   ReactNativePasskeyCreateResult,
   ReactNativePasskeyGetResult,
 } from "./passkey/native.js";
 export { createReactNativePasskeyAdapter } from "./passkey/native.js";
-
-export type { AvokRegistrationEvidence, AvokAssertionEvidence } from "./webauthn-evidence.js";
-export {
-  serializeRegistrationEvidence,
-  serializeAssertionEvidence,
-  assertionEvidenceFromParts,
-  registrationEvidenceFromParts,
-} from "./webauthn-evidence.js";

@@ -1,9 +1,8 @@
-// packages/wallet-core/src/sandbox.solana-discovered.test.ts
 import { describe, it, expect, vi } from "vitest";
 import type { Address, Hex } from "viem";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { base58 } from "@scure/base";
-import { withDiscoveredSolanaKey } from "../../src/wallet/sandbox.js";
+import { withDiscoveredKeys } from "../../src/wallet/sandbox.js";
 import { makeContainerBlob } from "./blob-fixture.js";
 import { deriveSlotId, encodeAccessHandle } from "../../src/wallet/passkey/label.js";
 import type { VaultReader } from "../../src/wallet/vault.js";
@@ -18,8 +17,9 @@ function anchorVaultWith(address: string, slotId: Hex, bytes: Uint8Array): Vault
 }
 
 // The discovered credential is a SECONDARY: its handle carries the wallet addresses, and its blob
-// is resolved from the on-chain (anchor) vault, then decrypted under the discover() PRF.
-describe("withDiscoveredSolanaKey", () => {
+// is resolved from the on-chain (anchor) vault, then decrypted under the discover() PRF. The Solana
+// signer is one half of the single-gesture `withDiscoveredKeys` (both rails, one discover()).
+describe("withDiscoveredKeys — Solana on the discovered secondary path", () => {
   it("does one discover() gesture and signs with the in-sandbox ed25519 key", async () => {
     const fx = await makeContainerBlob();
     const discover = vi.fn().mockResolvedValue({
@@ -31,8 +31,8 @@ describe("withDiscoveredSolanaKey", () => {
     const anchorVault = anchorVaultWith(fx.evmAddress, deriveSlotId(fx.evmAddress as Address, fx.credentialId), fx.bytes);
 
     const msg = new Uint8Array([1, 2, 3, 4]);
-    const { signature, address } = await withDiscoveredSolanaKey({ passkey, vaultForChain: () => anchorVault }, async (signer) => ({
-      signature: await signer.sign(msg), address: signer.address,
+    const { signature, address } = await withDiscoveredKeys({ passkey, vaultForChain: () => anchorVault }, async ({ solana }) => ({
+      signature: await solana.sign(msg), address: solana.address,
     }));
 
     expect(discover).toHaveBeenCalledTimes(1);
@@ -58,7 +58,7 @@ describe("withDiscoveredSolanaKey", () => {
     // failure is the crypto binding, not a not-found.
     const anchorVault = anchorVaultWith(wrongAddress, deriveSlotId(wrongAddress, fx.credentialId), fx.bytes);
 
-    await expect(withDiscoveredSolanaKey({ passkey, vaultForChain: () => anchorVault }, async () => 0))
+    await expect(withDiscoveredKeys({ passkey, vaultForChain: () => anchorVault }, async () => 0))
       .rejects.toThrow();
   });
 });

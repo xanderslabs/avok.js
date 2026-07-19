@@ -1,13 +1,7 @@
 import { base64UrlToBytes, bytesToBase64Url } from "../encoding.js";
 import type { DiscoveredPasskey, PasskeyAdapter, PasskeyRegistration } from "./adapter.js";
-import { NoPrfError } from "./adapter.js";
-import { getPrfSalt } from "./web.js";
-import {
-  assertionEvidenceFromParts,
-  registrationEvidenceFromParts,
-  type AvokAssertionEvidence,
-  type AvokRegistrationEvidence,
-} from "../webauthn-evidence.js";
+import { MissingRpIdError, NoPrfError } from "./adapter.js";
+import { getPrfSalt } from "../crypto/derive-wallet.js";
 
 interface PrfExtResults {
   prf?: { results?: { first?: string } };
@@ -53,6 +47,10 @@ export function createReactNativePasskeyAdapter(
   passkeyModule: ReactNativePasskeyLike,
   options: { rpId: string; rpName?: string },
 ): PasskeyAdapter {
+  // Fail loud, same as the web adapter: the rpId IS the key scope (K = HKDF(PRF(credential, rpId))), so
+  // an empty/absent one would silently derive a different wallet. Typed as required, but a JS caller or
+  // an env read can still deliver undefined or "".
+  if (typeof options?.rpId !== "string" || options.rpId.trim() === "") throw new MissingRpIdError();
   const rpName = options.rpName ?? options.rpId;
   const rpId = options.rpId;
   const prfSalt = bytesToBase64Url(getPrfSalt());
@@ -105,67 +103,6 @@ export function createReactNativePasskeyAdapter(
       const handle = result.response?.userHandle;
       if (!handle) throw new Error("Passkey assertion returned no user handle");
       return { credentialId: result.id, prfOutput, userHandle: base64UrlToBytes(handle) };
-    },
-
-    /**
-     * Uses the server-supplied challenge; returns PRF key material for local decryption and
-     * a serialized assertion for server verification. `clientExtensionResults` is emptied.
-     * Device-gated: requires react-native-passkey v3.3+ with PRF support.
-     */
-    async authenticateWithEvidence(
-      credentialId: string,
-      transports: string[] | undefined,
-      challenge: string,
-    ): Promise<{ prfOutput: ArrayBuffer; assertion: AvokAssertionEvidence }> {
-      const result = await passkeyModule.get({
-        challenge, rpId,
-        allowCredentials: [{ type: "public-key", id: credentialId, ...(transports?.length ? { transports } : {}) }],
-        userVerification: "required", extensions: { prf: { eval: { first: prfSalt } } },
-      });
-      assertLocalNative(result.authenticatorAttachment);
-      const prf = readPrf(result.clientExtensionResults);
-      if (!prf) throw new NoPrfError(PRF_HINT);
-      const assertion = assertionEvidenceFromParts({
-        credentialId,
-        clientDataJSON: result.response?.clientDataJSON ?? "",
-        authenticatorData: result.response?.authenticatorData ?? "",
-        signature: result.response?.signature ?? "",
-        userHandle: result.response?.userHandle,
-      });
-      return { prfOutput: prf, assertion };
-    },
-
-    /**
-     * Uses the server-supplied challenge; returns the PasskeyRegistration plus a serialized
-     * registration credential for server verification. Device-gated.
-     */
-    async createWithEvidence(
-      label: string,
-      userHandle: Uint8Array,
-      challenge: string,
-    ): Promise<PasskeyRegistration & { registration: AvokRegistrationEvidence }> {
-      const result = await passkeyModule.create({
-        rp: { name: rpName, id: rpId },
-        user: { id: bytesToBase64Url(userHandle), name: label, displayName: label },
-        challenge,
-        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-        authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "required", userVerification: "required" },
-        extensions: { prf: { eval: { first: prfSalt } } },
-      });
-      const transports = result.response?.transports ?? [];
-      // authenticate() throws NoPrfError if the get() fallback also yields no PRF, so prfOutput is defined.
-      const prfOutput = readPrf(result.clientExtensionResults) ?? (await authenticate(result.id, transports));
-      const registration = registrationEvidenceFromParts({
-        credentialId: result.id,
-        clientDataJSON: result.response?.clientDataJSON ?? "",
-        attestationObject: result.response?.attestationObject ?? "",
-        transports,
-      });
-      return {
-        credentialId: result.id, prfOutput, transports, rpId,
-        prf: { extension: "prf", saltVersion: "v0" }, platform: { authenticatorAttachment: "platform" },
-        registration,
-      };
     },
   };
 }

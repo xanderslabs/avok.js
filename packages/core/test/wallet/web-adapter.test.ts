@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, test, vi } from "vitest";
 import { getAddress } from "viem";
-import { WebAuthnPasskeyAdapter, getPrfSalt } from "../../src/wallet/passkey/web.js";
+import { WebAuthnPasskeyAdapter } from "../../src/wallet/passkey/web.js";
+import { getPrfSalt } from "../../src/wallet/crypto/derive-wallet.js";
 import { bytesToBase64Url } from "../../src/wallet/encoding.js";
 import { decodeUserHandle, encodeAccessHandle } from "../../src/wallet/passkey/label.js";
 

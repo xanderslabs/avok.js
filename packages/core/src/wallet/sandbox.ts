@@ -22,7 +22,6 @@ import { decodeUserHandle } from "./passkey/label.js";
 import type { PasskeyAdapter, PasskeySlot } from "./passkey/adapter.js";
 import { resolveBlob } from "./resolution.js";
 import type { VaultReader } from "./vault.js";
-import type { AvokAssertionEvidence } from "./webauthn-evidence.js";
 
 /** A trimmed on-chain blob paired with the credentialId that decrypts it. The blob itself no longer
  *  carries the id (it is public), so the in-memory state keeps the association out-of-band. */
@@ -59,16 +58,19 @@ function containerFor(state: WalletState, slot: PasskeySlot, prfOutput: ArrayBuf
 
 /** @internal One passkey gesture → decrypt/derive → validated container. Both rails build on this.
  *  Derive/use/clear: the container key K and the PRF output are zeroed in `finally`, so a throwing
- *  `fn` still wipes. Every EVM/Solana entry point funnels through here (or withDiscoveredContainer),
- *  so the wipe is guaranteed in one place rather than duplicated per entry point. */
+ *  `fn` still wipes — AND so does a FAILED decrypt/derive (wrong passkey, corrupt blob): `containerFor`
+ *  runs INSIDE the try, so the PRF (K's seed) is zeroed even when no container is ever built. Every
+ *  EVM/Solana entry point funnels through here (or withDiscoveredContainer), so the wipe is guaranteed
+ *  in one place rather than duplicated per entry point. */
 export async function withDecryptedContainer<T>(
   args: { state: WalletState; passkey: PasskeyAdapter; credentialId?: string },
   fn: (container: SecretContainer) => Promise<T>,
 ): Promise<T> {
   const slot = pickSlot(args.state, args.credentialId);
   const prfOutput = await args.passkey.authenticate(slot.credentialId, slot.transports);
-  const container = await containerFor(args.state, slot, prfOutput);
+  let container: SecretContainer | undefined;
   try {
+    container = await containerFor(args.state, slot, prfOutput);
     return await fn(container);
   } finally {
     wipeSecrets(container, prfOutput);
@@ -85,9 +87,10 @@ export async function withDecryptedContainer<T>(
  *  runs, and because the PasskeyAdapter contract (passkey/adapter.ts) transfers the buffer to the
  *  sandbox single-use: every adapter MUST return a fresh buffer per call and MUST NOT retain/reuse
  *  it. Production adapters (passkey/web.ts, passkey/native.ts) already do — they mint a fresh PRF
- *  output per assertion and never keep it. */
-function wipeSecrets(container: SecretContainer, prfOutput: ArrayBuffer): void {
-  container.key.fill(0);
+ *  output per assertion and never keep it. `container` is optional: a failed decrypt/derive wipes the
+ *  PRF with no container to zero. */
+function wipeSecrets(container: SecretContainer | undefined, prfOutput: ArrayBuffer): void {
+  container?.key.fill(0);
   new Uint8Array(prfOutput).fill(0);
 }
 
@@ -211,34 +214,38 @@ async function withDiscoveredContainer<T>(
   );
   const handle = decodeUserHandle(userHandle);
 
-  let container: SecretContainer;
-  let state: WalletState;
-  if (handle.kind === "primary") {
-    container = { key: await deriveWalletKey(prfOutput) };
-    const address = evmAddress(produceEvmKey(container));
-    const solanaAddress = solanaAddressFromSecret(produceSolanaKey(container));
-    // A primary has no expected address to compare against — the derived address IS the identity —
-    // so there is no ADDRESS_MISMATCH check here, and nothing is missing by its absence.
-    state = {
-      evmAddress: address,
-      solanaAddress,
-      slots: [{ credentialId, rpId: "", createdAt: new Date().toISOString() }],
-      blobs: [],
-    };
-  } else {
-    // Secondary: the handle carries the wallet's addresses AND the anchor chain its blob was written
-    // to. Resolve the vault from THAT marker chain — never a single app-configured anchor — so a
-    // reader whose own app anchor differs still reads the chain that actually holds the ciphertext.
-    if (!args.vaultForChain) throw new Error("A secondary credential needs a vault resolver to reach its access-slot blob");
-    const anchorVault = args.vaultForChain(handle.anchorChain);
-    const result = await resolveBlob({ address: handle.evm, credentialId, anchorVault });
-    if (!result) throw new Error("Encrypted blob for passkey slot was not found");
-    const blob = result.blob;
-    // The blob carries no addresses now: decrypt under the handle's EVM address (bound into the AES
-    // info) + the discovered credentialId, then DERIVE both addresses from K. A wrong handle address
-    // fails the AES tag; a blob whose K disagrees with the handle is caught by the explicit check.
-    container = await decryptKeyBlob(blob, prfOutput, handle.evm, credentialId);
-    try {
+  // One try/finally guards the WHOLE gesture: K and the PRF output (K's seed) are wiped even if `fn`
+  // throws AND even if the decrypt/derive below throws before a container is ever built (a wrong
+  // passkey, an unresolved blob, an address mismatch — all reachable). `container` stays optional so
+  // that failure path has nothing half-built to wipe.
+  let container: SecretContainer | undefined;
+  try {
+    let state: WalletState;
+    if (handle.kind === "primary") {
+      container = { key: await deriveWalletKey(prfOutput) };
+      const address = evmAddress(produceEvmKey(container));
+      const solanaAddress = solanaAddressFromSecret(produceSolanaKey(container));
+      // A primary has no expected address to compare against — the derived address IS the identity —
+      // so there is no ADDRESS_MISMATCH check here, and nothing is missing by its absence.
+      state = {
+        evmAddress: address,
+        solanaAddress,
+        slots: [{ credentialId, rpId: "", createdAt: new Date().toISOString() }],
+        blobs: [],
+      };
+    } else {
+      // Secondary: the handle carries the wallet's addresses AND the anchor chain its blob was written
+      // to. Resolve the vault from THAT marker chain — never a single app-configured anchor — so a
+      // reader whose own app anchor differs still reads the chain that actually holds the ciphertext.
+      if (!args.vaultForChain) throw new Error("A secondary credential needs a vault resolver to reach its access-slot blob");
+      const anchorVault = args.vaultForChain(handle.anchorChain);
+      const result = await resolveBlob({ address: handle.evm, credentialId, anchorVault });
+      if (!result) throw new Error("Encrypted blob for passkey slot was not found");
+      const blob = result.blob;
+      // The blob carries no addresses now: decrypt under the handle's EVM address (bound into the AES
+      // info) + the discovered credentialId, then DERIVE both addresses from K. A wrong handle address
+      // fails the AES tag; a blob whose K disagrees with the handle is caught by the explicit check.
+      container = await decryptKeyBlob(blob, prfOutput, handle.evm, credentialId);
       const evm = evmAddress(produceEvmKey(container));
       if (evm.toLowerCase() !== handle.evm.toLowerCase()) throw new Error(ADDRESS_MISMATCH);
       state = {
@@ -247,44 +254,11 @@ async function withDiscoveredContainer<T>(
         slots: [{ credentialId, rpId: "", createdAt: new Date().toISOString() }],
         blobs: [{ credentialId, blob }],
       };
-    } catch (e) {
-      wipeSecrets(container, prfOutput);
-      throw e;
     }
-  }
-  // Derive/use/clear for both rails: wipe K and the PRF output even if `fn` throws.
-  try {
     return await fn(container, state, { credentialId });
   } finally {
     wipeSecrets(container, prfOutput);
   }
-}
-
-/**
- * Gesture-collapse primitive for shared-origin sign-in. A single `discover()` assertion (one biometric
- * prompt) provides both the credential's handle AND the PRF output. A primary reconstructs K from
- * the PRF directly; a secondary resolves its ciphertext from `anchorVault` and decrypts it. No
- * second `authenticate()` call is made. The private key and PRF output are function-locals; never
- * returned or retained.
- */
-export async function withDiscoveredWalletKey<T>(
-  args: { passkey: PasskeyAdapter; vaultForChain?: (chainId: number) => VaultReader },
-  fn: (account: PrivateKeyAccount, state: WalletState) => Promise<T>,
-): Promise<T> {
-  return withDiscoveredContainer(args, async (container, state) => {
-    return fn(evmAccountFrom(container, state.evmAddress), state);
-  });
-}
-
-/** Gesture-collapse Solana primitive: single discover() → decrypt → ed25519 signer.
- *  The key stays in the closure and is never returned. */
-export async function withDiscoveredSolanaKey<T>(
-  args: { passkey: PasskeyAdapter; vaultForChain?: (chainId: number) => VaultReader },
-  fn: (signer: SolanaSigner, state: WalletState) => Promise<T>,
-): Promise<T> {
-  return withDiscoveredContainer(args, async (container, state) => {
-    return fn(solanaSignerFrom(container, state.solanaAddress), state);
-  });
 }
 
 /** Minimal Solana signer: ed25519 over raw bytes. S-2 wraps this for transactions. */
@@ -325,23 +299,4 @@ export async function withSolanaKey<T>(
   return withDecryptedContainer(args, async (container) => {
     return fn(solanaSignerFrom(container, args.state.solanaAddress));
   });
-}
-
-/** Like withWalletKey, but the gesture also yields a server-verifiable assertion over `challenge`. */
-export async function withWalletKeyAndEvidence<T>(
-  args: { state: WalletState; passkey: PasskeyAdapter; credentialId?: string; challenge: string },
-  fn: (account: PrivateKeyAccount) => Promise<T>,
-): Promise<{ result: T; assertion: AvokAssertionEvidence }> {
-  if (!args.passkey.authenticateWithEvidence) {
-    throw new Error("Passkey adapter does not support evidence capture");
-  }
-  const slot = pickSlot(args.state, args.credentialId);
-  const { prfOutput, assertion } = await args.passkey.authenticateWithEvidence(slot.credentialId, slot.transports, args.challenge);
-  const container = await containerFor(args.state, slot, prfOutput);
-  try {
-    const result = await fn(evmAccountFrom(container, args.state.evmAddress));
-    return { result, assertion };
-  } finally {
-    wipeSecrets(container, prfOutput);
-  }
 }

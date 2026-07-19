@@ -28,6 +28,36 @@ export const SLOT_INFO_PREFIX = "passkey-access-vault/slot-key/v0";
 export const SLOT_META_INFO = "passkey-access-vault/slot-meta-key/v0";
 
 /**
+ * HKDF `info` for the Solana ed25519 seed, derived from the WALLET KEY K (crypto/derive.ts) — so both
+ * a primary and any access-key credential reach the same Solana keypair. Distinct from every other
+ * domain here so the Solana seed can never collide with K, a slot key, or the metadata key.
+ *
+ * Normative: another implementation must reproduce this string byte-for-byte to land on the same
+ * Solana address. The seed is HKDF-SHA256(K, salt=HKDF_SALT, info=SOLANA_KEY_INFO); deriving it this
+ * way (not via a BIP-39 mnemonic) keeps K's entropy in zeroable BYTES the whole way — no un-wipeable
+ * mnemonic string is ever minted. See crypto/derive.ts and crypto/container.ts.
+ */
+export const SOLANA_KEY_INFO = "passkey-access-vault/solana-key/v0";
+
+let prfSaltCache: Uint8Array | undefined;
+/**
+ * The PRF salt — the FIRST input to the entire key chain: PRF = authenticator(salt), K = HKDF(PRF).
+ *
+ * As NORMATIVE as the HKDF domains above, and vendor-neutral for the same reason: the PRF output is
+ * deterministic per (credential, salt), so any conforming implementation that opens the same passkey —
+ * a replacement app on the same domain, a sibling app sharing the rpId, a second implementer of the
+ * standard — MUST pass byte-identical salt bytes or it derives a different K and silently lands in a
+ * DIFFERENT WALLET. A vendor's name here would make every other implementer recite it.
+ *
+ * Lives here (not in the browser adapter) so BOTH platform adapters — web and the DOM-free native base —
+ * read the one normative salt without either depending on the other. Changing this value changes every
+ * K, i.e. every wallet; it is frozen the moment real users hold value.
+ */
+export function getPrfSalt(): Uint8Array {
+  return (prfSaltCache ??= new TextEncoder().encode("passkey-access-vault/prf-salt/v0"));
+}
+
+/**
  * The wallet key K = HKDF-SHA256(PRF output). This is the ONLY place K is born.
  *
  * Consequence, stated once so nobody has to rediscover it: a single PRF evaluation now equals the

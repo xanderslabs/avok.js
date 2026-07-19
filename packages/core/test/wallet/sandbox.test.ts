@@ -2,7 +2,7 @@ import { describe, expect, it, test } from "vitest";
 import { hexToBytes } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { encryptKeyBlob } from "../../src/wallet/crypto/blob.js";
-import { withDiscoveredWalletKey, withDiscoveredKeys, withWalletKey, type WalletState } from "../../src/wallet/sandbox.js";
+import { withDiscoveredKeys, withWalletKey, type WalletState } from "../../src/wallet/sandbox.js";
 import { createWallet } from "../../src/wallet/wallet.js";
 import { produceSolanaKey } from "../../src/wallet/crypto/container.js";
 import { solanaAddressFromSecret } from "../../src/wallet/crypto/derive.js";
@@ -50,16 +50,6 @@ describe("sandbox", () => {
     const { state } = await seed(pk);
     const tampered: WalletState = { ...state, evmAddress: "0x0000000000000000000000000000000000000001" };
     await expect(withWalletKey({ state: tampered, passkey: pk }, async () => 1)).rejects.toThrow();
-  });
-
-  it("withDiscoveredWalletKey signs with exactly one passkey assertion", async () => {
-    const passkey = makeFakePasskeyWithCounters();
-    await createWallet({ passkey, networkName: "qudi.fi" });   // primary discover target: K reconstructs from PRF
-    const sig = await withDiscoveredWalletKey({ passkey }, async (account) =>
-      account.signMessage({ message: "x" }));
-    expect(sig).toMatch(/^0x/);
-    expect(passkey.counts.discover).toBe(1);
-    expect(passkey.counts.authenticate).toBe(0); // collapsed — no second gesture
   });
 
   it("withDiscoveredKeys signs BOTH rails with exactly one passkey assertion", async () => {

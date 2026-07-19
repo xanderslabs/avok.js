@@ -156,8 +156,12 @@ export async function reconstructWalletState(args: {
   /** This credential's PRF output. Consumed to decrypt K, then wiped (single-use). */
   prfOutput: ArrayBuffer;
 }): Promise<WalletState> {
-  const container = await decryptKeyBlob(args.blob, args.prfOutput, args.address, args.credentialId);
+  // `decryptKeyBlob` runs INSIDE the try so the single-use PRF (K's seed) is wiped even when decrypt
+  // itself throws — a wrong handle address or corrupt blob is a reachable failure, and leaving the PRF
+  // un-zeroed on it would defeat derive/use/clear. `container` stays optional for that no-container path.
+  let container: SecretContainer | undefined;
   try {
+    container = await decryptKeyBlob(args.blob, args.prfOutput, args.address, args.credentialId);
     const evm = evmAddress(produceEvmKey(container));
     if (evm.toLowerCase() !== args.address.toLowerCase()) {
       throw new Error("Cannot reconstruct: blob decrypts to a different wallet than its handle (address mismatch)");
@@ -174,7 +178,7 @@ export async function reconstructWalletState(args: {
   } finally {
     // Derive/use/clear: K was needed only to derive the public addresses. The prfOutput is single-use
     // per the adapter contract and is not reused by any caller after this returns — wipe both.
-    container.key.fill(0);
+    container?.key.fill(0);
     new Uint8Array(args.prfOutput).fill(0);
   }
 }

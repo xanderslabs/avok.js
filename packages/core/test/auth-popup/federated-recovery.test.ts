@@ -7,10 +7,10 @@
  * test drives a genuine secondary end-to-end: a fresh device `discover()`s as the secondary,
  * resolves its ciphertext from the anchor vault, decrypts, and signs.
  *
- * The origin's shared-origin EVM sign path is `createSignGate.approve` → `withDiscoveredWalletKey`,
- * handed an anchorVault built from `config.anchorRpcUrl` (`sign-gate.ts`). This test exercises that
- * exact primitive against a populated anchor vault, proving the Stage-2 anchor read reconstructs a
- * secondary's state and produces a valid signature for the ORIGINAL wallet address.
+ * The origin's shared-origin sign path is the single-gesture `withDiscoveredKeys` (auth-popup/mount.ts),
+ * handed an anchorVault built from the reader's resolved anchor chain. This test exercises that exact
+ * primitive against a populated anchor vault, proving the anchor read reconstructs a secondary's state
+ * and produces a valid signature for the ORIGINAL wallet address.
  */
 import { describe, expect, it } from "vitest";
 import { verifyMessage } from "viem";
@@ -20,7 +20,7 @@ import {
   deriveWalletKey,
   deriveSlotId,
   serializeBlob,
-  withDiscoveredWalletKey,
+  withDiscoveredKeys,
 } from "../../src/wallet/index.js";
 import { FakePasskeyAdapter, FakeVaultReader } from "../wallet/fakes.js";
 
@@ -52,14 +52,14 @@ describe("shared-origin fresh-device recovery (origin sign bootstrap)", () => {
     // 4. Fresh device: a single `discover()` surfaces the secondary (its handle decodes to
     //    kind: "secondary"), the origin resolves its ciphertext from the anchor vault, decrypts under
     //    the discover() PRF, and signs. No local state is carried in — recovery is purely vault-driven.
-    const signature = await withDiscoveredWalletKey({ passkey, vaultForChain: () => vault }, async (recovered, state) => {
+    const signature = await withDiscoveredKeys({ passkey, vaultForChain: () => vault }, async ({ evm }, state) => {
       // 5. The invariant that makes Solana work: the recovered addresses are IDENTICAL to the
       //    primary's, because both credentials reach the same K and the Solana address IS the
       //    ed25519 public key of that K. A new key would be a different, unrecoverable wallet.
-      expect(recovered.address.toLowerCase()).toBe(account.evm.toLowerCase());
+      expect(evm.address.toLowerCase()).toBe(account.evm.toLowerCase());
       expect(state.evmAddress).toBe(account.evm);
       expect(state.solanaAddress).toBe(account.solana);
-      return recovered.signMessage({ message: "recovered on a fresh device" });
+      return evm.signMessage({ message: "recovered on a fresh device" });
     });
 
     // The recovered key produced a valid signature for the ORIGINAL wallet address.

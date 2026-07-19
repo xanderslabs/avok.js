@@ -4,7 +4,7 @@ import { deriveWalletKey } from "../../src/wallet/crypto/derive-wallet.js";
 import { deriveSlotWrappingKeyBits, serializeBlob, encryptKeyBlobWithWrappingKey } from "../../src/wallet/crypto/blob.js";
 import { deriveSlotId, encodeAccessHandle } from "../../src/wallet/passkey/label.js";
 import { computeSas } from "../../src/wallet/pairing.js";
-import { getPrfSalt } from "../../src/wallet/passkey/web.js";
+import { getPrfSalt } from "../../src/wallet/crypto/derive-wallet.js";
 
 /**
  * CONFORMANCE TO THE STANDARD — Avok is an implementation, not the owner.

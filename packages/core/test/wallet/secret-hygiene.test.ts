@@ -1,12 +1,15 @@
 import { describe, expect, test } from "vitest";
 import { hexToBytes } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { encryptKeyBlob } from "../../src/wallet/crypto/blob.js";
+import { encryptKeyBlob, serializeBlob } from "../../src/wallet/crypto/blob.js";
 import { createPasskeyCredential } from "../../src/wallet/enrolment.js";
-import { withDecryptedContainer, withWalletKey, type WalletState } from "../../src/wallet/sandbox.js";
+import { withDecryptedContainer, withDiscoveredKeys, withWalletKey, type WalletState } from "../../src/wallet/sandbox.js";
+import { reconstructWalletState } from "../../src/wallet/wallet.js";
+import { encodeAccessHandle, deriveSlotId } from "../../src/wallet/passkey/label.js";
 import { produceSolanaKey } from "../../src/wallet/crypto/container.js";
 import { solanaAddressFromSecret } from "../../src/wallet/crypto/derive.js";
-import type { PasskeyAdapter } from "../../src/wallet/passkey/adapter.js";
+import type { DiscoveredPasskey, PasskeyAdapter } from "../../src/wallet/passkey/adapter.js";
+import { FakeVaultReader } from "./fakes.js";
 
 const PK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;
 
@@ -113,5 +116,65 @@ describe("derive/use/clear — the wipe actually happens", () => {
     ).rejects.toThrow(/boom/);
     expect(Array.from(captured!)).toEqual(new Array(32).fill(0));
     expect(Array.from(new Uint8Array(mintedPrf[0]))).toEqual(new Array(32).fill(0));
+  });
+
+  test("a decrypt FAILURE (wrong wallet address) still zeroes the PRF output — the seed of K", async () => {
+    // The gesture mints a PRF, then containerFor() decrypts the blob. A tampered wallet address derives
+    // a different AES key, so decrypt throws BEFORE any `fn` runs. The PRF is K's seed; leaving it
+    // un-zeroed on this (reachable: wrong passkey / corrupt blob) path defeats derive/use/clear. The
+    // wipe must not be conditional on getting past decrypt.
+    const { state, passkey, mintedPrf } = await makeState();
+    const tampered: WalletState = { ...state, evmAddress: "0x0000000000000000000000000000000000000001" };
+    await expect(
+      withDecryptedContainer({ state: tampered, passkey }, async () => "unreached"),
+    ).rejects.toThrow();
+    expect(mintedPrf).toHaveLength(1);
+    expect(Array.from(new Uint8Array(mintedPrf[0]))).toEqual(new Array(32).fill(0));
+  });
+
+  test("withDiscoveredKeys zeroes the discover() PRF when a SECONDARY's blob fails to decrypt", async () => {
+    // The gesture-collapse funnel resolves a secondary's blob and decrypts it under the discover() PRF.
+    // A blob sealed under a DIFFERENT PRF fails the AES tag — the same reachable failure as above, on the
+    // discover() rail. The minted PRF must still be zeroed.
+    const address = privateKeyToAccount(PK).address;
+    const credentialId = "Y3JlZC1zZWNvbmRhcnk";
+    const wrongPrf = new Uint8Array(32).fill(9);
+    const blob = await encryptKeyBlob({ container: { key: hexToBytes(PK) }, address, credentialId, prfOutput: wrongPrf.slice().buffer });
+    const vault = new FakeVaultReader();
+    vault.set(address, deriveSlotId(address, credentialId), serializeBlob(blob));
+
+    const mintedPrf: ArrayBuffer[] = [];
+    const passkey = {
+      async discover(): Promise<DiscoveredPasskey> {
+        const buf = new Uint8Array(32).fill(3).buffer; // ≠ the PRF the blob was sealed under → decrypt fails
+        mintedPrf.push(buf);
+        return { credentialId, prfOutput: buf, userHandle: encodeAccessHandle(address, 10) };
+      },
+      async authenticate() { throw new Error("unused"); },
+      async create() { throw new Error("unused"); },
+    } as unknown as PasskeyAdapter;
+
+    await expect(
+      withDiscoveredKeys({ passkey, vaultForChain: () => vault }, async () => "unreached"),
+    ).rejects.toThrow();
+    expect(mintedPrf).toHaveLength(1);
+    expect(Array.from(new Uint8Array(mintedPrf[0]))).toEqual(new Array(32).fill(0));
+  });
+
+  test("reconstructWalletState zeroes the PRF output when the blob fails to decrypt", async () => {
+    // Public secondary-recovery entry point: same defect surface. A wrong wallet address derives a
+    // different AES key, decrypt throws, and the caller-owned single-use PRF must be zeroed anyway.
+    const { state } = await makeState();
+    const prf = new Uint8Array(32).fill(5).buffer; // correct PRF for the blob; the ADDRESS is wrong below
+    await expect(
+      reconstructWalletState({
+        blob: state.blobs[0]!.blob,
+        address: "0x0000000000000000000000000000000000000001",
+        credentialId: state.slots[0]!.credentialId,
+        rpId: "x",
+        prfOutput: prf,
+      }),
+    ).rejects.toThrow();
+    expect(Array.from(new Uint8Array(prf))).toEqual(new Array(32).fill(0));
   });
 });

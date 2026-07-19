@@ -58,19 +58,4 @@ describe("createReactNativePasskeyAdapter", () => {
     await expect(pk.authenticate("cred-1")).rejects.toThrow(/platform authenticator/i);
   });
 
-  test("authenticateWithEvidence maps RN get result into PRF + emptied-extension evidence", async () => {
-    const get = vi.fn().mockResolvedValue({
-      id: "cred-1",
-      response: { clientDataJSON: "Y2Rq", authenticatorData: "YWQ", signature: "c2ln", userHandle: null },
-      clientExtensionResults: { prf: { results: { first: prfB64 } } },
-    });
-    const pk = createReactNativePasskeyAdapter({ create: vi.fn(), get }, { rpId: "qudi.fi" });
-    const { prfOutput, assertion } = await pk.authenticateWithEvidence!("cred-1", ["internal"], "chal-abc");
-
-    expect(bytesToBase64Url(new Uint8Array(prfOutput))).toBe(prfB64);
-    expect(assertion.response.clientExtensionResults).toEqual({});
-    expect(assertion.response.id).toBe("cred-1");
-    // server challenge is forwarded verbatim (RN module receives base64url challenge directly)
-    expect(get.mock.calls[0][0].challenge).toBe("chal-abc");
-  });
 });

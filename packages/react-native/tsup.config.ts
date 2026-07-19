@@ -31,7 +31,6 @@ export default defineConfig({
     /^@solana-program\//,
     /^@noble\//,
     /^@scure\//,
-    "micro-key-producer",
     "@avokjs/core/channel",
     "@avokjs/contracts",
   ],

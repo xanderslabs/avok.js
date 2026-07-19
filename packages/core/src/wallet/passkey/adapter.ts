@@ -1,5 +1,3 @@
-import type { AvokAssertionEvidence, AvokRegistrationEvidence } from "../webauthn-evidence.js";
-
 export interface PasskeyPrfProfile { extension: "prf"; saltVersion: "v0" }
 export interface PasskeyPlatformMetadata { authenticatorAttachment: "platform" }
 
@@ -44,11 +42,32 @@ export class NoPrfError extends Error {
 }
 
 /**
+ * Thrown when a passkey adapter is constructed without an rpId.
+ *
+ * The rpId is not configuration, it is the KEY SCOPE. K = HKDF(PRF(credential, rpId)), so the rpId
+ * decides which wallet a passkey opens — and every origin matching it can derive that key. It must be
+ * pinned by the operator, never inferred from a URL/hostname (serving the same app from two hosts would
+ * silently mint two different wallets). Both adapters (web, native) fail loud at construction on an
+ * absent/empty rpId — `rpId` is typed as required, but a JS caller, an env read, or an `as any` can
+ * still deliver undefined or "".
+ */
+export class MissingRpIdError extends Error {
+  constructor() {
+    super(
+      "A passkey adapter requires an explicit rpId. The rpId scopes the passkey PRF that IS the wallet " +
+        "key (K = HKDF(PRF(credential, rpId))) — it must be pinned by the operator, never inferred from " +
+        'a URL or hostname. Pass e.g. { rpId: "example.com" }.',
+    );
+    this.name = "MissingRpIdError";
+  }
+}
+
+/**
  * The System-1 platform seam. Web and React Native ship concrete adapters; tests inject a fake.
  * The PRF output is the only secret it surfaces and is consumed inside the sandbox only.
  *
- * PRF-OUTPUT OWNERSHIP CONTRACT: the `ArrayBuffer` returned by `authenticate()`, `discover()`, and
- * `authenticateWithEvidence()` (the `prfOutput`) is TRANSFERRED to the caller and is SINGLE-USE. The
+ * PRF-OUTPUT OWNERSHIP CONTRACT: the `ArrayBuffer` returned by `authenticate()` and `discover()`
+ * (the `prfOutput`) is TRANSFERRED to the caller and is SINGLE-USE. The
  * sandbox zeroes it after deriving K (derive → use → clear), so an adapter MUST return a FRESH buffer
  * per call and MUST NOT retain or re-return it. Production adapters (passkey/web.ts, passkey/native.ts)
  * already satisfy this — each assertion yields a new PRF output that is never kept. Fakes must too.
@@ -65,14 +84,4 @@ export interface PasskeyAdapter {
    * wallet this device has never seen) — constraining there would make picking impossible.
    */
   discover(opts?: { credentialId?: string }): Promise<DiscoveredPasskey>;
-  authenticateWithEvidence?(
-    credentialId: string,
-    transports: string[] | undefined,
-    challenge: string,
-  ): Promise<{ prfOutput: ArrayBuffer; assertion: AvokAssertionEvidence }>;
-  createWithEvidence?(
-    label: string,
-    userHandle: Uint8Array,
-    challenge: string,
-  ): Promise<PasskeyRegistration & { registration: AvokRegistrationEvidence }>;
 }
