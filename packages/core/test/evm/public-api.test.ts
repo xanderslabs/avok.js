@@ -8,9 +8,22 @@ test("public surface exposes the pipeline verbs and adapters", () => {
     "estimateNativeFee",
     "railFromContext", "getChainProfile",
     // 4337 sponsored rail (replaces the deleted bespoke relay client)
-    "createPaymaster7677", "createBundler", "buildUserOp", "getAvokUserOpHash", "toAvokSmartAccount",
+    "createPaymaster7677", "createBundler", "buildUserOp", "getAvokUserOpHash",
   ]) {
     expect(api[name as keyof typeof api], `missing export: ${name}`).toBeTypeOf("function");
+  }
+});
+
+test("does NOT re-export gas-model internals or the unused viem smart-account wrapper", () => {
+  // The raw self-pay gas constants + gas/price mechanics are internal (reached via pricing/resolve),
+  // and toAvokSmartAccount was a dead viem integration nothing wired (the sponsored rail signs the
+  // hash directly via buildUserOp + getAvokUserOpHash). A re-add should trip this, not slip in.
+  for (const internal of [
+    "BASE_TX_GAS", "AUTH_7702_GAS", "SELF_PAY_FEE_MUL", "SELF_PAY_TIP_MUL",
+    "selfPayEffectiveGasPrice", "selfPayGasEstimate",
+    "decodeCalls", "toAvokSmartAccount",
+  ]) {
+    expect(api).not.toHaveProperty(internal);
   }
 });
 

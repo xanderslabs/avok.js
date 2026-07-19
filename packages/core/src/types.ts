@@ -1,7 +1,8 @@
 import type { Address, Hex, TransactionSerializable, TypedDataDefinition } from "viem";
 import type { Signer, AuthorizationTriple, SignedAuthorizationLike } from "./channel/index.js";
 import type { ExportedWallet, VaultReader, AccessSlotEntry } from "./wallet/index.js";
-import type { Call, RpcClient, FetchLike, EvmChainProfile, AvokUserOperation } from "./evm/index.js";
+import type { Call, RpcClient, EvmChainProfile, AvokUserOperation } from "./evm/index.js";
+import type { FetchLike } from "./http.js";
 import type { RpcOverrides } from "@avokjs/contracts";
 import type { StorageAdapter } from "./storage.js";
 import type { NonceAllocator } from "./nonce.js";

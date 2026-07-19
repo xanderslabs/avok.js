@@ -13,17 +13,12 @@ export { createViemRpcClient } from "./rpc.js";
 // Pricing (self-pay native-cost estimate)
 export { estimateNativeFee } from "./pricing.js";
 
-// Gas model (self-pay)
-export {
-  BASE_TX_GAS, AUTH_7702_GAS,
-  SELF_PAY_FEE_MUL, SELF_PAY_TIP_MUL, selfPayFees, selfPayEffectiveGasPrice, selfPayGasEstimate,
-} from "./gas-model.js";
+// Gas model (self-pay) — only the send-time fee policy is public. The raw gas constants and the
+// self-pay gas/price internals stay module-private (reached via pricing.ts / resolve.ts).
+export { selfPayFees } from "./gas-model.js";
 
 // Vault reader
 export { createViemVaultReader } from "./vault-reader.js";
-
-// Injectable fetch shape (formerly re-exported from the deleted bespoke paymaster client)
-export type { FetchLike } from "./http.js";
 
 // ERC-7677 paymaster client
 export type { Paymaster7677, Paymaster7677Options, Paymaster7677StubParams, Paymaster7677DataParams } from "./paymaster-7677.js";
@@ -33,15 +28,15 @@ export { createPaymaster7677 } from "./paymaster-7677.js";
 export type { Bundler, BundlerOptions, AvokUserOperation } from "./bundler.js";
 export { createBundler } from "./bundler.js";
 
-// v0.8 UserOp builder + Connection-signed custom smart account
-export type { UserOpSigner, BuildUserOpArgs, ToAvokSmartAccountArgs } from "./userop.js";
-export { buildUserOp, getAvokUserOpHash, toAvokSmartAccount } from "./userop.js";
+// v0.8 UserOp builder (the Avok Connection signs the hash directly; bundler.ts submits the raw UserOp).
+export type { BuildUserOpArgs } from "./userop.js";
+export { buildUserOp, getAvokUserOpHash } from "./userop.js";
 
 // Pipeline
 export type { ResolveArgs } from "./resolve.js";
 export { resolveBatch, isDelegatedTo } from "./resolve.js";
 export type { SimulateDeps } from "./simulate.js";
-export { simulateResolved, decodeCalls } from "./simulate.js";
+export { simulateResolved } from "./simulate.js";
 export { buildSelfPayCalldata } from "./sim-methods.js";
 export type { TrackDeps } from "./track.js";
 export { getReceiptStatus } from "./track.js";

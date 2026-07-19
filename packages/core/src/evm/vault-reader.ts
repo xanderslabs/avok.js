@@ -25,9 +25,11 @@ export function createViemVaultReader(rpc: RpcClient): VaultReader {
         }
         throw new VaultUnreadableError(e);
       }
-      // `version` (the monotonic rollback counter) is returned but unused here.
+      // `version` (the monotonic rollback counter) is returned but unused here. Classify absence
+      // IDENTICALLY to wallet-core's registry reader (vault-registry.ts): inactive, empty, or missing
+      // blob all mean "no access slot" — the two readers must never disagree about what that is.
       const [blob, active] = raw;
-      if (!active || blob === "0x") return null;
+      if (!active || !blob || blob === "0x") return null;
       return hexToBytes(blob);
     },
     async accessSlotCount(address: Address) {

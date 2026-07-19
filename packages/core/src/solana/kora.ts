@@ -14,10 +14,8 @@ import type {
  * the SDK's published types as the source of truth for the wire format.
  */
 
-export type FetchLike = (
-  url: string,
-  init?: { method?: string; headers?: Record<string, string>; body?: string },
-) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
+import type { FetchLike } from "../http.js";
+export type { FetchLike };
 
 /**
  * A refusal Kora EXPLAINED. Phrased exactly like the EVM paymaster's, because `classifySendError`
