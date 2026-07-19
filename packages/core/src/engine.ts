@@ -26,7 +26,12 @@ export { NoPrfError } from "./wallet/passkey/adapter.js";
 export { VaultUnreadableError } from "./wallet/index.js";
 export { UserRejectedError } from "./channel/index.js";
 export { KoraRejectedError } from "./solana/index.js";
-export { EnrolmentUnaffordableError } from "./own-origin/connection.js";
+export {
+  EnrolmentUnaffordableError,
+  OrphanedCredentialError,
+  SlotUnreachableError,
+  EnrolmentBlockedError,
+} from "./own-origin/connection.js";
 
 export { createOwnOriginConnection } from "./own-origin/connection.js";
 export { createSharedOriginConnection } from "./shared-origin/connection.js";

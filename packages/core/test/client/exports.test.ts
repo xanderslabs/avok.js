@@ -9,6 +9,7 @@ describe("catchable error surface", () => {
     for (const name of [
       "UnsupportedFeeTokenError", "UserRejectedError", "NoPrfError",
       "KoraRejectedError", "EnrolmentUnaffordableError", "VaultUnreadableError",
+      "OrphanedCredentialError", "SlotUnreachableError", "EnrolmentBlockedError",
     ]) {
       expect(api, `missing error export: ${name}`).toHaveProperty(name);
       expect((api as Record<string, unknown>)[name]).toBeTypeOf("function");

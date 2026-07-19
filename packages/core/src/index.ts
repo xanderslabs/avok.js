@@ -30,6 +30,11 @@ export {
   KoraRejectedError,
   EnrolmentUnaffordableError,
   VaultUnreadableError,
+  // Own-origin lifecycle errors an app catches to pick UI: repair (orphan), retry (unreachable /
+  // enrolment blocked), top-up (unaffordable).
+  OrphanedCredentialError,
+  SlotUnreachableError,
+  EnrolmentBlockedError,
 } from "./engine.js";
 
 // Re-export webStorage so callers can supply the same adapter to other seams.

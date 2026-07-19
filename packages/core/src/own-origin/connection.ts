@@ -48,7 +48,6 @@ import {
   type PairRequest,
   type PairAck,
   type ExportedWallet,
-  type EncryptedKeyBlob,
 } from "../wallet/index.js";
 import { createSiweMessage } from "viem/siwe";
 import { base58 } from "@scure/base";
