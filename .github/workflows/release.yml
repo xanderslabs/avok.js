@@ -35,7 +35,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm -r --filter "./packages/*" build
+      # Build contracts too: @avokjs/core imports @avokjs/contracts, whose types resolve
+      # through its built dist/. Omitting it fails core's build with "Cannot find module".
+      - run: pnpm -r --filter "./packages/*" --filter "./contracts" build
 
       - uses: changesets/action@v1
         with:
