@@ -12,7 +12,14 @@
  * only holds for the emitted artifact.
  */
 import { useEffect, useRef, useState } from "react";
-import { runAuthPopup, authPopupDeps, type AuthPopupConfig, type AuthPopupView } from "@avokjs/core/auth-popup";
+import {
+  runAuthPopup,
+  runAuthRedirect,
+  authPopupDeps,
+  type AuthPopupConfig,
+  type AuthPopupView,
+} from "@avokjs/core/auth-popup";
+import { decodeRequestUrl } from "@avokjs/core/channel";
 
 type Phase =
   | { kind: "idle" }
@@ -37,8 +44,16 @@ export function AuthPopup({ config }: { config: AuthPopupConfig }): React.JSX.El
           setPhase({ kind: "consent", lines, error: opts?.error, rejectOnly: opts?.rejectOnly ?? false });
         }),
     };
-    return runAuthPopup({ ...authPopupDeps(config), view });
-    // Mount-once: the popup services exactly one opener session. config is captured at mount.
+    // ONE PAGE, BOTH CLIENTS. A request in the fragment means a redirect-driven native session (no
+    // opener to talk to, answer leaves by navigation); anything else is a browser popup. Detected
+    // from the request rather than the user agent, because UA sniffing is guesswork that breaks on
+    // every new browser while the fragment is a fact about this navigation.
+    const deps = { ...authPopupDeps(config), view };
+    if (decodeRequestUrl(window.location.href)) {
+      return runAuthRedirect(deps as Parameters<typeof runAuthRedirect>[0]);
+    }
+    return runAuthPopup(deps);
+    // Mount-once: the page services exactly one session. config is captured at mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

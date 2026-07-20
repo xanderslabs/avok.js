@@ -20,7 +20,14 @@ import {
 import { getChainProfile } from "@avokjs/contracts";
 import { performSign } from "./sign/perform-sign.js";
 import type { SignConsentRequest } from "./sign/consent.js";
-import { runAuthPopup, type AuthPopupConfig, type AuthPopupCeremonyDeps, type AuthPopupAccount } from "./ceremony.js";
+import {
+  runAuthPopup,
+  runAuthRedirect,
+  type AuthPopupConfig,
+  type AuthPopupCeremonyDeps,
+  type AuthPopupAccount,
+} from "./ceremony.js";
+import { decodeRequestUrl } from "../channel/redirect-protocol.js";
 import { createDomView } from "./view-dom.js";
 
 /**
@@ -81,10 +88,29 @@ export function authPopupDeps(config: AuthPopupConfig): Omit<AuthPopupCeremonyDe
   };
 }
 
-/** Mount the wallet-sandbox popup into `root` (defaults to #root). Returns a disposer. */
+/**
+ * Mount the wallet sandbox into `root` (defaults to #root). Returns a disposer.
+ *
+ * ONE PAGE SERVES BOTH CLIENTS, and it decides which by looking at how it was opened rather than by
+ * being configured. A browser popup arrives with an opener to talk to and an empty fragment; a native
+ * in-app browser session arrives with the request IN the fragment and nobody to talk to. The operator
+ * hosts one page and it works for both, because asking them to deploy two — or to guess a flag — is
+ * how one of the two ends up untested and broken.
+ *
+ * Detection is on the REQUEST, not on the user agent. Sniffing for "am I in a WebView" is guesswork
+ * that breaks on every new browser; the presence of a request in the fragment is a fact about this
+ * navigation and cannot be wrong.
+ */
 export function mountAuthPopup(config: AuthPopupConfig, root?: HTMLElement): () => void {
   const el = root ?? document.getElementById("root");
   if (!el) throw new Error('mountAuthPopup: no root element (pass one, or add <div id="root"> to the page)');
   const view = createDomView(el);
-  return runAuthPopup({ ...authPopupDeps(config), view });
+  const deps = { ...authPopupDeps(config), view };
+
+  // A request in the fragment means a redirect-driven session: there is no opener, and the answer
+  // has to leave by navigation.
+  if (decodeRequestUrl(window.location.href)) {
+    return runAuthRedirect(deps as Parameters<typeof runAuthRedirect>[0]);
+  }
+  return runAuthPopup(deps);
 }
