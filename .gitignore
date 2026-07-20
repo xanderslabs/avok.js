@@ -16,4 +16,3 @@ artifacts
 *.tsbuildinfo
 .DS_Store
 .superpowers/
-misc/
