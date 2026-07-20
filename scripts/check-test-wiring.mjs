@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 // Guards the gate itself.
 //
@@ -76,4 +76,74 @@ for (const [where, body] of sources) {
   }
 }
 
-console.log(`Test wiring intact: build precedes typecheck; every --filter resolves (${projects.length} projects).`);
+// The `--filter` check above closes one instance of a shape this repo keeps hitting: a SELECTOR that
+// silently narrows to nothing while the command over it still exits 0. Absence is indistinguishable
+// from success. Three instances landed before anyone noticed — a stale --filter, a deleted demos
+// folder, and `No test files found, exiting with code 0` from a package whose suite had gone empty.
+//
+// The two below cover the remaining selectors the gate leans on. Neither is hypothetical: rename
+// packages/ and biome's globs match nothing, so `format:check` and `lint` — the gate this repo just
+// adopted — would both pass having read zero files, which is the exact defect they exist to prevent.
+
+const IGNORED_DIRS = new Set(["node_modules", "dist", "out", "cache", "lib", "app-dist", "app-inlined"]);
+const walk = (dir, out = []) => {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith(".") || IGNORED_DIRS.has(entry.name)) continue;
+    const full = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) walk(full, out);
+    else out.push(full);
+  }
+  return out;
+};
+const repoFiles = walk(".").map((f) => f.slice(2)); // strip the leading "./"
+
+// Order matters: `**/` must be consumed before a bare `*`, or the second rule eats the first's stars.
+const globToRegExp = (glob) =>
+  new RegExp(
+    `^${glob
+      .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+      .replaceAll("**/", "\u0000")
+      .replaceAll("**", "\u0001")
+      .replace(/\*/g, "[^/]*")
+      .replaceAll("\u0000", "(?:[^/]+/)*")
+      .replaceAll("\u0001", ".*")}$`,
+  );
+
+// 1. Every positive glob in biome's `files.includes` must match a real file. A negated pattern (`!`)
+//    matching nothing is harmless — it only ever removes — so those are skipped.
+const biome = JSON.parse(readFileSync("biome.json", "utf8"));
+for (const glob of biome.files?.includes ?? []) {
+  if (glob.startsWith("!")) continue;
+  const rx = globToRegExp(glob);
+  if (!repoFiles.some((f) => rx.test(f))) {
+    fail(
+      `biome.json includes \`${glob}\`, which matches no file.\n` +
+        "  biome exits 0 having checked nothing, so `format:check` and `lint` would report success\n" +
+        "  over an empty set. Drop the glob, or fix the path it was meant to cover.",
+    );
+  }
+}
+
+// 2. Every package claiming a `test` script must own at least one test file. vitest prints
+//    "No test files found, exiting with code 0" and passes — which is how an empty suite reads as a
+//    green suite. Matched on filename rather than a fixed directory because the layout varies:
+//    packages/* keep tests in test/, contracts keeps them beside the source in src-ts/.
+for (const project of projects) {
+  if (project.path === ".") continue; // the root's `test` script is the gate itself, not a suite
+  const { scripts: own = {} } = JSON.parse(readFileSync(`${project.path}/package.json`, "utf8"));
+  if (!own.test) continue;
+  const dir = project.path.slice(2); // "./packages/core" -> "packages/core"
+  const tests = repoFiles.filter((f) => f.startsWith(`${dir}/`) && /\.test\.(ts|tsx|mts)$/.test(f));
+  if (tests.length === 0) {
+    fail(
+      `${project.name} defines a \`test\` script but owns no *.test.ts file.\n` +
+        "  vitest reports `No test files found, exiting with code 0` — an empty suite is\n" +
+        "  indistinguishable from a passing one. Add the tests back, or drop the script.",
+    );
+  }
+}
+
+console.log(
+  `Test wiring intact: build precedes typecheck; every --filter resolves (${projects.length} projects); ` +
+    "biome globs and test suites are non-empty.",
+);
