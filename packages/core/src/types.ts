@@ -316,10 +316,10 @@ export interface ClientConfig<C extends Connection = Connection> {
    * tell those apart — a deliberately unsponsored chain and a mistyped `PAYMASTER_URL` both look like
    * an absent string. This flag is how the app states which it meant.
    *
-   * Set it if your product PROMISES gasless transactions. The failure it prevents is not a surprise
-   * charge, it is worse: an app onboarding users who hold no native gas at all sees the degraded send
-   * fail on insufficient funds, an error that names a balance rather than the missing endpoint that
-   * caused it.
+   * Set it if your product promises users they can pay fees in a token. The failure it prevents is
+   * not a surprise charge in the wrong currency — the users this rail exists for hold the fee TOKEN
+   * and no native gas, so a degraded send does not charge them, it fails outright on insufficient
+   * funds, an error naming a native balance rather than the missing endpoint that caused it.
    *
    * Sponsorship still has to be ASKED for. A send with no fee token is self-pay by intent and is never
    * affected by this flag.

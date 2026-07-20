@@ -1,7 +1,18 @@
 # Sponsored transactions are bring-your-own
 
-Avok can send transactions the user does not pay gas for. It does **not** provide the infrastructure
-that makes that possible, and it never will.
+Avok can send transactions whose fee the user pays in an **ERC-20 token or SPL mint** instead of the
+chain's native gas asset. It does **not** provide the infrastructure that makes that possible, and it
+never will.
+
+Be precise about what "sponsored" means here, because the word is overloaded across the ecosystem.
+Avok's sponsored rail is a **token paymaster**: the user holds a paymaster-supported token, the fee is
+charged in that token, and the paymaster+bundler collects it and pays the chain in native gas on the
+user's behalf. The user still pays — just not in a currency they may not hold.
+
+It is NOT a verifying paymaster, where an operator absorbs the fee and the user pays nothing. That is
+why a fee token is required to reach this rail: **the token is the payment**, so a send with no fee
+token has nothing to charge and is self-pay by definition. An operator who wants to absorb the cost
+does that at their own paymaster, as a policy on their side; from the SDK the call is identical.
 
 There is no default bundler, no default paymaster, no default Kora endpoint. A sponsored send is
 reachable only through a URL or a client **you** pass in. Supply nothing and every send is self-pay —
@@ -112,9 +123,10 @@ before anything is signed or broadcast, naming which side is missing. Self-pay s
 or omitted) are unaffected — the flag means "when I ask for sponsorship, mean it", not "every send
 must be sponsored".
 
-Worth being concrete about what the default costs you when it is wrong. The users sponsorship exists
-for hold **no native gas at all**, so the degraded send does not quietly charge them — it fails on
-insufficient funds, an error naming a balance rather than the missing endpoint that caused it.
+Worth being concrete about what the default costs you when it is wrong. The users this rail exists for
+hold the fee **token** and **no native gas**, so a degraded send does not quietly charge them in the
+wrong currency — it fails outright on insufficient funds, an error naming a native balance rather than
+the missing endpoint that caused it.
 
 **`receipt.rail` is the only thing that tells you which happened.** It is `"sponsored"` or
 `"self-pay"`. If your app promises users gasless transactions, check it rather than assuming your

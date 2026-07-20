@@ -6,9 +6,10 @@
  * never reached production — and nothing in the SDK can tell those apart, because a deliberately
  * unsponsored chain and a mistyped env var are both an absent string.
  *
- * The failure this prevents is not a surprise charge. An app onboarding users who hold no native gas
- * at all — the case sponsorship exists for — sees the degraded send fail on insufficient funds, an
- * error naming a balance rather than the missing endpoint that caused it.
+ * The failure this prevents is not a surprise charge in the wrong currency. The users this rail
+ * exists for hold the fee TOKEN and no native gas, so a degraded send does not charge them at all —
+ * it fails outright on insufficient funds, an error naming a native balance rather than the missing
+ * endpoint that caused it.
  *
  * MUTATION: deleting the `if (requireSponsorship) throw` branch in resolveFeeToken (evm.ts) must fail
  * the "throws" tests below. Verified when written.
