@@ -58,6 +58,7 @@ export type {
 //     a second import of @avokjs/core). MissingRpIdError is intentionally absent (fail-fast config error). ───
 export {
   UnsupportedFeeTokenError,
+  SponsorshipUnavailableError,
   UserRejectedError,
   NoPrfError,
   KoraRejectedError,

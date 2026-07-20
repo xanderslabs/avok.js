@@ -49,6 +49,7 @@ export type {
 // @avokjs/react. MissingRpIdError is intentionally absent (fail-fast config error, not runtime-catchable).
 export {
   UnsupportedFeeTokenError,
+  SponsorshipUnavailableError,
   UserRejectedError,
   NoPrfError,
   KoraRejectedError,

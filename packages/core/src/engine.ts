@@ -17,6 +17,7 @@ export type { AvokClientFor, UseOnlyAvokClient, FullAvokClient } from "./client/
 export type { TxOpts, EvmNamespace, EvmFeeToken } from "./client/evm.js";
 export type { SolanaNamespace, SolanaTxOpts, SolanaResolved, SolanaSimulation, FeeToken } from "./client/solana.js";
 export { UnsupportedFeeTokenError } from "./client/fee-token-error.js";
+export { SponsorshipUnavailableError } from "./client/sponsorship-error.js";
 
 // Catchable error types — the runtime errors a consumer handles BY TYPE (matching
 // UnsupportedFeeTokenError above), surfaced on the main barrel even though the low-level subpaths keep

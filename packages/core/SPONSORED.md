@@ -94,10 +94,27 @@ await client.evm.send(calls, { chainId, feeToken: USDC });  // sponsored, if inf
 await client.evm.send(calls, { chainId, feeToken: null });  // self-pay, explicitly
 ```
 
-**Without infra, a fee token is silently ignored.** Asking for `feeToken` on a client with no bundler
-and paymaster does not throw — the send degrades to self-pay and the user pays native gas
-(`SPEC §1`: self-pay everywhere; sponsored only where a bundler+paymaster exist). The transaction
-succeeds, but not the way you asked.
+**Without infra, a fee token is silently ignored — unless you say otherwise.** Asking for `feeToken`
+on a client with no bundler and paymaster does not throw by default: the send degrades to self-pay
+(`SPEC §1`: self-pay everywhere; sponsored only where a bundler+paymaster exist). That is deliberate,
+so one codebase can sponsor on the chains where infra exists and pay natively on the ones where it
+does not, without branching.
+
+It is also indistinguishable from a mistyped `PAYMASTER_URL`, because both are an absent string. If
+your product promises gasless transactions, say so:
+
+```ts
+createAvokClient({ connection, paymasterUrl, bundlerUrl, requireSponsorship: true });
+```
+
+A fee-token send that cannot reach the sponsored rail then throws `SponsorshipUnavailableError`,
+before anything is signed or broadcast, naming which side is missing. Self-pay sends (`feeToken: null`
+or omitted) are unaffected — the flag means "when I ask for sponsorship, mean it", not "every send
+must be sponsored".
+
+Worth being concrete about what the default costs you when it is wrong. The users sponsorship exists
+for hold **no native gas at all**, so the degraded send does not quietly charge them — it fails on
+insufficient funds, an error naming a balance rather than the missing endpoint that caused it.
 
 **`receipt.rail` is the only thing that tells you which happened.** It is `"sponsored"` or
 `"self-pay"`. If your app promises users gasless transactions, check it rather than assuming your

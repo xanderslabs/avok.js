@@ -307,6 +307,26 @@ export interface ClientConfig<C extends Connection = Connection> {
   bundlerUrl?: string;
 
   /**
+   * Fail instead of silently self-paying when a send asks for a fee token and sponsorship is not
+   * reachable. Defaults to `false`, which is the graceful behaviour: a fee token on a chain with no
+   * bundler+paymaster degrades to self-pay (SPEC §1), so one codebase can sponsor on the chains where
+   * infra exists and pay natively on the ones where it does not, without branching.
+   *
+   * That default is right for a multi-chain app and wrong for a MISCONFIGURED one, and the SDK cannot
+   * tell those apart — a deliberately unsponsored chain and a mistyped `PAYMASTER_URL` both look like
+   * an absent string. This flag is how the app states which it meant.
+   *
+   * Set it if your product PROMISES gasless transactions. The failure it prevents is not a surprise
+   * charge, it is worse: an app onboarding users who hold no native gas at all sees the degraded send
+   * fail on insufficient funds, an error that names a balance rather than the missing endpoint that
+   * caused it.
+   *
+   * Sponsorship still has to be ASKED for. A send with no fee token is self-pay by intent and is never
+   * affected by this flag.
+   */
+  requireSponsorship?: boolean;
+
+  /**
    * RPC endpoints, per chain. Avok ships NO third-party provider as a default: an RPC is a trust
    * boundary (it answers "what address does `vitalik.eth` resolve to?", and a liar there redirects
    * the user's funds), so the integrator picks who they trust.

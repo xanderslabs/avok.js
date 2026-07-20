@@ -32,6 +32,7 @@ import {
 } from "./sponsored-userop.js";
 import { randomNonceAllocator } from "../nonce.js";
 import { UnsupportedFeeTokenError } from "./fee-token-error.js";
+import { SponsorshipUnavailableError } from "./sponsorship-error.js";
 import type { ClientConfig, ScopedSigner } from "../types.js";
 
 export type TxOpts = { chainId?: number; feeToken?: Address | null };
@@ -121,7 +122,7 @@ export type AccessSlotWriter = {
 };
 
 export function createEvmNamespace(config: ClientConfig): EvmNamespace & { readonly __accessSlot: AccessSlotWriter } {
-  const { connection, paymasterUrl, bundlerUrl, deps } = config;
+  const { connection, paymasterUrl, bundlerUrl, requireSponsorship, deps } = config;
   const deadlineWindowSeconds = BigInt(config.defaultDeadlineSeconds ?? 3600);
 
   function requireAddress(): Address {
@@ -175,7 +176,19 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
     // No 4337 infra on this deployment (no bundler+paymaster) ⇒ a sponsored attempt falls back to
     // self-pay (SPEC §1: "self-pay everywhere; sponsored only where a bundler+paymaster exist"). Don't
     // validate/forward the token — the chain will simply be paid in native.
-    if (!canSponsor()) return null;
+    //
+    // Unless the app said it MEANT it. The degrade is graceful for a multi-chain app and silent for a
+    // misconfigured one, and nothing here can tell those apart, so `requireSponsorship` is the app
+    // declaring which case it is in. Thrown before anything is signed or sent.
+    if (!canSponsor()) {
+      if (requireSponsorship) {
+        throw new SponsorshipUnavailableError(chainId, {
+          hasPaymaster: Boolean(paymasterUrl || deps?.paymaster),
+          hasBundler: Boolean(bundlerUrl || deps?.bundler),
+        });
+      }
+      return null;
+    }
     // A fee token is an ERC-20 address, and addresses are chain-specific. Validate against the
     // TARGET chain's registry tokens — never forward a token that means nothing here.
     if (!feeTokens(chainId).some((t) => t.address.toLowerCase() === token.toLowerCase())) {

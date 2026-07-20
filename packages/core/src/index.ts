@@ -34,13 +34,15 @@ export type {
 } from "./engine.js";
 
 // The catchable runtime error types, exported as values so apps can `instanceof`-narrow them:
-// UnsupportedFeeTokenError (fee token not supported on the target chain), UserRejectedError (the user
+// UnsupportedFeeTokenError (fee token not supported on the target chain), SponsorshipUnavailableError
+// (requireSponsorship was set and the sponsored rail is not reachable), UserRejectedError (the user
 // pressed Reject in the signing popup), NoPrfError (the passkey provider lacks PRF), KoraRejectedError
 // (the Solana paymaster refused), EnrolmentUnaffordableError (the wallet can't pay for the access-slot
 // write), VaultUnreadableError (the chain did not answer — retryable). MissingRpIdError is intentionally
 // not here: it is a fail-fast config error, not a condition to catch.
 export {
   UnsupportedFeeTokenError,
+  SponsorshipUnavailableError,
   UserRejectedError,
   NoPrfError,
   KoraRejectedError,
