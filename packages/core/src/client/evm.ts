@@ -12,6 +12,7 @@ import {
   listFeeTokens,
   simulateResolved,
   getReceiptStatus,
+  type AvokUserOperation,
   type Bundler,
   type Call,
   type EvmChainProfile,
@@ -108,15 +109,26 @@ export type PreparedAccessSlotWrite = {
   suggestedTip: Awaited<ReturnType<RpcClient["getMaxPriorityFeePerGas"]>>;
   /** The chain's base fee — the price it actually charges. Not derivable from gasPrice. */
   baseFee: Awaited<ReturnType<RpcClient["getBaseFeePerGas"]>>;
+  /** SPONSORED only — the post-handshake UserOperation, attached by `sponsorWrite`. Absent on the
+   *  self-pay rail, and its presence is what tells `sign`/`broadcast` which rail they are on. */
+  sponsored?: PreparedSponsoredUserOp;
 };
 
-// Access-slot writes are SELF-PAY (SPEC §5: internal management writes default to self-pay). The
-// sponsored rail is now a 4337 UserOp, which the three-phase key-isolated writer does not use.
-export type SignedAccessSlotWrite = { rail: "self-pay"; raw: Hex };
+// An access-slot write can now take either rail. Self-pay signs a raw type-4/1559 transaction;
+// sponsored signs a 4337 UserOperation whose fee the paymaster charges in a token.
+//
+// The two are NOT symmetric in cost, and the asymmetry is inherent rather than an oversight: the
+// self-pay signature is built entirely in-process from a same-length probe, so sealing and signing
+// fit in ONE key scope. Sponsored must fetch a paymaster quote over the REAL calldata — which only
+// exists after the blob is sealed — so it is seal (key) → quote (IO) → sign (key), and K may never
+// be live across that IO. Two scopes, therefore two passkey gestures.
+export type SignedAccessSlotWrite = { rail: "self-pay"; raw: Hex } | { rail: "sponsored"; userOp: AvokUserOperation };
 
 /** The three-phase access-slot writer. See `AccessSlotWriter` on AccessCtx for why it is split this way. */
 export type AccessSlotWriter = {
   prepare(probe: Call[], chainId: number): Promise<PreparedAccessSlotWrite>;
+  /** SPONSORED only. IO, no key: the 7677 handshake over the REAL calls. */
+  sponsor(p: PreparedAccessSlotWrite, calls: Call[], feeToken: Address): Promise<PreparedAccessSlotWrite>;
   sign(p: PreparedAccessSlotWrite, calls: Call[], signer: ScopedSigner): Promise<SignedAccessSlotWrite>;
   broadcast(p: PreparedAccessSlotWrite, signed: SignedAccessSlotWrite): Promise<{ id: string }>;
 };
@@ -246,8 +258,45 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
       return { rpc, batch, txNonce, suggestedTip, baseFee };
     },
 
+    /** SPONSORED only. IO, NO KEY — the 7677 handshake, over the calls the blob is already sealed
+     *  into. Runs BETWEEN the two key scopes, which is the whole reason this rail costs two
+     *  gestures: the paymaster signs over the real calldata, and the real calldata needs K. */
+    async sponsor(p: PreparedAccessSlotWrite, calls: Call[], feeToken: Address): Promise<PreparedAccessSlotWrite> {
+      if (!canSponsor()) {
+        throw new SponsorshipUnavailableError(p.batch.chainId, {
+          hasPaymaster: Boolean(paymasterUrl || deps?.paymaster),
+          hasBundler: Boolean(bundlerUrl || deps?.bundler),
+        });
+      }
+      // Validate against the TARGET chain, exactly as a send would — a token that means nothing here
+      // must not reach the paymaster.
+      if (!feeTokens(p.batch.chainId).some((t) => t.address.toLowerCase() === feeToken.toLowerCase())) {
+        throw new UnsupportedFeeTokenError(feeToken, p.batch.chainId);
+      }
+      const batch: ResolvedBatch = { ...p.batch, rail: "sponsored", feeToken, userCalls: calls };
+      return { ...p, batch, sponsored: await prepareSponsored(p.rpc, batch) };
+    },
+
     /** PURE — no IO. Runs inside the caller's single key scope. */
     async sign(p: PreparedAccessSlotWrite, calls: Call[], signer: ScopedSigner): Promise<SignedAccessSlotWrite> {
+      // SPONSORED: the operation is already built and quoted; this scope only signs it. The calls are
+      // ignored here on purpose — they were baked into the UserOp the paymaster priced, and
+      // substituting anything now would invalidate the quote.
+      if (p.sponsored) {
+        const userOp = p.sponsored.op;
+        userOp.signature = await signer.signUserOp({ userOp, chainId: p.batch.chainId });
+        if (p.batch.authorization) {
+          // The 7702 authorization rides the UserOp, signed over the EOA's own nonce (not txNonce + 1:
+          // the EntryPoint submits, so the wallet is not the transaction sender here).
+          const signedAuth = await signer.signAuthorization({
+            chainId: p.batch.authorization.chainId,
+            address: p.batch.authorization.address,
+            nonce: p.txNonce,
+          });
+          (userOp as { authorization?: unknown }).authorization = signedAuth;
+        }
+        return { rail: "sponsored", userOp };
+      }
       // Substituting userCalls is sound because the probe is the same LENGTH (see above), so every
       // resolved field — authorization, nonce, fee — is the one the real calls would have produced.
       // Access-slot writes are self-pay (SPEC §5), so there is only the self-pay signing path here.
@@ -284,6 +333,11 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
     },
 
     async broadcast(p: PreparedAccessSlotWrite, signed: SignedAccessSlotWrite): Promise<{ id: string }> {
+      // A sponsored id is the bundler's userOpHash — an INTENT id, not a transaction hash. It will
+      // never appear on an explorer, and nothing may present it as a confirmation.
+      if (signed.rail === "sponsored") {
+        return { id: await sponsoredInfra(p.rpc).bundler.sendUserOperation(signed.userOp) };
+      }
       return { id: await p.rpc.sendRawTransaction(signed.raw) };
     },
   };

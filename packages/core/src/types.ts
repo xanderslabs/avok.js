@@ -45,10 +45,10 @@ export interface AccessCtx {
    *
    * It simulates a representative access-slot write (which resolves the EIP-7702 authorization for an
    * undelegated wallet, exactly as the real send does) and compares the cost, plus a buffer, against
-   * the balance that will actually pay: native gas in self-pay, the fee token in sponsored mode. The
+   * the balance that will actually pay: native gas in self-pay, the fee TOKEN when one is passed. The
    * buffer means the threshold is deliberately ABOVE the true cost — it is a gate, not a quote.
    */
-  assertCanAffordAccessSlot(chainId: number): Promise<void>;
+  assertCanAffordAccessSlot(chainId: number, feeToken?: Address | null): Promise<void>;
 
   /**
    * THE ACCESS-SLOT WRITER — one user action, ONE passkey gesture.
@@ -72,6 +72,18 @@ export interface AccessCtx {
    * `prepared` and `signed` are OPAQUE handles — pass them back unchanged.
    */
   prepareWrite(probe: Call[], chainId: number): Promise<unknown>;
+  /**
+   * SPONSORED ONLY, and the reason this rail costs a second gesture.
+   *
+   * The ERC-7677 handshake must run over the REAL calldata, because the paymaster signs a hash that
+   * includes it — and the real calldata contains the sealed blob, which only exists once K has been
+   * live. So the order is unavoidably seal (key) → quote (IO) → sign (key), and K may not be live
+   * across a network round-trip. Self-pay needs none of this: its signature is built entirely
+   * in-process from a same-length probe, which is why it stays a single gesture.
+   *
+   * IO, NO KEY. Returns a new opaque `prepared` carrying the sponsored UserOperation.
+   */
+  sponsorWrite(prepared: unknown, calls: Call[], feeToken: Address): Promise<unknown>;
   /** PURE. Must be called INSIDE a single key scope, with that scope's signer. Never does IO. */
   signWrite(prepared: unknown, calls: Call[], signer: ScopedSigner): Promise<unknown>;
   broadcastWrite(prepared: unknown, signed: unknown): Promise<{ id: string }>;
@@ -85,7 +97,18 @@ export interface AccessCtx {
 export type ScopedSigner = Pick<
   Signer,
   "signMessage" | "signTypedData" | "signSiwe" | "signAuthorization" | "signTransaction"
->;
+> & {
+  /**
+   * Sign a UserOperation inside an ALREADY-OPEN key scope — the sponsored rail's counterpart to
+   * `signTransaction`, used by the access-slot writer when the fee is paid in a token.
+   *
+   * It takes the OPERATION, not a hash, deliberately. `validateUserOp` checks a raw ecrecover over
+   * the userOpHash, so a hash-taking signer would be an unrestricted signing oracle over the wallet
+   * key: hand it any 32 bytes and it signs them. Deriving the hash here instead means this can only
+   * ever sign something that is genuinely a UserOperation for this chain.
+   */
+  signUserOp(args: { userOp: AvokUserOperation; chainId: number }): Promise<Hex>;
+};
 
 /**
  * Connection is the USE-ONLY custody surface: the Signer verbs plus continuation,
@@ -194,7 +217,10 @@ export interface SelfCustodyConnection extends Connection {
    * device" is ever reachable. Handles only ciphertext; no plaintext key is produced. Idempotent:
    * returns `txId: "noop"` when the slot is already stored.
    */
-  addPasskey(ctx: AccessCtx): Promise<{ slotId: Hex; txId: string; passkeyCount: number }>;
+  addPasskey(
+    ctx: AccessCtx,
+    opts?: { feeToken?: Address | null },
+  ): Promise<{ slotId: Hex; txId: string; passkeyCount: number }>;
 
   /** The roster a settings screen needs: every access slot on the anchor chain WITH the domain that
    *  enrolled it, each with its enrollment date and an `isThisDevice` flag. There is no cross-chain

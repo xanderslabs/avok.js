@@ -1,4 +1,4 @@
-import { type Hex } from "viem";
+import { type Address, type Hex } from "viem";
 import { type AccessSlotEntry } from "../wallet/index.js";
 import { isDelegatedTo, createViemVaultReader } from "../evm/index.js";
 import { evmRpcUrl } from "@avokjs/contracts";
@@ -67,7 +67,7 @@ export interface FullAvokClient extends UseOnlyAvokClient {
    * the new device/domain and needs no chain access. The facade builds the on-chain AccessCtx.
    */
   enrollAccessSlot: {
-    (): Promise<{ slotId: Hex; txId: string; passkeyCount: number }>;
+    (o?: { feeToken?: Address | null }): Promise<{ slotId: Hex; txId: string; passkeyCount: number }>;
     readonly viaPairing: {
       holder: Omit<SelfCustodyConnection["pairing"]["holder"], "invite" | "complete"> & {
         invite(): Promise<{ qr: string }>;
@@ -203,7 +203,7 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
        * would rather tell a user "top up" and be slightly wrong than mint them a passkey that opens
        * nothing.
        */
-      assertCanAffordAccessSlot: async (chainId: number) => {
+      assertCanAffordAccessSlot: async (chainId: number, feeToken?: Address | null) => {
         const addr = connection.account()?.evm.address;
         if (!addr) throw new Error("No wallet active");
 
@@ -213,8 +213,11 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
           encryptedBlob: new Uint8Array(61).fill(0xab),
           encryptedMeta: new Uint8Array(93).fill(0xcd),
         });
-        // Internal management writes are SELF-PAY by default (SPEC §5 — no client-level fee token).
-        const sim = await evm.simulate([probe], { chainId, feeToken: null });
+        // The gate must price the rail the caller CHOSE. Passing null unconditionally is what kept the
+        // sponsored branch below unreachable: `sim.fee` is populated on the sponsored rail only, so a
+        // self-pay simulation could never produce it, and a token-paying user was measured against a
+        // native balance they may not have at all.
+        const sim = await evm.simulate([probe], { chainId, feeToken: feeToken ?? null });
 
         if (sim.fee) {
           // Sponsored: the paymaster advances the gas and the user repays in the fee token, so the fee
@@ -242,9 +245,14 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
 
       submit: (calls: Call[], { chainId }) => evm.send(calls, { chainId, feeToken: null }),
 
-      // ONE gesture for an access-slot write: resolve without the key, seal AND sign inside a single scope,
+      // SELF-PAY: one gesture — resolve without the key, seal AND sign inside a single scope,
       // broadcast after. See AccessCtx.prepareWrite for why the probe is exact rather than a guess.
+      //
+      // SPONSORED: two, and unavoidably. `sponsorWrite` sits between the scopes because the paymaster
+      // quotes over the real calldata, which only exists once the blob is sealed.
       prepareWrite: (probe: Call[], chainId: number) => evmAll.__accessSlot.prepare(probe, chainId),
+      sponsorWrite: (prepared: unknown, calls: Call[], feeToken: Address) =>
+        evmAll.__accessSlot.sponsor(prepared as PreparedAccessSlotWrite, calls, feeToken),
       signWrite: (prepared: unknown, calls: Call[], signer: ScopedSigner) =>
         evmAll.__accessSlot.sign(prepared as PreparedAccessSlotWrite, calls, signer),
       broadcastWrite: (prepared: unknown, signed: unknown) =>
@@ -275,8 +283,10 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
     // it receives no key, so it logs in afterwards via login() (which notifies), once the holder's write
     // has landed. holder.complete writes a slot on chain, so the facade injects the same accessCtx.
     enrollAccessSlot: Object.assign(
-      async (): Promise<{ slotId: Hex; txId: string; passkeyCount: number }> => {
-        const r = await sc.addPasskey(accessCtx());
+      async (o?: { feeToken?: Address | null }): Promise<{ slotId: Hex; txId: string; passkeyCount: number }> => {
+        // Per-call, like every other fee token in this SDK: a fee token is a payment the user makes,
+        // and a wallet must not pick one on their behalf.
+        const r = await sc.addPasskey(accessCtx(), { feeToken: o?.feeToken ?? null });
         notify(); // passkeyCount changed
         return r;
       },

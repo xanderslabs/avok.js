@@ -47,6 +47,7 @@ import {
   type PairInvite,
   type ExportedWallet,
 } from "../wallet/index.js";
+import type { SecretContainer } from "../wallet/crypto/container.js";
 import { createSiweMessage } from "viem/siwe";
 import { base58 } from "@scure/base";
 import { encodeOffchainMessage } from "../solana/index.js";
@@ -165,6 +166,9 @@ function scopedSigner(account: PrivateKeyAccount, st: WalletState): ScopedSigner
     // Cast is safe: viem returns { ...fields, v } (legacy); SignedAuthorizationLike omits v.
     signAuthorization: (auth) => account.signAuthorization(auth) as Promise<SignedAuthorizationLike>,
     signTransaction: (tx) => account.signTransaction(tx),
+    // The hash is derived HERE from the operation rather than accepted from the caller, so this is a
+    // UserOperation signer and not a general signing oracle over the wallet key.
+    signUserOp: ({ userOp, chainId }) => account.sign({ hash: getAvokUserOpHash(userOp, chainId) }),
   };
 }
 
@@ -238,7 +242,7 @@ export function createOwnOriginConnection(opts: {
    * It cannot be perfect — the chain can die between this check and the write — which is why repair
    * exists. It removes the PREDICTABLE orphans, which is most of them.
    */
-  async function preflight(ctx: AccessCtx): Promise<void> {
+  async function preflight(ctx: AccessCtx, feeToken?: Address | null): Promise<void> {
     // (1) Does the chain ANSWER? The zero slot id is a well-formed bytes32 no real credential can derive
     //     to; we are not asking about an access slot, we are asking whether the chain is reachable at all.
     const PROBE_SLOT = `0x${"00".repeat(32)}` as Hex;
@@ -250,7 +254,7 @@ export function createOwnOriginConnection(opts: {
     // (2) Can the wallet PAY for the access slot? This throws EnrolmentUnaffordableError, which is actionable
     //     ("top up") rather than mysterious. It propagates unchanged — wrapping it in
     //     EnrolmentBlockedError would throw away the numbers the user needs.
-    await ctx.assertCanAffordAccessSlot(anchorChain.chainId);
+    await ctx.assertCanAffordAccessSlot(anchorChain.chainId, feeToken ?? null);
   }
 
   /** Access slots on THIS app's anchor chain (there is no cross-chain index — §3.5). The session's own
@@ -674,10 +678,15 @@ export function createOwnOriginConnection(opts: {
       },
     },
 
-    async addPasskey(ctx: AccessCtx): Promise<{ slotId: Hex; txId: string; passkeyCount: number }> {
+    async addPasskey(
+      ctx: AccessCtx,
+      opts_?: { feeToken?: Address | null },
+    ): Promise<{ slotId: Hex; txId: string; passkeyCount: number }> {
+      const feeToken = opts_?.feeToken ?? null;
       const st = requireState();
       // Refuse before minting anything if the write path is already visibly dead (see preflight).
-      await preflight(ctx);
+      // The fee token goes with it: affordability is measured against the balance that will PAY.
+      await preflight(ctx, feeToken);
       // Enrolment and the on-chain write are ONE atomic call, deliberately. A secondary cannot
       // derive K (its PRF differs from the primary's), so it wraps the existing K under its own PRF
       // and its recovery depends entirely on that ciphertext being on chain. Enrolling without the
@@ -696,31 +705,60 @@ export function createOwnOriginConnection(opts: {
       // PRF, and sign the write. (Minting the credential is its own WebAuthn ceremony — you are
       // creating a passkey — but unlocking the wallet and signing the write are now a single
       // confirmation instead of two.)
-      const { slot, blob, encryptedMeta, slotId, signed } = await withWalletKeyAndContainer(
-        { state: st, passkey: opts.passkey },
-        async ({ container, account }) => {
-          const r = await addPasskey({
-            passkey: opts.passkey,
-            networkName: opts.operatorName ?? opts.rpId,
-            container,
-            address: st.evmAddress,
-            solanaAddress: st.solanaAddress,
-            // Record this app's anchor in the new secondary's handle — the SAME chain the ciphertext is
-            // submitted to below — so the marker always equals where the blob is stored.
-            anchorChainId: anchorChain.chainId,
-          });
-          const slotId = deriveSlotId(st.evmAddress, r.slot.credentialId);
-          // Ciphertext only — serializeBlob(blob) is the AES-encrypted blob at rest.
-          const call = buildAddAccessSlotCall({
-            address: st.evmAddress,
-            slotId,
-            encryptedBlob: serializeBlob(r.blob),
-            encryptedMeta: r.encryptedMeta,
-          });
-          const signed = await ctx.signWrite(prepared, [call], scopedSigner(account, st));
-          return { ...r, slotId, signed };
-        },
-      );
+      const mint = async ({ container }: { container: SecretContainer }) => {
+        const r = await addPasskey({
+          passkey: opts.passkey,
+          networkName: opts.operatorName ?? opts.rpId,
+          container,
+          address: st.evmAddress,
+          solanaAddress: st.solanaAddress,
+          // Record this app's anchor in the new secondary's handle — the SAME chain the ciphertext is
+          // submitted to below — so the marker always equals where the blob is stored.
+          anchorChainId: anchorChain.chainId,
+        });
+        const slotId = deriveSlotId(st.evmAddress, r.slot.credentialId);
+        // Ciphertext only — serializeBlob(blob) is the AES-encrypted blob at rest.
+        const call = buildAddAccessSlotCall({
+          address: st.evmAddress,
+          slotId,
+          encryptedBlob: serializeBlob(r.blob),
+          encryptedMeta: r.encryptedMeta,
+        });
+        return { ...r, slotId, call };
+      };
+
+      let slot: Awaited<ReturnType<typeof mint>>["slot"];
+      let blob: Awaited<ReturnType<typeof mint>>["blob"];
+      let encryptedMeta: Uint8Array;
+      let slotId: Hex;
+      let signed: unknown;
+      let write = prepared;
+
+      if (feeToken) {
+        // SPONSORED — TWO gestures, and the split is forced rather than chosen. The paymaster quotes
+        // over the REAL calldata, the real calldata contains the sealed blob, and the blob needs K.
+        // So: seal (key), fetch the quote (IO), sign (key). K is never live across that round-trip.
+        const minted = await withWalletKeyAndContainer({ state: st, passkey: opts.passkey }, mint);
+        ({ slot, blob, encryptedMeta, slotId } = minted);
+        write = await ctx.sponsorWrite(prepared, [minted.call], feeToken);
+        // A declined second gesture FAILS. It does not quietly fall back to self-pay: the caller asked
+        // to pay in a token, and silently charging native gas instead is the degrade `requireSponsorship`
+        // exists to prevent — worse here, because the user may hold no native gas at all.
+        signed = await withWalletKeyAndContainer({ state: st, passkey: opts.passkey }, ({ account }) =>
+          ctx.signWrite(write, [minted.call], scopedSigner(account, st)),
+        );
+      } else {
+        // SELF-PAY — ONE gesture. The signature is built entirely in-process from the same-length
+        // probe, so sealing and signing fit in a single scope with no IO between them.
+        const done = await withWalletKeyAndContainer(
+          { state: st, passkey: opts.passkey },
+          async ({ container, account }) => {
+            const r = await mint({ container });
+            return { ...r, signed: await ctx.signWrite(prepared, [r.call], scopedSigner(account, st)) };
+          },
+        );
+        ({ slot, blob, encryptedMeta, slotId, signed } = done);
+      }
 
       state = { ...st, slots: [...st.slots, slot], blobs: [...st.blobs, { credentialId: slot.credentialId, blob }] };
       const passkeyCount = state.slots.length;

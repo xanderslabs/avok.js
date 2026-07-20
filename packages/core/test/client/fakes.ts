@@ -211,13 +211,19 @@ export function makeFakeChannel(opts: { address: string; subname?: string; solan
 /**
  * The three access-slot-write phases, for AccessCtx doubles. Spread it into any fake: `{ ...ACCESS_SLOT_WRITER }`.
  *
- * An access-slot write is now ONE passkey gesture — resolve with no key (prepare), seal AND sign inside a
- * single scope (sign), broadcast after (broadcast). `broadcastWrite` forwards to the fake's OWN
+ * A SELF-PAY access-slot write is ONE passkey gesture — resolve with no key (prepare), seal AND sign
+ * inside a single scope (sign), broadcast after (broadcast). A SPONSORED one inserts `sponsorWrite`
+ * between two scopes, because the paymaster quotes over calldata that only exists once the blob is
+ * sealed; the fake records the fee token so tests can assert which rail was taken. `broadcastWrite` forwards to the fake's OWN
  * `submit` (it is called as `ctx.broadcastWrite(...)`, so `this` is the fake), which means every
  * assertion written against `submit` keeps working AND still sees the real sealed ciphertext.
  */
 export const ACCESS_SLOT_WRITER = {
   prepareWrite: async (_probe: Call[], chainId: number) => ({ chainId }),
+  sponsorWrite: async (prepared: unknown, _calls: Call[], feeToken: string) => ({
+    ...(prepared as object),
+    feeToken,
+  }),
   signWrite: async (_prepared: unknown, calls: Call[]) => ({ calls }),
   broadcastWrite(
     this: { submit: (calls: Call[], o: { chainId: number }) => Promise<{ id: string }> },
