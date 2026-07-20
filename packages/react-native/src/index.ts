@@ -6,12 +6,13 @@
  *   - createOwnOriginConnection — wires the native passkey adapter + SecureStore.
  *   - secureStoreStorage — platform-resolved StorageAdapter.
  *
- * OWN-ORIGIN ONLY, FOR NOW — and the reason has changed, so do not read the old one as current.
+ * BOTH POSTURES SHIP. Own-origin for apps that own their rpId domain; shared-origin, over a native
+ * in-app browser session, for apps that do not.
  *
- * #8 deleted the native auth-session channel (ASWebAuthenticationSession / Custom Tabs) because it
- * had never worked, and the note here concluded that native shared-origin therefore had no viable
- * path. That conclusion is WRONG, and the correction is worth stating precisely because the evidence
- * for it is expensive to reacquire.
+ * That second one was long believed impossible here. #8 deleted an earlier native auth-session
+ * channel (ASWebAuthenticationSession / Custom Tabs) because it had never worked, and the note left
+ * behind concluded the platform forbade it. The conclusion outlived its evidence — the commit
+ * explaining WHY it failed was destroyed in a history squash — and it was wrong.
  *
  * MEASURED ON DEVICE, 2026-07-20: a WebAuthn ceremony with the PRF extension — the whole basis of
  * `K = HKDF(PRF(credential, rpId))` — evaluates successfully inside BOTH iOS
@@ -27,18 +28,23 @@
  * elsewhere and use the passkey only to authenticate. The public record is empty because nobody is
  * doing this, not because it fails. It was established by running the ceremony on real hardware.
  *
- * What remains is BUILD work, not a feasibility question: a native SigningChannel over the in-app
- * browser tab. Until it ships this package stays own-origin only. RFC 8252 §6 endorses the shape and
- * names both APIs; ASWebAuthenticationSession is one-shot (request → redirect, no postMessage), so
- * the result comes back through the callback URL.
+ * RFC 8252 §6 endorses this shape and names both APIs; §8.12 forbids the embedded-WebView
+ * alternative. ASWebAuthenticationSession is one-shot — request → redirect, no postMessage — so the
+ * result returns through the callback URL, and is therefore never trusted on arrival: an authorize
+ * carries a signature over the caller's nonce (see @avokjs/core/channel authorize-proof).
  *
  * Peer deps: react, react-native, expo-secure-store (all injected; not static).
  * No DOM imports in this graph.
  */
 import { createOwnOriginConnection as sdkCreateOwnOrigin } from "@avokjs/core/engine";
-import type { StorageAdapter, SelfCustodyConnection } from "@avokjs/core/engine";
+import type { StorageAdapter, SelfCustodyConnection, Connection } from "@avokjs/core/engine";
 import type { ChainId } from "@avokjs/contracts";
 import type { ReactNativePasskeyLike } from "@avokjs/core/wallet";
+import { createSharedOriginConnection as sdkCreateSharedOrigin } from "@avokjs/core/engine";
+import {
+  createNativeChannel as sdkCreateNativeChannel,
+  type AuthSessionOpener as AuthSessionOpenerType,
+} from "@avokjs/core/channel";
 import { buildNativePasskeyAdapter } from "./native-platform.js";
 import { secureStoreStorage } from "./native-storage.js";
 
@@ -152,5 +158,56 @@ export function createOwnOriginConnection(opts: {
     passkey: buildNativePasskeyAdapter(opts.passkey, opts.rpId, opts.operatorName),
     storage: opts.storage ?? secureStoreStorage(),
     anchorChainId: opts.anchorChainId,
+  });
+}
+
+// ─── Shared-origin (native) ───────────────────────────────────────────────────────────────────────
+//
+// The rail for apps that do NOT own the wallet's rpId domain — which is the whole reason shared-origin
+// exists, and it is the same constraint on native as on web: an app cannot host /.well-known files for
+// someone else's domain, so the ceremony must run somewhere that genuinely IS that origin.
+//
+// It was long believed impossible here. #8 deleted an earlier native channel for never having worked,
+// and the note left behind concluded the platform forbade it. Measured on device 2026-07-20: a
+// WebAuthn ceremony with the PRF extension — the basis of K = HKDF(PRF(credential, rpId)) — succeeds
+// inside BOTH iOS ASWebAuthenticationSession and Android Chrome Custom Tabs. RFC 8252 §6 endorses this
+// shape and names both APIs.
+export { createNativeChannel, AuthSessionCancelledError } from "@avokjs/core/channel";
+export type { AuthSessionOpener } from "@avokjs/core/channel";
+
+/**
+ * Build a shared-origin connection over a native in-app browser session.
+ *
+ * `openAuthSession` is injected so this package stays free of a hard Expo dependency — the signature
+ * is deliberately `expo-web-browser`'s `openAuthSessionAsync`, so the common case is a one-liner:
+ *
+ * ```ts
+ * import * as WebBrowser from "expo-web-browser";
+ * const connection = createNativeSharedOrigin({
+ *   authOrigin: "https://wallet.example.com",
+ *   redirectUri: "myapp://avok-callback",
+ *   openAuthSession: WebBrowser.openAuthSessionAsync,
+ * });
+ * ```
+ *
+ * The app must register `redirectUri` as a scheme it handles, or the session has nowhere to return to.
+ *
+ * One session per signature, matching the web popup — which also opens and closes per request, so the
+ * semantics are the same rather than a native compromise.
+ */
+export function createNativeSharedOrigin(opts: {
+  authOrigin: string;
+  redirectUri: string;
+  openAuthSession: AuthSessionOpenerType;
+  storage?: StorageAdapter;
+}): Connection {
+  return sdkCreateSharedOrigin({
+    authOrigin: opts.authOrigin,
+    channel: sdkCreateNativeChannel({
+      authOrigin: opts.authOrigin,
+      redirectUri: opts.redirectUri,
+      openAuthSession: opts.openAuthSession,
+    }),
+    ...(opts.storage ? { storage: opts.storage as never } : {}),
   });
 }
