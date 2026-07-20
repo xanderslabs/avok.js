@@ -76,37 +76,6 @@ export interface SolanaChainProfile {
 
 export type ChainProfile = EvmChainProfile | SolanaChainProfile;
 
-export interface EnsDeployment {
-  registry: Address;
-  reverseRegistrar: Address;
-  /** ENS public resolver — read for forward `addr` resolution. */
-  publicResolver: Address;
-}
-
-// ENS L1 deployments. VERIFY against ENS docs before mainnet use ([[avok-pending-mainnet-values]]).
-const ENS_DEPLOYMENTS: Record<number, EnsDeployment> = {
-  1: {
-    registry: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    reverseRegistrar: "0xa58E81fe9b61B5c3fE2AFD33CF304c454AbFc7Cb",
-    publicResolver: "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
-  },
-  11155111: {
-    registry: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    reverseRegistrar: "0xA0a1AbcDAe1a2a4A2EF8e9113Ff0e02DD81DC0C6",
-    publicResolver: "0x8FADE66B79cC9f707aB26799354482EB93a5B7dD",
-  },
-};
-
-/** ENS contract deployment for a name-resolution chain. Throws on a chain with no known ENS deployment. */
-export function getEnsDeployment(chainId: number): EnsDeployment {
-  const d = ENS_DEPLOYMENTS[chainId];
-  if (!d)
-    throw new Error(
-      `no ENS deployment for chainId ${chainId} — ENS resolution requires an ENS-enabled chain (1 or 11155111)`,
-    );
-  return d;
-}
-
 const OP_USDC: Address = "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85";
 const OP_USDT: Address = "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58";
 const BASE_USDC: Address = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";

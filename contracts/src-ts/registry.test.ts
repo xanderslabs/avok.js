@@ -11,7 +11,6 @@ import {
   DEFAULT_ANCHOR_CHAIN_ID,
   TOKEN_PROGRAM,
   TOKEN_2022_PROGRAM,
-  getEnsDeployment,
   CHAIN_NAME_TO_ID,
   resolveChainByName,
   chainIdNumberByName,
@@ -338,16 +337,5 @@ describe("chain-name → id resolver (additive alias layer)", () => {
     expect(chainIdNumberByName("arc-testnet")).toBe(5042002);
     expect(() => chainIdNumberByName("solana-mainnet")).toThrow(/not an EVM chain/i);
     expect(() => chainIdNumberByName("nope")).toThrow(/unknown chain name/i);
-  });
-});
-
-describe("ENS deployments", () => {
-  it("returns mainnet ENS contracts for chainId 1", () => {
-    const d = getEnsDeployment(1);
-    expect(d.registry).toBe("0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e");
-    expect(d.publicResolver).toBe("0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63");
-  });
-  it("throws fail-loud on a chain with no ENS deployment", () => {
-    expect(() => getEnsDeployment(56)).toThrow(/no ENS deployment/i);
   });
 });

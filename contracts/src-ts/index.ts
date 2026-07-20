@@ -227,7 +227,6 @@ export type {
   EvmChainProfile,
   SolanaChainProfile,
   ChainProfile,
-  EnsDeployment,
 } from "./registry.js";
 export {
   TOKEN_PROGRAM,
@@ -245,7 +244,6 @@ export {
   chainIdNumberByName,
   DEFAULT_ANCHOR_CHAIN_ID,
   resolveAnchorChain,
-  getEnsDeployment,
 } from "./registry.js";
 export type { RpcOverrides } from "./rpc.js";
 export { evmRpcUrl, solanaRpcUrl, isPublicDefaultRpc } from "./rpc.js";
