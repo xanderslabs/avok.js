@@ -1,3 +1,4 @@
+import type { PairingTransport } from "@avokjs/core/helpers";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, waitFor, act, cleanup } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -109,5 +110,47 @@ describe("usePairingCeremony (import / enroller)", () => {
     act(() => captured.retryCamera());
     // After retry the scan succeeds and the ceremony advances past the camera error to the SAS gate.
     await waitFor(() => expect(captured.phase).toBe("sas"));
+  });
+});
+
+describe("usePairingCeremony with an injected transport (same-device, no camera)", () => {
+  it("runs without qrRef/videoRef mounted, and never gates on a tap", async () => {
+    // The QR path cannot start until both DOM refs exist and the user taps to open the camera.
+    // Neither applies to a postMessage peer: there is no camera to open, and the other side announces
+    // itself. A tap gate here would be a button with no reason to exist.
+    const injected: PairingTransport = {
+      showCode: vi.fn(),
+      scanCode: vi.fn().mockResolvedValue("INVITE"),
+      stop: vi.fn(),
+    };
+
+    function Bare() {
+      captured = usePairingCeremony({ role: "import", transport: injected });
+      return null; // deliberately renders NO qr/video elements
+    }
+
+    render(wrap(<Bare />));
+
+    // It reached the peer unaided — no refs, no tap.
+    await waitFor(() => expect(injected.scanCode).toHaveBeenCalled());
+    expect(captured.phase).not.toBe("prompt-scan");
+  });
+
+  it("still drives the same ceremony — the transport is the only thing that changed", async () => {
+    const injected: PairingTransport = {
+      showCode: vi.fn(),
+      scanCode: vi.fn().mockResolvedValue("INVITE"),
+      stop: vi.fn(),
+    };
+
+    function Bare() {
+      captured = usePairingCeremony({ role: "import", transport: injected });
+      return null;
+    }
+    render(wrap(<Bare />));
+
+    // Same enroller verb, same code out — only the pipe differs.
+    await waitFor(() => expect(pairing.enroller.mintAndWrap).toHaveBeenCalledWith("INVITE"));
+    await waitFor(() => expect(injected.showCode).toHaveBeenCalledWith("WRAP"));
   });
 });

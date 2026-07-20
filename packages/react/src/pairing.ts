@@ -90,7 +90,23 @@ function authorizeController(pairing: PairingVerbs) {
   };
 }
 
-export function usePairingCeremony(opts: { role: "import" | "export" }): PairingCeremony {
+export function usePairingCeremony(opts: {
+  role: "import" | "export";
+  /**
+   * Inject a transport to run the ceremony over something other than a camera.
+   *
+   * The default is QR, which exists to move codes between two DEVICES. Applied to two ORIGINS on one
+   * device it produces the worst interaction in the product — scan a code shown on the screen you are
+   * already looking at — so `@avokjs/core/pairing-window` supplies a postMessage transport for that
+   * case, and this is where it goes in. Matches @avokjs/react-native, which has always taken its
+   * transport injected because it cannot ship a camera view.
+   *
+   * With one supplied, `qrRef`/`videoRef` go unused and the tap-to-scan gate is skipped: that gate
+   * exists because a device cannot detect that the other one scanned its screen, which is not a
+   * problem a postMessage channel has.
+   */
+  transport?: PairingTransport;
+}): PairingCeremony {
   const { role } = opts;
   const client = useSelfCustody();
 
@@ -113,8 +129,10 @@ export function usePairingCeremony(opts: { role: "import" | "export" }): Pairing
 
   useEffect(() => {
     let cancelled = false;
-    if (!qrRef.current || !videoRef.current) return;
-    const base = createBrowserQrTransport({ qrContainer: qrRef.current, video: videoRef.current });
+    // An injected transport needs no DOM; the QR one cannot start without both refs mounted.
+    if (!opts.transport && (!qrRef.current || !videoRef.current)) return;
+    const injected = opts.transport;
+    const base = injected ?? createBrowserQrTransport({ qrContainer: qrRef.current!, video: videoRef.current! });
     const pairing = client.enrollAccessSlot.viaPairing;
 
     const transport: PairingTransport = {
@@ -127,11 +145,16 @@ export function usePairingCeremony(opts: { role: "import" | "export" }): Pairing
         // Gate on a tap (a device cannot detect that the other one scanned its QR). Keep our own QR up
         // ONLY during the enroller's `await-invite` (there the code must stay up for the other
         // side); every other scan hides the stale QR and shows a plain "open camera" prompt.
-        const keepQrUp = stepRef.current === "await-invite";
-        await new Promise<void>((r) => {
-          scanTap.current = r;
-          if (!cancelled) setPhase(shownRef.current && keepQrUp ? "show" : "prompt-scan");
-        });
+        // The tap gate is a CAMERA affordance: a device cannot detect that the other one scanned its
+        // screen, so a human says when to look. A postMessage peer announces itself, so gating there
+        // would just add a button the user has no reason to press.
+        if (!injected) {
+          const keepQrUp = stepRef.current === "await-invite";
+          await new Promise<void>((r) => {
+            scanTap.current = r;
+            if (!cancelled) setPhase(shownRef.current && keepQrUp ? "show" : "prompt-scan");
+          });
+        }
         for (;;) {
           if (!cancelled) setPhase("scanning");
           try {
