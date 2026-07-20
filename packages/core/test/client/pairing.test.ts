@@ -59,13 +59,12 @@ describe("Enrolling the user's OWN second device (the same one ceremony)", () =>
     const passkeyB = makeFakePasskey(); // B: the user's other device, no wallet yet
     const B = createOwnOriginConnection({ rpId: "qudi.fi", passkey: passkeyB, anchorVault: vault });
 
-    const { qr: qr1 } = await B.pairing.enroller.begin();
-    const { qr: qr2, sas: sasA } = await A.pairing.holder.authorize({ qr: qr1, ctx: vault });
-    const { sas: sasB } = await B.pairing.enroller.receiveAck(qr2);
+    const { qr: qr1 } = await A.pairing.holder.invite({ ctx: vault });
+    const { qr: qr2, sas: sasB } = await B.pairing.enroller.mintAndWrap(qr1);
+    const { sas: sasA } = await A.pairing.holder.receiveWrap(qr2);
     expect(sasA).toBe(sasB); // the human confirms this on both screens
 
-    const { qr: qr3 } = await B.pairing.enroller.enroll({ sasConfirmed: true });
-    await A.pairing.holder.complete({ qr: qr3, sasConfirmed: true, ctx: vault });
+    await A.pairing.holder.complete({ sasConfirmed: true, ctx: vault });
 
     // B holds no key yet — it was never given one.
     expect(B.status()).toBe(false);
@@ -85,11 +84,10 @@ describe("Enrolling the user's OWN second device (the same one ceremony)", () =>
 
     const passkeyB = makeFakePasskey();
     const B = createOwnOriginConnection({ rpId: "qudi.fi", passkey: passkeyB, anchorVault: vault });
-    const { qr: qr1 } = await B.pairing.enroller.begin();
-    const { qr: qr2 } = await A.pairing.holder.authorize({ qr: qr1, ctx: vault });
-    await B.pairing.enroller.receiveAck(qr2);
-    const { qr: qr3 } = await B.pairing.enroller.enroll({ sasConfirmed: true });
-    await A.pairing.holder.complete({ qr: qr3, sasConfirmed: true, ctx: vault });
+    const { qr: qr1 } = await A.pairing.holder.invite({ ctx: vault });
+    const { qr: qr2 } = await B.pairing.enroller.mintAndWrap(qr1);
+    await A.pairing.holder.receiveWrap(qr2);
+    await A.pairing.holder.complete({ sasConfirmed: true, ctx: vault });
 
     // Fresh connection over the SAME authenticator: the WebAuthn credential persists, state does not.
     const Breload = createOwnOriginConnection({ rpId: "qudi.fi", passkey: passkeyB, anchorVault: vault });
@@ -101,12 +99,11 @@ describe("Enrolling the user's OWN second device (the same one ceremony)", () =>
   it("rejects verbs with no session", async () => {
     const A = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
     await A.create();
-    await expect(A.pairing.holder.complete({ qr: "x", sasConfirmed: true, ctx: capturingVault() })).rejects.toThrow(
-      /no enrolment session|authorize/i,
+    await expect(A.pairing.holder.complete({ sasConfirmed: true, ctx: capturingVault() })).rejects.toThrow(
+      /no enrolment session|invite/i,
     );
 
-    const B = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
-    await expect(B.pairing.enroller.enroll({ sasConfirmed: true })).rejects.toThrow(/no enrolment session|receiveAck/i);
+    await expect(A.pairing.holder.receiveWrap("x")).rejects.toThrow(/no enrolment session|invite/i);
   });
 });
 
@@ -198,13 +195,13 @@ async function handshake(
   clientHolder: ReturnType<typeof facadeClientHolder>,
   B: ReturnType<typeof createOwnOriginConnection>,
 ) {
-  const { qr: qr1 } = await B.pairing.enroller.begin();
+  const { qr: qr1 } = await clientHolder.enrollAccessSlot.viaPairing.holder.invite();
   // The FACADE injects the ctx (for the preflight and the write) — the app never assembles one.
-  const { qr: qr2, sas: sasA } = await clientHolder.enrollAccessSlot.viaPairing.holder.authorize({ qr: qr1 });
-  const { sas: sasB } = await B.pairing.enroller.receiveAck(qr2);
+  const { qr: qr2, sas: sasB } = await B.pairing.enroller.mintAndWrap(qr1);
+  const { sas: sasA } = await clientHolder.enrollAccessSlot.viaPairing.holder.receiveWrap(qr2);
   expect(sasA).toBe(sasB); // the human confirms this
-  const { qr: qr3 } = await B.pairing.enroller.enroll({ sasConfirmed: true });
-  return qr3;
+  // Nothing to hand back: the wrap is already decrypted and held behind the holder's gate,
+  // so the caller finishes with complete({ sasConfirmed: true }) alone.
 }
 
 describe("Passkey enrolment — through the client facade (accessCtx)", () => {
@@ -224,8 +221,8 @@ describe("Passkey enrolment — through the client facade (accessCtx)", () => {
       anchorChainId: "eip155:10",
     });
 
-    const wrapQr = await handshake(clientHolder, B);
-    const { txId } = await clientHolder.enrollAccessSlot.viaPairing.holder.complete({ qr: wrapQr, sasConfirmed: true });
+    await handshake(clientHolder, B);
+    const { txId } = await clientHolder.enrollAccessSlot.viaPairing.holder.complete({ sasConfirmed: true });
     expect(txId).toBe("0xselfpaytx");
 
     // The write actually went out — decode the captured self-pay batch calls with the ABI.
@@ -269,10 +266,10 @@ describe("Passkey enrolment — through the client facade (accessCtx)", () => {
       anchorChainId: "eip155:10",
     });
 
-    const wrapQr = await handshake(clientHolder, B);
-    await expect(
-      clientHolder.enrollAccessSlot.viaPairing.holder.complete({ qr: wrapQr, sasConfirmed: true }),
-    ).rejects.toThrow(/broadcast rejected/i);
+    await handshake(clientHolder, B);
+    await expect(clientHolder.enrollAccessSlot.viaPairing.holder.complete({ sasConfirmed: true })).rejects.toThrow(
+      /broadcast rejected/i,
+    );
 
     expect(h.addAccessSlotSubmitted).toBe(0);
     expect(clientHolder.status()).toBe(true); // the holder's own wallet was never at risk

@@ -233,10 +233,17 @@ export interface SelfCustodyConnection extends Connection {
    * PRF and sends that; the holder seals K under it and pays for the write. (The old ceremony shipped K
    * to the new device; it is deleted.)
    *
-   *  - `holder` runs on the EXISTING, live wallet: authorize → complete.
-   *  - `enroller` runs on the new device/domain: begin → receiveAck → enroll, then `continue()` to log
-   *    in once the holder's write has landed. It cannot log in before that: what it decrypts is its
-   *    blob, and the blob is not on chain until the holder puts it there.
+   * TWO CODES, not three. The holder speaks first, because the enroller cannot mint anything until it
+   * knows which wallet it is joining — that is baked into its credential's user handle and immutable
+   * afterwards. The enroller answers with its wrapping key. There is no third code, because W is not a
+   * secret worth a round of its own: W plus the on-chain blob yields K, and W alone yields nothing, so
+   * it may travel BEFORE the SAS is compared. The holder compares digits, and only then publishes the
+   * blob that gives W any power.
+   *
+   *  - `holder` runs on the EXISTING, live wallet: invite → receiveWrap → complete.
+   *  - `enroller` runs on the new device/domain: mintAndWrap, then `continue()` to log in once the
+   *    holder's write has landed. It cannot log in before that: what it decrypts is its blob, and the
+   *    blob is not on chain until the holder puts it there.
    *
    * ENROLLING A PASSKEY IS A GRANT, DEFERRED. Once the slot lands, that credential can decrypt its way to
    * K whenever it likes — any passkey that can recover the wallet can obtain the key. No UI may claim
@@ -246,38 +253,48 @@ export interface SelfCustodyConnection extends Connection {
   pairing: {
     /** The EXISTING wallet: it has K, it is delegated, and it pays for the write. */
     holder: {
-      /** Answer the enroller's request. The ack carries the sealed offer (wallet + anchor chain) the
-       *  enroller needs before it can mint a credential. Returns the SAS for the user to compare.
+      /** ROUND 1 — the INVITE. Publish this wallet and its anchor chain, in cleartext (both are already
+       *  public on chain; their integrity comes from the SAS transcript, not from encryption). No SAS
+       *  yet: the digits commit to both public keys and the enroller's has not arrived.
        *
        *  Takes `ctx` to PREFLIGHT the write path: the enroller has no chain access and is about to mint
-       *  a credential purely on the strength of this ack, so if our write path is dead we refuse HERE —
-       *  before a passkey exists on their domain that we could never finish enrolling. Throws
+       *  a credential purely on the strength of this offer, so if our write path is dead we refuse HERE
+       *  — before a passkey exists on their domain that we could never finish enrolling. Throws
        *  EnrolmentBlockedError; nothing is created. */
-      authorize(args: { qr: string; ctx: AccessCtx }): Promise<{ qr: string; sas: string }>;
-      /** Open the wrap, seal K under the received wrapping key, write the slot, pay. The slot id is
-       *  derived here from the credential id — never taken off the wire. `sasConfirmed` MUST be true:
-       *  a MITM that substituted its own wrapping key would get a passkey into this wallet. Idempotent on
-       *  a retry of the same credential. */
-      complete(args: { qr: string; sasConfirmed: true; ctx: AccessCtx }): Promise<{ slotId: Hex; txId: string }>;
+      invite(args: { ctx: AccessCtx }): Promise<{ qr: string }>;
+      /** ROUND 2 arrives. Derive the session, decrypt the wrap, and return the SAS to show the user.
+       *  The wrapping key inside is deliberately NOT released here — it stays behind a gate that only
+       *  `complete` opens. */
+      receiveWrap(qr: string): Promise<{ sas: string }>;
+      /** The user's answer. Seal K under the wrapping key, write the slot, pay. The slot id is derived
+       *  here from the credential id — never taken off the wire. `sasConfirmed` MUST be true: a MITM
+       *  that substituted its own wrapping key would get a passkey into this wallet. Idempotent on a
+       *  retry of the same credential. */
+      complete(args: { sasConfirmed: true; ctx: AccessCtx }): Promise<{ slotId: Hex; txId: string }>;
     };
     /** The NEW device or domain: no wallet, no chain access, and it never receives K. */
     enroller: {
-      begin(): Promise<{ qr: string }>;
-      receiveAck(qr: string): Promise<{ sas: string }>;
-      /** Mint this origin's credential and return its wrapping key, sealed. `sasConfirmed` MUST be
-       *  true — the wrapping key plus the public blob yields K, so an unconfirmed channel is a stolen
-       *  wallet. Afterwards, wait for the holder's write and call `continue()`. */
-      enroll(args: { sasConfirmed: true }): Promise<{ qr: string; rpId: string }>;
+      /** The whole enroller side, and the name is deliberate: this MINTS A PASSKEY. Read the invite,
+       *  create this origin's credential, seal its wrapping key,
+       *  and answer — returning the SAS for the user to compare against the holder's.
+       *
+       *  ON A SAS MISMATCH THIS CREDENTIAL IS BURNED. Do not retry with it: W is scoped to
+       *  (address, slotId) and slotId derives from the credential id, so an attacker's intercepted copy
+       *  of W would come alive the instant a later attempt published a blob for the same credential.
+       *  Every call mints a fresh credential, which is what makes retrying safe.
+       *
+       *  Afterwards, wait for the holder's write and call `continue()`. */
+      mintAndWrap(qr: string): Promise<{ qr: string; sas: string; rpId: string }>;
       /**
        * REPAIR an orphaned credential — one that exists and whose slot write never landed (see
-       * OrphanedCredentialError). Identical to `enroll` except that it REUSES the credential instead of
-       * minting one, reproducing the same wrapping key the failed enrolment would have used.
+       * OrphanedCredentialError). Identical to `mintAndWrap` except that it REUSES the credential instead
+       * of minting one, reproducing the same wrapping key the failed enrolment would have used.
        *
        * Repair needs a SURVIVING PASSKEY and there is no way around that: this credential holds a PRF but
        * no key, so with no passkey left to re-encrypt from, the wallet is gone. Say that plainly rather
        * than offering a repair that cannot work.
        */
-      repair(args: { sasConfirmed: true }): Promise<{ qr: string; rpId: string }>;
+      repair(qr: string): Promise<{ qr: string; sas: string; rpId: string }>;
     };
   };
 }

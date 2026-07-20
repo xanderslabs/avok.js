@@ -57,11 +57,10 @@ describe("the primary domain dies and the wallet survives", () => {
       anchorVault: vault,
     });
 
-    const { qr: request } = await enroller.pairing.enroller.begin();
-    const { qr: ack, sas } = await primary.pairing.holder.authorize({ qr: request, ctx: vault });
-    expect((await enroller.pairing.enroller.receiveAck(ack)).sas).toBe(sas);
-    const { qr: wrap } = await enroller.pairing.enroller.enroll({ sasConfirmed: true });
-    await primary.pairing.holder.complete({ qr: wrap, sasConfirmed: true, ctx: vault });
+    const { qr: invite } = await primary.pairing.holder.invite({ ctx: vault });
+    const { qr: wrap, sas } = await enroller.pairing.enroller.mintAndWrap(invite);
+    expect((await primary.pairing.holder.receiveWrap(wrap)).sas).toBe(sas);
+    await primary.pairing.holder.complete({ sasConfirmed: true, ctx: vault });
 
     // The enroller still has no wallet: it ran a ceremony, it did not receive a key.
     expect(enroller.status()).toBe(false);

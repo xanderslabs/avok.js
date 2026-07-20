@@ -37,8 +37,14 @@ export interface PairingTransport {
   stop(): void;
 }
 
-export type ImportStep = "show-request" | "scan-ack" | "confirm-sas" | "show-wrap" | "done";
-export type ExportStep = "scan-request" | "show-ack" | "confirm-sas" | "scan-wrap" | "done";
+// Two codes, so two transport steps per side instead of three. The SAS step stays: the digits are
+// what make the reduction safe, not what the reduction removed.
+//
+// Named for INTENT, not for mechanism. "show"/"scan" describe a camera, and this ceremony also runs
+// over postMessage, where nothing is shown and nothing is scanned — a step called `show-offer` would
+// be a lie in the transport that needs no QR at all. send/await are true in both.
+export type ImportStep = "await-invite" | "send-wrap" | "confirm-sas" | "done";
+export type ExportStep = "send-invite" | "await-wrap" | "confirm-sas" | "done";
 
 export interface CeremonyHandlers<Step> {
   onStep(step: Step): void;
@@ -50,10 +56,10 @@ export interface CeremonyHandlers<Step> {
  *  wallet key, so it is NOT logged in when the ceremony ends: it calls `continue()` afterwards, once
  *  the holder's write has landed. */
 export interface ImportCtl {
-  begin(): Promise<{ requestQr: string }>;
-  receiveAck(ackQr: string): Promise<{ sas: string }>;
-  /** Mint this origin's credential and hand back its wrapping key, sealed. */
-  confirm(): Promise<{ wrapQr: string }>;
+  /** MINTS A PASSKEY, then seals its wrapping key and answers — returning the SAS for the user to
+   *  compare. One call, because the session agreement now rides the same two codes that carry the
+   *  payload. The name is deliberate: a credential comes into existence here. */
+  mintAndWrap(inviteQr: string): Promise<{ wrapQr: string; sas: string }>;
   reject(): void;
 }
 
@@ -62,17 +68,21 @@ type CompleteResult = Awaited<ReturnType<FullAvokClient["enrollAccessSlot"]["via
 /** The HOLDER (the live wallet) — wraps the SDK's `pairing.holder`. This side scans the wrap, seals K
  *  under the enroller's wrapping key, and PAYS for the on-chain write. */
 export interface ExportCtl {
-  authorize(requestQr: string): Promise<{ ackQr: string; sas: string }>;
+  /** Publish the invite: this wallet and its anchor chain. No SAS yet — the digits commit to both
+   *  public keys, and the enroller's has not arrived. */
+  invite(): Promise<{ inviteQr: string }>;
+  /** Decrypt the wrap and return the SAS. The wrapping key stays behind a gate until `confirm`. */
+  receiveWrap(wrapQr: string): Promise<{ sas: string }>;
   /** Seals K under the enroller's wrapping key and writes the access slot on chain. The write IS the
    *  transaction: it lands, or the enrolment fails — there is no queued access slot. Derived from the SDK
    *  so this contract cannot drift from the real `complete()`; the driver discards the result. */
-  confirm(wrapQr: string): Promise<CompleteResult>;
+  confirm(): Promise<CompleteResult>;
   reject(): void;
 }
 
 const SAS_REJECTED = "SAS did not match — pairing cancelled";
 
-/** ENROLLER: show request → scan ack → confirm SAS → show wrap → done.
+/** ENROLLER: await invite → send wrap → confirm SAS → done.
  *
  *  It returns nothing: the enroller is not logged in by the ceremony, because it was handed no key.
  *  The app calls `client.login()` once the holder's write has landed — one ordinary passkey prompt,
@@ -82,41 +92,45 @@ export async function runImportCeremony(
   t: PairingTransport,
   h: CeremonyHandlers<ImportStep>,
 ): Promise<void> {
-  h.onStep("show-request");
-  const { requestQr } = await ctl.begin();
-  t.showCode(requestQr);
+  h.onStep("await-invite");
+  const inviteQr = await t.scanCode();
 
-  h.onStep("scan-ack");
-  const ackQr = await t.scanCode();
-  const { sas } = await ctl.receiveAck(ackQr);
+  // Minting the credential, sealing W, and sending it all happen HERE — before the user has compared
+  // anything. That is the reduction: W travels early because W alone is worthless. It becomes a key
+  // to this wallet only once the holder seals K under it and publishes the blob, and the holder does
+  // that only after the digits match.
+  h.onStep("send-wrap");
+  const { wrapQr, sas } = await ctl.mintAndWrap(inviteQr);
+  t.showCode(wrapQr);
 
   h.onStep("confirm-sas");
   if (!(await h.confirmSas(sas))) {
+    // ON MISMATCH THIS CREDENTIAL IS BURNED. A retry must mint a fresh one: W is scoped to
+    // (address, slotId) and slotId derives from the credential id, so reusing it would make an
+    // intercepted copy of W live the moment a later attempt published a blob.
     ctl.reject();
     t.stop();
     throw new Error(SAS_REJECTED);
   }
 
-  h.onStep("show-wrap");
-  const { wrapQr } = await ctl.confirm();
-  t.showCode(wrapQr);
-
   h.onStep("done");
-  // The wrap QR stays up for the holder to scan; the caller stops the transport when the user is done.
+  // The holder writes the slot. This side is NOT logged in by the ceremony — it was handed no key —
+  // so the app calls client.login() once that write has landed.
 }
 
-/** HOLDER: scan request → show ack → confirm SAS → scan wrap → done (writes the access slot, and pays). */
+/** HOLDER: send invite → await wrap → confirm SAS → done (writes the access slot, and pays). */
 export async function runExportCeremony(
   ctl: ExportCtl,
   t: PairingTransport,
   h: CeremonyHandlers<ExportStep>,
 ): Promise<void> {
-  h.onStep("scan-request");
-  const requestQr = await t.scanCode();
-  const { ackQr, sas } = await ctl.authorize(requestQr);
+  h.onStep("send-invite");
+  const { inviteQr } = await ctl.invite();
+  t.showCode(inviteQr);
 
-  h.onStep("show-ack");
-  t.showCode(ackQr); // the ack carries the sealed wallet + chain the enroller needs to mint
+  h.onStep("await-wrap");
+  const wrapQr = await t.scanCode();
+  const { sas } = await ctl.receiveWrap(wrapQr); // decrypts; the wrapping key stays gated
 
   h.onStep("confirm-sas");
   if (!(await h.confirmSas(sas))) {
@@ -125,9 +139,9 @@ export async function runExportCeremony(
     throw new Error(SAS_REJECTED);
   }
 
-  h.onStep("scan-wrap");
-  const wrapQr = await t.scanCode();
-  await ctl.confirm(wrapQr); // seals K under the enroller's wrapping key and writes the access slot
+  // Only now does the wrapping key become reachable, and only now is the blob published — which is
+  // what gives an intercepted W any power at all.
+  await ctl.confirm();
 
   t.stop();
   h.onStep("done");

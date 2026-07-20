@@ -55,22 +55,15 @@ export interface PairingCeremony {
 // ONLY via confirm(), and only after the handshake — stays out of the render path.
 
 function setupController(pairing: PairingVerbs) {
-  let ok = false;
   return {
-    async begin() {
-      const { qr } = await pairing.enroller.begin();
-      return { requestQr: qr };
+    async mintAndWrap(inviteQr: string) {
+      // One call now: read the invite, mint the credential, seal W, and return the digits. The
+      // enroller has no state to keep between rounds because there is only one round on this side.
+      const { qr, sas } = await pairing.enroller.mintAndWrap(inviteQr);
+      return { wrapQr: qr, sas };
     },
-    async receiveAck(ackQr: string) {
-      const { sas } = await pairing.enroller.receiveAck(ackQr);
-      ok = true;
-      return { sas };
-    },
-    async confirm() {
-      if (!ok) throw new Error("confirm() is only valid after receiveAck()");
-      const { qr } = await pairing.enroller.enroll({ sasConfirmed: true });
-      return { wrapQr: qr };
-    },
+    // On a SAS mismatch the credential just minted is BURNED — a retry runs mintAndWrap again and
+    // mints a fresh one, which is what keeps an intercepted wrapping key worthless.
     reject() {},
   };
 }
@@ -78,14 +71,20 @@ function setupController(pairing: PairingVerbs) {
 function authorizeController(pairing: PairingVerbs) {
   let ok = false;
   return {
-    async authorize(requestQr: string) {
-      const { qr, sas } = await pairing.holder.authorize({ qr: requestQr });
-      ok = true;
-      return { ackQr: qr, sas };
+    async invite() {
+      const { qr } = await pairing.holder.invite();
+      return { inviteQr: qr };
     },
-    async confirm(wrapQr: string) {
-      if (!ok) throw new Error("confirm() is only valid after authorize()");
-      return pairing.holder.complete({ qr: wrapQr, sasConfirmed: true });
+    async receiveWrap(wrapQr: string) {
+      // Decrypts, and deliberately does NOT release the wrapping key: it stays behind the gate that
+      // only complete() opens, after the user has compared digits.
+      const { sas } = await pairing.holder.receiveWrap(wrapQr);
+      ok = true;
+      return { sas };
+    },
+    async confirm() {
+      if (!ok) throw new Error("confirm() is only valid after receiveWrap()");
+      return pairing.holder.complete({ sasConfirmed: true });
     },
     reject() {},
   };
@@ -126,9 +125,9 @@ export function usePairingCeremony(opts: { role: "import" | "export" }): Pairing
       },
       scanCode: async () => {
         // Gate on a tap (a device cannot detect that the other one scanned its QR). Keep our own QR up
-        // ONLY during the enroller's `scan-ack` (there the request code must stay up for the other
+        // ONLY during the enroller's `await-invite` (there the code must stay up for the other
         // side); every other scan hides the stale QR and shows a plain "open camera" prompt.
-        const keepQrUp = stepRef.current === "scan-ack";
+        const keepQrUp = stepRef.current === "await-invite";
         await new Promise<void>((r) => {
           scanTap.current = r;
           if (!cancelled) setPhase(shownRef.current && keepQrUp ? "show" : "prompt-scan");

@@ -46,34 +46,42 @@ describe("passkey enrolment (one ceremony, whoever the enroller is)", () => {
     expect(enroller.status()).toBe(true);
   });
 
-  it("the enroller refuses to send its wrapping key without the SAS confirmation", async () => {
+  it("the enroller sends its wrapping key BEFORE any confirmation — and that is the design", async () => {
+    // Inverted from the three-round ceremony, deliberately. The enroller no longer gates W behind a
+    // SAS answer, because W alone is worthless: W plus the on-chain blob yields K, and W by itself
+    // yields nothing. An attacker who intercepts this wrap holds a key to a lock that is never built,
+    // because the holder compares digits before publishing the blob.
+    //
+    // This test exists to make that inversion explicit. If someone later "restores" a confirmation
+    // gate here, they have misread why the round could be dropped.
     const vault = capturingVault();
     const { holder, enroller } = twoSides(vault);
     await holder.create();
 
-    const { qr: request } = await enroller.pairing.enroller.begin();
-    const { qr: ack } = await holder.pairing.holder.authorize({ qr: request, ctx: vault });
-    await enroller.pairing.enroller.receiveAck(ack);
+    const { qr: invite } = await holder.pairing.holder.invite({ ctx: vault });
+    const { qr: wrap, sas } = await enroller.pairing.enroller.mintAndWrap(invite);
 
-    await expect(enroller.pairing.enroller.enroll({ sasConfirmed: false as unknown as true })).rejects.toThrow(
-      /sasConfirmed/i,
-    );
+    expect(typeof wrap).toBe("string");
+    expect(sas).toMatch(/^\d{6}$/);
   });
 
   it("the holder refuses to seal K under a wrapping key whose SAS was never confirmed", async () => {
     // THE ATTACK this stops: a MITM substitutes its OWN wrapping key, the holder seals K under it, and
     // the attacker now has a passkey into the wallet. The 6 digits the user compared rule that out.
+    //
+    // With W now arriving before the human answers, this is the ONLY thing standing between a
+    // decrypted wrap and a sealed key — which is why the refusal lives in the type (`openWrap` returns
+    // a gate) rather than in a check this function could lose to a refactor.
     const vault = capturingVault();
     const { holder, enroller } = twoSides(vault);
     await holder.create();
 
-    const { qr: request } = await enroller.pairing.enroller.begin();
-    const { qr: ack } = await holder.pairing.holder.authorize({ qr: request, ctx: vault });
-    await enroller.pairing.enroller.receiveAck(ack);
-    const { qr: wrap } = await enroller.pairing.enroller.enroll({ sasConfirmed: true });
+    const { qr: invite } = await holder.pairing.holder.invite({ ctx: vault });
+    const { qr: wrap } = await enroller.pairing.enroller.mintAndWrap(invite);
+    await holder.pairing.holder.receiveWrap(wrap);
 
     await expect(
-      holder.pairing.holder.complete({ qr: wrap, sasConfirmed: false as unknown as true, ctx: vault }),
+      holder.pairing.holder.complete({ sasConfirmed: false as unknown as true, ctx: vault }),
     ).rejects.toThrow(/sasConfirmed/i);
   });
 

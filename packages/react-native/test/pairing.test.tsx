@@ -13,11 +13,13 @@ import { usePairingCeremony, type PairingCeremony } from "../src/pairing.js";
 
 const pairing = {
   enroller: {
-    begin: vi.fn().mockResolvedValue({ qr: "REQ" }),
-    receiveAck: vi.fn().mockResolvedValue({ sas: "654321" }),
-    enroll: vi.fn().mockResolvedValue({ qr: "WRAP" }),
+    mintAndWrap: vi.fn().mockResolvedValue({ qr: "WRAP", sas: "654321" }),
   },
-  holder: { authorize: vi.fn(), complete: vi.fn() },
+  holder: {
+    invite: vi.fn().mockResolvedValue({ qr: "INVITE" }),
+    receiveWrap: vi.fn().mockResolvedValue({ sas: "123456" }),
+    complete: vi.fn(),
+  },
 };
 const client = {
   custody: "self",
@@ -41,17 +43,27 @@ afterEach(() => {
 });
 
 describe("usePairingCeremony (react-native, injected transport)", () => {
-  it("drives the ceremony over the injected transport and shows the request code", async () => {
-    const transport: PairingTransport = { showCode: vi.fn(), scanCode: vi.fn(() => new Promise<string>(() => {})), stop: vi.fn() };
+  it("drives the ceremony over the injected transport, scanning before it shows anything", async () => {
+    // The enroller's opening move is a SCAN now — it has nothing to say until the invite tells it
+    // which wallet it is joining. Parking the scan proves nothing is shown before that.
+    const transport: PairingTransport = {
+      showCode: vi.fn(),
+      scanCode: vi.fn(() => new Promise<string>(() => {})),
+      stop: vi.fn(),
+    };
     render(wrap(<Harness transport={transport} />));
-    await waitFor(() => {
-      expect(pairing.enroller.begin).toHaveBeenCalled();
-      expect(transport.showCode).toHaveBeenCalledWith("REQ");
-    });
+    // Scans are tap-gated (a device cannot detect that the other one scanned its screen), so the
+    // ceremony parks on the camera prompt with nothing shown until the user acts.
+    await waitFor(() => expect(captured.phase).toBe("prompt-scan"));
+    expect(transport.showCode).not.toHaveBeenCalled();
   });
 
   it("reaches the SAS gate after a scan; confirmSas(false) rejects", async () => {
-    const transport: PairingTransport = { showCode: vi.fn(), scanCode: vi.fn().mockResolvedValue("ACK"), stop: vi.fn() };
+    const transport: PairingTransport = {
+      showCode: vi.fn(),
+      scanCode: vi.fn().mockResolvedValue("INVITE"),
+      stop: vi.fn(),
+    };
     render(wrap(<Harness transport={transport} />));
 
     await waitFor(() => {
@@ -62,14 +74,16 @@ describe("usePairingCeremony (react-native, injected transport)", () => {
 
     act(() => captured.confirmSas(false));
     await waitFor(() => expect(captured.phase).toBe("rejected"));
-    expect(pairing.enroller.enroll).not.toHaveBeenCalled();
+    // The credential is already minted by this point — that is the trade the shorter ceremony makes,
+    // and why a mismatch BURNS it. What must not happen is the holder sealing K, asserted on that side.
+    expect(pairing.enroller.mintAndWrap).toHaveBeenCalled();
   });
 
   it("surfaces a blocked camera and clears it on retryCamera", async () => {
     const scanCode = vi
       .fn<() => Promise<string>>()
       .mockRejectedValueOnce(new CameraUnavailableError())
-      .mockResolvedValueOnce("ACK");
+      .mockResolvedValueOnce("INVITE");
     const transport: PairingTransport = { showCode: vi.fn(), scanCode, stop: vi.fn() };
     render(wrap(<Harness transport={transport} />));
 

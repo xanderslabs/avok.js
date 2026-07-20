@@ -62,16 +62,16 @@ export interface FullAvokClient extends UseOnlyAvokClient {
    * encrypted blob on chain, atomically (one funded transaction); there is no gas-free enrolment,
    * since a secondary is only recoverable once its ciphertext is on chain.
    *
-   * `enrollAccessSlot.viaPairing.{ holder, enroller }` is the cross-device / cross-domain QR ceremony
+   * `enrollAccessSlot.viaPairing.{ holder, enroller }` is the cross-device / cross-origin ceremony
    * (see SelfCustodyConnection.pairing). `holder` runs on the live wallet and pays; `enroller` runs on
    * the new device/domain and needs no chain access. The facade builds the on-chain AccessCtx.
    */
   enrollAccessSlot: {
     (): Promise<{ slotId: Hex; txId: string; passkeyCount: number }>;
     readonly viaPairing: {
-      holder: Omit<SelfCustodyConnection["pairing"]["holder"], "authorize" | "complete"> & {
-        authorize(args: { qr: string }): Promise<{ qr: string; sas: string }>;
-        complete(args: { qr: string; sasConfirmed: true }): Promise<{ slotId: Hex; txId: string }>;
+      holder: Omit<SelfCustodyConnection["pairing"]["holder"], "invite" | "complete"> & {
+        invite(): Promise<{ qr: string }>;
+        complete(args: { sasConfirmed: true }): Promise<{ slotId: Hex; txId: string }>;
       };
       enroller: SelfCustodyConnection["pairing"]["enroller"];
     };
@@ -285,11 +285,11 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
           enroller: sc.pairing.enroller,
           holder: {
             ...sc.pairing.holder,
-            // Both verbs need the ctx: authorize to PREFLIGHT the write path before the enroller mints a
-            // credential, complete to actually submit. The app assembles neither.
-            authorize: (args: { qr: string }) => sc.pairing.holder.authorize({ ...args, ctx: accessCtx() }),
-            complete: (args: { qr: string; sasConfirmed: true }) =>
-              sc.pairing.holder.complete({ ...args, ctx: accessCtx() }),
+            // Two of the three verbs need the ctx: `invite` to PREFLIGHT the write path before the
+            // enroller mints a credential, `complete` to actually submit. `receiveWrap` is pure
+            // decryption and touches no chain. The app assembles none of them.
+            invite: () => sc.pairing.holder.invite({ ctx: accessCtx() }),
+            complete: (args: { sasConfirmed: true }) => sc.pairing.holder.complete({ ...args, ctx: accessCtx() }),
           },
         },
       },

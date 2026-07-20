@@ -138,17 +138,10 @@ describe("preflight: never mint a credential you cannot finish enrolling", () =>
     const holder = createOwnOriginConnection({ rpId: "qudi.fi", passkey, anchorVault: emptyChain });
     await holder.create();
 
-    const enrollerPasskey = makeFakePasskey("independent.example");
-    const enroller = createOwnOriginConnection({
-      rpId: "independent.example",
-      passkey: enrollerPasskey,
-      anchorVault: emptyChain,
-    });
-    const { qr: request } = await enroller.pairing.enroller.begin();
-
+    // No enroller is constructed: the holder now refuses at invite(), before the other side exists at
+    // all. That is the point of preflighting here — nothing is minted anywhere.
     await expect(
-      holder.pairing.holder.authorize({
-        qr: request,
+      holder.pairing.holder.invite({
         ctx: {
           submit: async () => ({ id: "x" }),
           hasSlot: async () => {
@@ -161,8 +154,10 @@ describe("preflight: never mint a credential you cannot finish enrolling", () =>
       }),
     ).rejects.toBeInstanceOf(EnrolmentBlockedError);
 
-    // The enroller never got an ack, so it never minted a credential: no orphan on their domain.
-    expect(enrollerPasskey.allCredentialIds()).toHaveLength(0);
+    // Nothing was minted anywhere, and the reason is stronger than it used to be: the refusal now
+    // happens before an INVITE is even produced, so there is nothing to hand an enroller. Previously
+    // the holder answered a request first and only then refused, which meant the enroller had already
+    // been contacted. No invite, no enrolment, no orphan.
   });
 });
 
@@ -227,15 +222,13 @@ describe("repairing an orphan through a surviving passkey", () => {
     // with a friendly name, that opens nothing.
     const orphanPasskey = makeFakePasskey("qudi.fi");
     const orphan = createOwnOriginConnection({ rpId: "qudi.fi", passkey: orphanPasskey, anchorVault: vault });
-    const { qr: req0 } = await orphan.pairing.enroller.begin();
-    const { qr: ack0 } = await holder.pairing.holder.authorize({ qr: req0, ctx: vault });
-    await orphan.pairing.enroller.receiveAck(ack0);
-    const { qr: wrap0 } = await orphan.pairing.enroller.enroll({ sasConfirmed: true });
+    const { qr: inv0 } = await holder.pairing.holder.invite({ ctx: vault });
+    const { qr: wrap0 } = await orphan.pairing.enroller.mintAndWrap(inv0);
+    await holder.pairing.holder.receiveWrap(wrap0);
     // The holder queues it (write-on-first-value)... and then that holder is discarded, so the queue
     // dies with it. What survives is a credential with no access slot: the orphan.
     await expect(
       holder.pairing.holder.complete({
-        qr: wrap0,
         sasConfirmed: true,
         ctx: {
           ...vault,
@@ -249,12 +242,11 @@ describe("repairing an orphan through a surviving passkey", () => {
     // Confirmed orphaned: the chain answers, and has no access slot for it.
     await expect(orphan.continue()).rejects.toBeInstanceOf(OrphanedCredentialError);
 
-    // REPAIR. The same three codes — only the enroller reuses its credential instead of minting one.
-    const { qr: req } = await orphan.pairing.enroller.begin();
-    const { qr: ack, sas } = await holder.pairing.holder.authorize({ qr: req, ctx: vault });
-    expect((await orphan.pairing.enroller.receiveAck(ack)).sas).toBe(sas);
-    const { qr: wrap } = await orphan.pairing.enroller.repair({ sasConfirmed: true });
-    await holder.pairing.holder.complete({ qr: wrap, sasConfirmed: true, ctx: vault });
+    // REPAIR. The same two codes — only the enroller reuses its credential instead of minting one.
+    const { qr: inv } = await holder.pairing.holder.invite({ ctx: vault });
+    const { qr: wrap, sas } = await orphan.pairing.enroller.repair(inv);
+    expect((await holder.pairing.holder.receiveWrap(wrap)).sas).toBe(sas);
+    await holder.pairing.holder.complete({ sasConfirmed: true, ctx: vault });
 
     // No SECOND credential was minted — the orphan was healed, not replaced. (A repair that minted a
     // new passkey would leave the original orphan in the picker forever, still opening nothing.)
@@ -276,12 +268,22 @@ describe("repairing an orphan through a surviving passkey", () => {
     const orphanPasskey = makeFakePasskey("qudi.fi");
     const orphan = createOwnOriginConnection({ rpId: "qudi.fi", passkey: orphanPasskey, anchorVault: vault });
 
-    const { qr: req } = await orphan.pairing.enroller.begin();
-    const { qr: ack } = await holder.pairing.holder.authorize({ qr: req, ctx: vault });
-    await orphan.pairing.enroller.receiveAck(ack);
-    await expect(orphan.pairing.enroller.repair({ sasConfirmed: false as unknown as true })).rejects.toThrow(
-      /sasConfirmed/i,
-    );
+    // The interlock moved with the round. Repair, like a fresh enrolment, no longer gates its own
+    // wrapping key behind a SAS answer — it sends W and lets the holder decide, because W is inert
+    // until a blob is published. So the refusal that matters is the HOLDER's, and it is the one that
+    // stops a repaired orphan being sealed to a MITM's key.
+    //
+    // The orphan must own a credential before it can repair one: repair AUTHENTICATES the existing
+    // passkey to recover the PRF that reproduces its wrapping key. So mint one first.
+    const { qr: inv0 } = await holder.pairing.holder.invite({ ctx: vault });
+    await orphan.pairing.enroller.mintAndWrap(inv0);
+
+    const { qr: inv } = await holder.pairing.holder.invite({ ctx: vault });
+    const { qr: wrap } = await orphan.pairing.enroller.repair(inv);
+    await holder.pairing.holder.receiveWrap(wrap);
+    await expect(
+      holder.pairing.holder.complete({ sasConfirmed: false as unknown as true, ctx: vault }),
+    ).rejects.toThrow(/sasConfirmed/i);
   });
 });
 

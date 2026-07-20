@@ -1,5 +1,5 @@
 {
-  "$comment": "Cross-implementation test vectors for the Passkey Access Vault ERC. An implementation that reproduces these bytes interoperates. These are NOT examples — they are the conformance bar. CC0.",
+  "$comment": "Cross-implementation test vectors for the Passkey Access Vault ERC. An implementation that reproduces these bytes interoperates. These are NOT examples \u2014 they are the conformance bar. CC0.",
   "constants": {
     "hkdfSalt": "passkey-access-vault/hkdf-salt/v0",
     "prfSalt": "passkey-access-vault/prf-salt/v0",
@@ -25,7 +25,7 @@
     "slotId": "0xe495ac60cc43ed7373e9b1dbda10419c60cd3d10f1f60b00365846708e496f54"
   },
   "slotWrappingKey": {
-    "$comment": "W = HKDF-SHA256(IKM=prf_of_THIS_door, salt=hkdfSalt, info=`${slotInfoPrefix}|${lowercase_address}|${slotId}`, L=32). Both info inputs are PUBLIC — that is what lets an enroller derive W alone and never receive K.",
+    "$comment": "W = HKDF-SHA256(IKM=prf_of_THIS_door, salt=hkdfSalt, info=`${slotInfoPrefix}|${lowercase_address}|${slotId}`, L=32). Both info inputs are PUBLIC \u2014 that is what lets an enroller derive W alone and never receive K.",
     "prf": "0xabababababababababababababababababababababababababababababababab",
     "address": "0x1111111111111111111111111111111111111111",
     "credentialId": "Y3JlZC0x",
@@ -55,10 +55,12 @@
     }
   },
   "sas": {
-    "$comment": "6 digits from SHA-256(bPub || aPub || nonce). bPub is the INITIATOR (the enroller).",
+    "$comment": "6 digits from SHA-256(bPub || aPub || nonce || evm || anchorChainId), where the offer is joined as `${evm.toLowerCase()}|${anchorChainId}`. bPub is the ENROLLER (the side acquiring access); aPub is the HOLDER, which sends round 1. The offer is committed because it travels in cleartext: an attacker relaying both pubkeys faithfully while rewriting `evm` would otherwise be invisible. Address case is normalised \u2014 checksum variants must not split the digits.",
     "bPub": "0x0101010101010101010101010101010101010101010101010101010101010101",
     "aPub": "0x0202020202020202020202020202020202020202020202020202020202020202",
     "nonce": "BwcHBwcHBwcHBwcHBwcHBw",
-    "sas": "270524"
+    "evm": "0x9858effd232b4033e47d90003d41ec34ecaeda94",
+    "anchorChainId": 10,
+    "sas": "280470"
   }
 }

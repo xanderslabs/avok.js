@@ -13,13 +13,19 @@
 import { useEffect } from "react";
 import { usePairingCeremony } from "./pairing.js";
 
+// PairDevice is the QR surface, so its copy may name cameras — the step IDs themselves deliberately
+// do not, because the same ceremony runs over postMessage where nothing is shown or scanned. An app
+// on that transport supplies its own captions for the same four steps.
 const DEFAULT_CAPTIONS: Record<string, string> = {
-  "show-request": "Show this code to your other device.",
-  "scan-ack": "Scan the reply shown on your other device.",
-  "show-wrap": "Show this final code to your other device to finish.",
-  "scan-request": "Scan the code shown on your other device.",
-  "show-ack": "Show this to your other device.",
-  "scan-wrap": "Scan the final code from your other device.",
+  // Holder — the device that already has the wallet.
+  "send-invite": "Show this code to the device you are adding.",
+  "await-wrap": "Now scan the code shown on that device.",
+  // Enroller — the device being added.
+  "await-invite": "Scan the code shown on your existing device.",
+  "send-wrap": "Show this code back to your existing device.",
+  // Both.
+  "confirm-sas": "Check that both devices show the same six digits.",
+  done: "Done.",
 };
 
 export function PairDevice({

@@ -51,24 +51,24 @@ export function twoSides(vault: Vault) {
   };
 }
 
-/** The whole ceremony: THREE codes, capturing every payload that crosses the wire. */
+/** The whole ceremony: TWO codes, capturing every payload that crosses the wire. */
 export async function enrolAccessSlot(holder: Conn, enroller: Conn, vault: Vault) {
   const wire: string[] = [];
 
-  const { qr: request } = await enroller.pairing.enroller.begin();
-  wire.push(request);
+  // ROUND 1 — the invite. The holder speaks first: the enroller cannot mint anything until it knows
+  // which wallet it is joining, and that is immutable in the credential once created.
+  const { qr: invite } = await holder.pairing.holder.invite({ ctx: vault });
+  wire.push(invite);
 
-  // The ack carries the sealed offer (wallet + anchor chain). Folding it in is what keeps the ceremony
-  // at three codes even though the wallet key no longer travels.
-  const { qr: ack, sas: sasHolder } = await holder.pairing.holder.authorize({ qr: request, ctx: vault });
-  wire.push(ack);
-  const { sas: sasEnroller } = await enroller.pairing.enroller.receiveAck(ack);
-  expect(sasHolder).toBe(sasEnroller); // the human compares these on the two screens
-
-  const { qr: wrap, rpId } = await enroller.pairing.enroller.enroll({ sasConfirmed: true });
+  // ROUND 2 — the enroller mints its credential and answers with its sealed wrapping key.
+  const { qr: wrap, sas: sasEnroller, rpId } = await enroller.pairing.enroller.mintAndWrap(invite);
   wire.push(wrap);
 
-  const { slotId, txId } = await holder.pairing.holder.complete({ qr: wrap, sasConfirmed: true, ctx: vault });
+  // The holder decrypts but cannot use it yet — the wrapping key is gated behind the SAS answer.
+  const { sas: sasHolder } = await holder.pairing.holder.receiveWrap(wrap);
+  expect(sasHolder).toBe(sasEnroller); // the human compares these on the two screens
+
+  const { slotId, txId } = await holder.pairing.holder.complete({ sasConfirmed: true, ctx: vault });
   return { wire, rpId, slotId, txId };
 }
 

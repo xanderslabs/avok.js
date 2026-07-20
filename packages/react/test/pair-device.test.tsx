@@ -12,7 +12,7 @@ vi.mock("@avokjs/core/qr", () => ({
 }));
 
 const pairing = {
-  enroller: { begin: vi.fn().mockResolvedValue({ qr: "REQ" }), receiveAck: vi.fn(), enroll: vi.fn() },
+  enroller: { mintAndWrap: vi.fn().mockResolvedValue({ qr: "WRAP", sas: "123456" }) },
   holder: { authorize: vi.fn(), complete: vi.fn() },
 };
 const client = {
@@ -34,9 +34,9 @@ describe("<PairDevice>", () => {
       </AvokProvider>,
     );
     expect(container).toBeTruthy();
-    await waitFor(() => expect(pairing.enroller.begin).toHaveBeenCalled());
-    expect(transport.showCode).toHaveBeenCalledWith("REQ");
-    // With the request code up and the ceremony parked at the scan step, the tap-to-scan control shows.
-    await waitFor(() => expect(container.textContent).toMatch(/scan their reply/i));
+    // The enroller's opening move is now a SCAN, not a display — it has nothing to say until it knows
+    // which wallet it is joining. Scans are tap-gated (a device cannot detect that the other one
+    // scanned its screen), so the component parks on the camera prompt for the `await-invite` step.
+    await waitFor(() => expect(container.textContent).toMatch(/scan the code shown on your existing device/i));
   });
 });

@@ -21,11 +21,13 @@ vi.mock("@avokjs/core/qr", () => ({
 
 const pairing = {
   enroller: {
-    begin: vi.fn().mockResolvedValue({ qr: "REQ" }),
-    receiveAck: vi.fn().mockResolvedValue({ sas: "123456" }),
-    enroll: vi.fn().mockResolvedValue({ qr: "WRAP" }),
+    mintAndWrap: vi.fn().mockResolvedValue({ qr: "WRAP", sas: "123456" }),
   },
-  holder: { authorize: vi.fn(), complete: vi.fn() },
+  holder: {
+    invite: vi.fn().mockResolvedValue({ qr: "INVITE" }),
+    receiveWrap: vi.fn().mockResolvedValue({ sas: "123456" }),
+    complete: vi.fn(),
+  },
 };
 const login = vi.fn().mockResolvedValue({});
 const client = {
@@ -60,17 +62,24 @@ afterEach(() => {
 });
 
 describe("usePairingCeremony (import / enroller)", () => {
-  it("begins the ceremony and shows the request QR", async () => {
-    transport.scanCode.mockReturnValue(new Promise(() => {})); // never resolves — park at scan-ack
+  it("scans the invite and shows its wrap", async () => {
+    // The enroller now SCANS first and shows nothing until it has the invite — the inversion the
+    // two-round ceremony introduced.
+    //
+    // That changes the FIRST observable. Previously the enroller showed a code immediately, which
+    // needed no user action; now its opening move is a scan, and scans are gated behind a tap (a
+    // device cannot detect that the other one scanned its screen). So the ceremony correctly parks at
+    // `prompt-scan` with nothing shown, waiting for the user to open the camera.
+    transport.scanCode.mockReturnValue(new Promise(() => {})); // never resolves
     render(wrap(<Harness role="import" />));
     await waitFor(() => {
-      expect(pairing.enroller.begin).toHaveBeenCalled();
-      expect(transport.showCode).toHaveBeenCalledWith("REQ");
+      expect(captured.phase).toBe("prompt-scan");
     });
+    expect(transport.showCode).not.toHaveBeenCalled();
   });
 
   it("reaches the SAS gate after a scan, and confirmSas(false) rejects the ceremony", async () => {
-    transport.scanCode.mockResolvedValue("ACK");
+    transport.scanCode.mockResolvedValue("INVITE");
     render(wrap(<Harness role="import" />));
 
     // Poll triggerScan until the tap-gated scan advances and the ceremony reaches the SAS gate.
@@ -79,17 +88,18 @@ describe("usePairingCeremony (import / enroller)", () => {
       expect(captured.phase).toBe("sas");
     });
     expect(captured.sas).toBe("123456");
-    expect(pairing.enroller.receiveAck).toHaveBeenCalledWith("ACK");
+    expect(pairing.enroller.mintAndWrap).toHaveBeenCalledWith("INVITE");
 
     act(() => captured.confirmSas(false));
     await waitFor(() => expect(captured.phase).toBe("rejected"));
-    expect(pairing.enroller.enroll).not.toHaveBeenCalled(); // never asserts sasConfirmed on a reject
+    // The credential is already minted by this point — that is the trade for the shorter
+    // ceremony. What must NOT happen is the holder sealing K, which is asserted on that side.
   });
 
   it("a blocked camera surfaces a camera-error phase that retryCamera clears", async () => {
     transport.scanCode
       .mockRejectedValueOnce(new FakeCameraUnavailable())
-      .mockResolvedValueOnce("ACK");
+      .mockResolvedValueOnce("INVITE");
     render(wrap(<Harness role="import" />));
 
     await waitFor(() => {

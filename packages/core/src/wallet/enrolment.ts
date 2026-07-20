@@ -10,7 +10,6 @@ import {
 import { encryptSlotMeta } from "./crypto/slot-meta.js";
 import { deriveSlotId, encodeAccessHandle, handleLabel } from "./passkey/label.js";
 import type { PasskeyAdapter } from "./passkey/adapter.js";
-import type { PairEphemeral, PairAck } from "./pairing.js";
 
 /**
  * PASSKEY ENROLMENT — the ONE ceremony that provisions an access slot, and the only one there is.
@@ -47,15 +46,21 @@ import type { PairEphemeral, PairAck } from "./pairing.js";
 const ENROLMENT_VERSION = 1 as const;
 
 /** What the holder tells the enroller: the wallet, and the chain its slot goes on. The enroller needs
- *  both BEFORE it can mint a credential (they are baked into the passkey's user handle at creation),
- *  which is why this rides the ACK — folding it there keeps the ceremony at three codes. */
+ *  both BEFORE it can mint a credential — they are baked into the passkey's user handle at creation,
+ *  and a credential is immutable once made. This is round 1, in cleartext (both values are already
+ *  public on chain); its integrity comes from the SAS transcript, not from encryption. */
 export interface AccessSlotOffer {
   evm: Address;
   anchorChainId: number;
 }
 
-/** What the enroller sends back: its credential, its domain (for the roster), and its wrapping key. */
+/** What the enroller sends back: its ephemeral public key, its credential, its domain (for the
+ *  roster), and its wrapping key. The pubkey rides here because the ack round that used to carry it
+ *  is gone — this is the holder's first and only sight of the enroller's half of the ECDH. */
 export interface AccessSlotWrap {
+  /** The enroller's ephemeral public key. Cleartext by necessity: the holder needs it to derive the
+   *  session key that decrypts everything else in this payload. Bound into the SAS. */
+  bPub: string;
   v: 1;
   kind: "wrap";
   iv: string;
@@ -88,35 +93,6 @@ async function open<T>(key: CryptoKey, kind: "ack" | "wrap", p: { iv: string; ct
   return body;
 }
 
-/** Holder → enroller (round 2). The ack carries the session's public key AND the sealed offer. The
- *  offer is sealed rather than sent in the clear: a QR code is a thing people point cameras at. */
-export async function buildAck(
-  eph: PairEphemeral,
-  nonce: string,
-  key: CryptoKey,
-  offer: AccessSlotOffer,
-): Promise<PairAck> {
-  return {
-    v: ENROLMENT_VERSION,
-    kind: "ack",
-    aPub: bytesToBase64Url(eph.publicKey),
-    nonce,
-    ...(await seal(key, "ack", offer)),
-  };
-}
-
-export async function openAck(key: CryptoKey, ack: PairAck): Promise<AccessSlotOffer> {
-  return open<AccessSlotOffer>(key, "ack", ack);
-}
-
-/**
- * Enroller side (round 3, part one). Mint the credential under THIS origin, derive W from its PRF.
- *
- * K is never requested and never received — that is the point of the ceremony. The PRF is NOT wiped:
- * a registration's prfOutput belongs to the ADAPTER (an adapter may hand back a buffer it still owns,
- * and zeroing it would zero the credential — a passkey that enrols and can never be opened). Only the
- * single-use PRF from authenticate()/discover() is wiped. See test/secret-hygiene.test.ts.
- */
 export async function createPasskeyCredential(args: {
   passkey: PasskeyAdapter;
   networkName: string;
@@ -156,10 +132,10 @@ export async function repairPasskeyCredential(args: {
 /** Enroller → holder (round 3): the credential id, this origin's rp-id (for the roster), and W. */
 export async function sealWrap(
   key: CryptoKey,
-  w: { credentialId: string; rpId: string; wrappingKey: Uint8Array },
+  w: { bPub: Uint8Array; credentialId: string; rpId: string; wrappingKey: Uint8Array },
 ): Promise<AccessSlotWrap> {
   const body = { credentialId: w.credentialId, rpId: w.rpId, wrappingKey: bytesToBase64Url(w.wrappingKey) };
-  return { v: ENROLMENT_VERSION, kind: "wrap", ...(await seal(key, "wrap", body)) };
+  return { v: ENROLMENT_VERSION, kind: "wrap", bPub: bytesToBase64Url(w.bPub), ...(await seal(key, "wrap", body)) };
 }
 
 /** What `openWrap` hands back: a wrap that has been DECRYPTED but is not yet USABLE. */

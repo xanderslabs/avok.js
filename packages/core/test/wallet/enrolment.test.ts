@@ -1,14 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { hexToBytes, type Address } from "viem";
-import { generateEphemeral, randomNonce, deriveSession } from "../../src/wallet/pairing.js";
-import {
-  buildAck,
-  openAck,
-  createPasskeyCredential,
-  sealWrap,
-  openWrap,
-  sealAccessSlot,
-} from "../../src/wallet/enrolment.js";
+import { generateEphemeral, randomNonce, deriveSession, buildInvite, computeSas } from "../../src/wallet/pairing.js";
+import { createPasskeyCredential, sealWrap, openWrap, sealAccessSlot } from "../../src/wallet/enrolment.js";
 import { decryptKeyBlob } from "../../src/wallet/crypto/blob.js";
 import { decryptSlotMeta } from "../../src/wallet/crypto/slot-meta.js";
 import { deriveSlotId, decodeUserHandle } from "../../src/wallet/passkey/label.js";
@@ -43,6 +36,8 @@ const enrollerPasskey = (captured: { handle?: Uint8Array } = {}) =>
   }) as unknown as PasskeyAdapter;
 
 /** Both halves of one SAS-confirmed session, exactly as the connection builds them. */
+const OFFER = { evm: EVM as string, anchorChainId: 10 };
+
 async function session() {
   const b = generateEphemeral();
   const a = generateEphemeral();
@@ -51,35 +46,71 @@ async function session() {
     myPrivate: b.privateKey,
     myPublic: b.publicKey,
     theirPublic: a.publicKey,
-    iAmInitiator: true,
+    iAmEnroller: true,
     nonce,
+    offer: OFFER,
   });
   const as = await deriveSession({
     myPrivate: a.privateKey,
     myPublic: a.publicKey,
     theirPublic: b.publicKey,
-    iAmInitiator: false,
+    iAmEnroller: false,
     nonce,
+    offer: OFFER,
   });
   expect(as.sas).toBe(bs.sas); // both sides show the user the same 6 digits
   return { holder: as.key, enroller: bs.key, eph: a, nonce };
 }
 
 describe("passkey enrolment (the one ceremony)", () => {
-  test("the ACK carries the offer — so the ceremony stays at three codes, not four", async () => {
-    // encodeAccessHandle is baked into user.id at credential creation, so the enroller cannot mint
-    // its passkey until it knows the wallet and its chain. Folding the offer into the ack is what lets
-    // us delete K-transport without charging the user an extra QR hop.
-    const { holder, enroller, eph, nonce } = await session();
-    const ack = await buildAck(eph, nonce, holder, { evm: EVM, anchorChainId: 10 });
-    expect(ack.kind).toBe("ack");
-    expect(await openAck(enroller, ack)).toEqual({ evm: EVM, anchorChainId: 10 });
+  test("the INVITE carries the offer — so the enroller can mint from round 1 alone", async () => {
+    // encodeAccessHandle is baked into user.id at credential creation and is immutable afterwards, so
+    // the enroller cannot mint its passkey until it knows the wallet and its chain. Round 1 carrying
+    // them is what lets the ceremony be two codes instead of three.
+    const eph = generateEphemeral();
+    const invite = buildInvite(eph, randomNonce(), { evm: EVM, anchorChainId: 10 });
+    expect(invite.kind).toBe("invite");
+    expect(invite.evm).toBe(EVM);
+    expect(invite.anchorChainId).toBe(10);
   });
 
-  test("the offer is ciphertext — the wallet address does not ride the QR in the clear", async () => {
-    const { holder, eph, nonce } = await session();
-    const ack = await buildAck(eph, nonce, holder, { evm: EVM, anchorChainId: 10 });
-    expect(JSON.stringify(ack).toLowerCase()).not.toContain(EVM.slice(2, 12).toLowerCase());
+  test("the offer rides in CLEARTEXT — and the SAS is what protects it", async () => {
+    // Inverted from the old design deliberately. Both values are already public on chain, so sealing
+    // them bought nothing; what they need is INTEGRITY. An attacker relaying both public keys
+    // faithfully while rewriting `evm` would otherwise pass every check, and the enroller would mint
+    // a credential whose immutable handle names a wallet its user never chose.
+    const eph = generateEphemeral();
+    const invite = buildInvite(eph, randomNonce(), { evm: EVM, anchorChainId: 10 });
+    expect(JSON.stringify(invite).toLowerCase()).toContain(EVM.slice(2, 12).toLowerCase());
+
+    // Tampering with either field moves the digits, which is what the two humans are comparing.
+    const b = generateEphemeral();
+    const honest = await computeSas(b.publicKey, eph.publicKey, invite.nonce, {
+      evm: EVM,
+      anchorChainId: 10,
+    });
+    const swappedWallet = await computeSas(b.publicKey, eph.publicKey, invite.nonce, {
+      evm: "0x000000000000000000000000000000000000dEaD",
+      anchorChainId: 10,
+    });
+    const swappedChain = await computeSas(b.publicKey, eph.publicKey, invite.nonce, {
+      evm: EVM,
+      anchorChainId: 8453,
+    });
+    expect(swappedWallet).not.toBe(honest);
+    expect(swappedChain).not.toBe(honest);
+  });
+
+  test("the SAS ignores address CASE — checksum variants must not split the digits", async () => {
+    // An EVM address is case-insensitive but checksums differ by source. Two sides that disagreed on
+    // case would show different digits for an identical, untampered ceremony — an abort with no
+    // attacker, which trains users to ignore mismatches.
+    const b = generateEphemeral();
+    const a = generateEphemeral();
+    const nonce = randomNonce();
+    const lower = await computeSas(b.publicKey, a.publicKey, nonce, { evm: EVM.toLowerCase(), anchorChainId: 10 });
+    const checksummed = await computeSas(b.publicKey, a.publicKey, nonce, { evm: EVM, anchorChainId: 10 });
+    expect(lower).toBe(checksummed);
   });
 
   test("createPasskeyCredential mints the credential and derives W — and never asks for K", async () => {
@@ -104,7 +135,7 @@ describe("passkey enrolment (the one ceremony)", () => {
       evm: EVM,
       anchorChainId: 10,
     });
-    const wire = await sealWrap(enroller, slot);
+    const wire = await sealWrap(enroller, { bPub: new Uint8Array(32).fill(9), ...slot });
 
     // Nothing the enroller sends contains the wallet key — it does not have it, and cannot.
     expect(JSON.stringify(wire)).not.toContain(Buffer.from(K.key).toString("base64"));
@@ -152,14 +183,8 @@ describe("passkey enrolment (the one ceremony)", () => {
       evm: EVM,
       anchorChainId: 10,
     });
-    const wire = await sealWrap(s1.enroller, slot);
+    const wire = await sealWrap(s1.enroller, { bPub: new Uint8Array(32).fill(9), ...slot });
     await expect(openWrap(s2.holder, wire)).rejects.toThrow();
-  });
-
-  test("an ack cannot be replayed as a wrap (the payload kind is the AES-GCM additionalData)", async () => {
-    const { holder, enroller, eph, nonce } = await session();
-    const ack = await buildAck(eph, nonce, holder, { evm: EVM, anchorChainId: 10 });
-    await expect(openWrap(enroller, { ...ack, kind: "wrap" } as never)).rejects.toThrow();
   });
 });
 
@@ -178,6 +203,7 @@ describe("openWrap is confirm-gated", () => {
   async function wireUp() {
     const { enroller, holder } = await session();
     const wire = await sealWrap(enroller, {
+      bPub: new Uint8Array(32).fill(9),
       credentialId: CRED,
       rpId: "independent.example",
       wrappingKey: new Uint8Array(32).fill(7),

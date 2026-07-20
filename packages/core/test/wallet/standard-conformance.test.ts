@@ -126,6 +126,7 @@ describe("conformance: Avok reproduces the standard's test vectors", () => {
       hexToBytes(V.sas.bPub as `0x${string}`),
       hexToBytes(V.sas.aPub as `0x${string}`),
       V.sas.nonce,
+      { evm: V.sas.evm, anchorChainId: V.sas.anchorChainId },
     );
     expect(sas).toBe(V.sas.sas);
   });

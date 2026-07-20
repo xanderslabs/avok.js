@@ -35,30 +35,43 @@ export function randomNonce(): string {
   return bytesToBase64Url(crypto.getRandomValues(new Uint8Array(16)));
 }
 
-export interface PairRequest {
-  v: 1;
-  kind: "request";
-  bPub: string;
-  nonce: string;
-}
 /**
- * The ack also CARRIES THE OFFER: the wallet address and anchor chain, sealed under the session key.
- * The enrolling side needs both BEFORE it can mint its credential (they are baked into the passkey's
- * user handle at creation), and folding them in here keeps the ceremony at three codes — the same
- * count as the old K-shipping flow, so removing K from the wire costs the user no extra step.
+ * ROUND 1, holder → enroller: the INVITE. The holder speaks first, and the offer it carries — which
+ * wallet, which anchor chain — travels in CLEARTEXT.
+ *
+ * Both fields are already public on chain — the wallet address is the account, and the anchor chain
+ * is where its slots live — so sealing them bought nothing. They were sealed only because they used
+ * to ride a message that happened to be sealed. What they DO need is integrity, which they get from
+ * the SAS transcript (see `computeSas`): tamper with either and the six digits diverge.
+ *
+ * The holder speaks first because of what the enroller cannot do without this. A credential's user
+ * handle is baked at creation and immutable, and it must name the wallet — so the enroller cannot
+ * mint anything until it knows these two values.
  */
-export interface PairAck {
+export interface PairInvite {
   v: 1;
-  kind: "ack";
+  kind: "invite";
+  /** The holder's ephemeral public key. */
   aPub: string;
   nonce: string;
-  /** Sealed offer: AES-GCM(iv, {evm, anchorChainId}) under the session key. */
-  iv: string;
-  ct: string;
+  /** The wallet being enrolled into. Public; integrity comes from the SAS. */
+  evm: string;
+  /** The chain its access slot is written to. Public; integrity comes from the SAS. */
+  anchorChainId: number;
 }
-
-export function buildRequest(eph: PairEphemeral, nonce: string): PairRequest {
-  return { v: PAIRING_VERSION, kind: "request", bPub: bytesToBase64Url(eph.publicKey), nonce };
+export function buildInvite(
+  eph: PairEphemeral,
+  nonce: string,
+  offer: { evm: string; anchorChainId: number },
+): PairInvite {
+  return {
+    v: PAIRING_VERSION,
+    kind: "invite",
+    aPub: bytesToBase64Url(eph.publicKey),
+    nonce,
+    evm: offer.evm,
+    anchorChainId: offer.anchorChainId,
+  };
 }
 
 /** Serialize a payload to base64url JSON (for QR rendering). Any versioned, kinded payload — the
@@ -81,8 +94,11 @@ export async function deriveSession(args: {
   myPrivate: Uint8Array;
   myPublic: Uint8Array;
   theirPublic: Uint8Array;
-  iAmInitiator: boolean; // B (new device) = initiator
+  /** True on the ENROLLER (the side acquiring access). Fixes transcript position, not send order. */
+  iAmEnroller: boolean;
   nonce: string;
+  /** The cleartext offer from round 1. Bound into the SAS so tampering with it is visible. */
+  offer: { evm: string; anchorChainId: number };
 }): Promise<{ key: CryptoKey; sas: string }> {
   const shared = x25519.getSharedSecret(args.myPrivate, args.theirPublic);
   const baseKey = await crypto.subtle.importKey("raw", bytesToArrayBuffer(shared), "HKDF", false, ["deriveKey"]);
@@ -102,20 +118,39 @@ export async function deriveSession(args: {
     false,
     ["encrypt", "decrypt"],
   );
-  // Canonical transcript order: initiator(B) pubkey ‖ responder(A) pubkey ‖ nonce.
-  const bPub = args.iAmInitiator ? args.myPublic : args.theirPublic;
-  const aPub = args.iAmInitiator ? args.theirPublic : args.myPublic;
-  const sas = await computeSas(bPub, aPub, args.nonce);
+  // Canonical transcript order: enroller(B) pubkey ‖ holder(A) pubkey ‖ nonce ‖ offer. Position is
+  // by ROLE, not by who spoke first — the holder now sends round 1, and tying the order to send
+  // order instead would have silently swapped the transcript and broken every SAS.
+  const bPub = args.iAmEnroller ? args.myPublic : args.theirPublic;
+  const aPub = args.iAmEnroller ? args.theirPublic : args.myPublic;
+  const sas = await computeSas(bPub, aPub, args.nonce, args.offer);
   return { key, sas };
 }
 
-/** 6 decimal digits from SHA-256(bPub ‖ aPub ‖ nonce). */
-export async function computeSas(bPub: Uint8Array, aPub: Uint8Array, nonce: string): Promise<string> {
+/**
+ * 6 decimal digits over the WHOLE transcript: SHA-256(bPub ‖ aPub ‖ nonce ‖ evm ‖ anchorChainId).
+ *
+ * The offer is in here because it is no longer sealed. An attacker relaying both public keys
+ * faithfully while rewriting `evm` would otherwise pass every check: the shared secrets match, the
+ * digits match, and the enroller mints a credential whose immutable user handle names a wallet its
+ * user never chose — a silent, permanent, confusing failure. Committing the offer to the digits makes
+ * that tampering visible to the two humans comparing them.
+ */
+export async function computeSas(
+  bPub: Uint8Array,
+  aPub: Uint8Array,
+  nonce: string,
+  offer: { evm: string; anchorChainId: number },
+): Promise<string> {
+  // Lowercased: an EVM address is case-insensitive but checksums vary by source, and two sides that
+  // disagree on case would show different digits for an identical, untampered ceremony.
+  const ob = stringToBytes(`${offer.evm.toLowerCase()}|${offer.anchorChainId}`);
   const nb = stringToBytes(nonce);
-  const transcript = new Uint8Array(bPub.length + aPub.length + nb.length);
+  const transcript = new Uint8Array(bPub.length + aPub.length + nb.length + ob.length);
   transcript.set(bPub, 0);
   transcript.set(aPub, bPub.length);
   transcript.set(nb, bPub.length + aPub.length);
+  transcript.set(ob, bPub.length + aPub.length + nb.length);
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytesToArrayBuffer(transcript)));
   const n = ((digest[0] << 16) | (digest[1] << 8) | digest[2]) % 1_000_000;
   return n.toString().padStart(6, "0");

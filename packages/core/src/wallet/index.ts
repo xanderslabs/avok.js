@@ -35,25 +35,23 @@ export {
 export {
   generateEphemeral,
   randomNonce,
-  buildRequest,
+  buildInvite,
   encodePayload,
   decodePayload,
   deriveSession,
   type PairEphemeral,
-  type PairRequest,
-  type PairAck,
+  type PairInvite,
 } from "./pairing.js";
 
 // The ONE enrolment ceremony — same passkey whether the credential is on your second device or under an
 // independent domain.
 export type { AccessSlotOffer, AccessSlotWrap } from "./enrolment.js";
 export {
-  buildAck,
-  openAck,
   createPasskeyCredential,
   repairPasskeyCredential,
   sealWrap,
   openWrap,
+  type PendingAccessSlotWrap,
   sealAccessSlot,
 } from "./enrolment.js";
 

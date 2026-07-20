@@ -13,7 +13,7 @@ import {
   withDecryptedContainer,
   generateEphemeral,
   randomNonce,
-  buildRequest,
+  buildInvite,
   encodePayload,
   decodePayload,
   deriveSession,
@@ -30,12 +30,11 @@ import {
   listAccessSlots as coreListAccessSlots,
   readAccessSlotRpId,
   vaultForChainFromRegistry,
-  buildAck,
-  openAck,
   createPasskeyCredential,
   repairPasskeyCredential,
   sealWrap,
   openWrap,
+  type PendingAccessSlotWrap,
   sealAccessSlot,
   type AccessSlotOffer,
   type AccessSlotWrap,
@@ -45,8 +44,7 @@ import {
   type RosterReader,
   type AccessSlotEntry,
   type PairEphemeral,
-  type PairRequest,
-  type PairAck,
+  type PairInvite,
   type ExportedWallet,
 } from "../wallet/index.js";
 import { createSiweMessage } from "viem/siwe";
@@ -218,8 +216,15 @@ export function createOwnOriginConnection(opts: {
   // Per-session ephemeral pairing state. Wiped on completion/abort; never persisted.
   // Per-session ephemeral enrolment state. Wiped on completion/abort; never persisted. `offer` is the
   // holder's wallet+chain, learned by the enroller from the ack, and needed before it can mint.
-  let pairing: { role: "A" | "B"; eph: PairEphemeral; nonce: string; key?: CryptoKey; offer?: AccessSlotOffer } | null =
-    null;
+  let pairing: {
+    role: "A" | "B";
+    eph: PairEphemeral;
+    nonce: string;
+    key?: CryptoKey;
+    offer?: AccessSlotOffer;
+    /** HOLDER only: the decrypted-but-withheld wrap, awaiting the user's SAS answer. */
+    pending?: PendingAccessSlotWrap;
+  } | null = null;
 
   /**
    * PREFLIGHT. Every orphan is born the same way: a credential minted into a write that was never going
@@ -473,52 +478,72 @@ export function createOwnOriginConnection(opts: {
     pairing: {
       // ── The holder: an existing, live passkey. It has K, it is delegated, it pays. ──
       holder: {
-        async authorize(args: { qr: string; ctx: AccessCtx }): Promise<{ qr: string; sas: string }> {
+        /**
+         * ROUND 1 — the INVITE. The holder speaks first, because the enroller cannot act until it knows which
+         * wallet it is enrolling into — that is baked into its credential's user handle at creation
+         * and immutable afterwards.
+         *
+         * No SAS is returned yet: the digits commit to BOTH public keys, and the enroller's has not
+         * arrived. It comes back from `receiveWrap`.
+         */
+        async invite(args: { ctx: AccessCtx }): Promise<{ qr: string }> {
           const st = requireState();
-          // PREFLIGHT, and it belongs HERE. The enroller has no chain access by design — it cannot check
-          // anything itself, and it is about to mint a credential purely on the strength of this ack. If
-          // our write path is dead, say so now, before a passkey exists on their domain that we could
-          // never finish enrolling.
+          // PREFLIGHT, and it belongs HERE. The enroller has no chain access by design — it cannot
+          // check anything itself, and it is about to mint a credential purely on the strength of
+          // this offer. If our write path is dead, say so now, before a passkey exists on their
+          // domain that we could never finish enrolling.
           await preflight(args.ctx);
-          const req = decodePayload<PairRequest>(args.qr, "request");
           const eph = generateEphemeral();
-          pairing = { role: "A", eph, nonce: req.nonce };
-          const { key, sas } = await deriveSession({
-            myPrivate: eph.privateKey,
-            myPublic: eph.publicKey,
-            theirPublic: base64UrlToBytes(req.bPub),
-            iAmInitiator: false,
-            nonce: req.nonce,
-          });
-          pairing.key = key;
-          // The ack carries the offer the enroller needs BEFORE it can mint a credential (the wallet
-          // and its anchor chain are baked into the passkey's user handle at creation). Sealed, not
-          // plaintext: a QR code is a thing people point cameras at.
-          const ack = await buildAck(eph, req.nonce, key, {
-            evm: st.evmAddress,
-            anchorChainId: anchorChain.chainId,
-          });
-          return { qr: encodePayload(ack), sas };
+          const nonce = randomNonce();
+          pairing = { role: "A", eph, nonce };
+          return {
+            qr: encodePayload(buildInvite(eph, nonce, { evm: st.evmAddress, anchorChainId: anchorChain.chainId })),
+          };
         },
 
-        async complete(args: {
-          qr: string;
-          sasConfirmed: true;
-          ctx: AccessCtx;
-        }): Promise<{ slotId: Hex; txId: string }> {
+        /**
+         * ROUND 2 arrives. Derive the session, DECRYPT the wrap, and show the user the digits.
+         *
+         * The wrapping key is inside what we just decrypted and is deliberately NOT reachable here —
+         * `openWrap` hands back a gate, and only `complete({ sasConfirmed: true })` opens it. That
+         * ordering is the entire reason this ceremony can be two rounds instead of three: W may
+         * arrive before the human confirms, because W alone is worthless. It is worth something only
+         * once we seal K under it and publish the blob, and that happens on the far side of the gate.
+         */
+        async receiveWrap(qr: string): Promise<{ sas: string }> {
           const st = requireState();
-          if (!pairing || pairing.role !== "A" || !pairing.key)
-            throw new Error("no enrolment session — call authorize() first");
-          // SAS interlock. This is the payload that matters: a MITM who substituted its OWN wrapping
-          // key would have us seal K under it — handing that attacker a passkey into the wallet. The 6
-          // digits the user compared are what rule that out.
-          //
-          // The check is no longer written here. `openWrap` decrypts but withholds, and the only way
-          // to a wrapping key is `confirm(sasConfirmed)` — so the interlock cannot be dropped by a
-          // refactor of this function, and a second caller of openWrap inherits it rather than having
-          // to remember it.
-          const pending = await openWrap(pairing.key, decodePayload<AccessSlotWrap>(args.qr, "wrap"));
-          const wrap = pending.confirm(args.sasConfirmed);
+          if (!pairing || pairing.role !== "A") throw new Error("no enrolment session — call invite() first");
+          const wrap = decodePayload<AccessSlotWrap>(qr, "wrap");
+          const { key, sas } = await deriveSession({
+            myPrivate: pairing.eph.privateKey,
+            myPublic: pairing.eph.publicKey,
+            theirPublic: base64UrlToBytes(wrap.bPub),
+            iAmEnroller: false,
+            nonce: pairing.nonce,
+            offer: { evm: st.evmAddress, anchorChainId: anchorChain.chainId },
+          });
+          pairing.key = key;
+          pairing.pending = await openWrap(key, wrap);
+          return { sas };
+        },
+
+        /**
+         * ROUND 2 is already in hand; this is the human's answer to it.
+         *
+         * The SAS interlock is not written here. `receiveWrap` decrypted into a gate, and the only
+         * route to a wrapping key is `confirm(sasConfirmed)` — so the check cannot be dropped by a
+         * refactor of this function, and any future caller inherits it instead of remembering it.
+         *
+         * Refusing wipes the wrapping key. The enroller must then BURN its credential and mint a
+         * fresh one before retrying: W is scoped to (address, slotId) and slotId derives from the
+         * credential id, so reusing it would make an attacker's copy of W live the instant a later
+         * attempt publishes the blob.
+         */
+        async complete(args: { sasConfirmed: true; ctx: AccessCtx }): Promise<{ slotId: Hex; txId: string }> {
+          const st = requireState();
+          if (!pairing || pairing.role !== "A" || !pairing.pending)
+            throw new Error("no enrolment session — call invite() then receiveWrap() first");
+          const wrap = pairing.pending.confirm(args.sasConfirmed);
           pairing = null;
 
           // The slot id is derived from the CREDENTIAL ID, not taken off the wire — a hostile enroller
@@ -565,49 +590,48 @@ export function createOwnOriginConnection(opts: {
 
       // ── The enroller: a fresh device, or an independent domain. No wallet, no chain access. ──
       enroller: {
-        async begin(): Promise<{ qr: string }> {
+        /**
+         * The WHOLE enroller side, in one call — and the name says what it costs: this MINTS A PASSKEY.
+         * Read the invite, create the credential, seal its wrapping key, answer.
+         *
+         * Three verbs collapsed into this because the two rounds the ceremony used to spend agreeing
+         * on a session are now folded into the two rounds that carry real payload. Nothing was
+         * skipped: the offer is read, an ephemeral is generated, ECDH runs, and the digits are
+         * computed — it simply all happens between receiving one code and sending the next.
+         *
+         * The SAS is returned ALONGSIDE the wrap rather than gating it, and that inversion is the
+         * heart of the reduction. W is not a secret worth a round of its own: W plus the on-chain
+         * blob yields K, and W alone yields nothing. An attacker who intercepts this wrap holds a key
+         * to a lock that will never be built, because the holder compares digits before publishing
+         * the blob and abandons the ceremony on a mismatch.
+         *
+         * ON MISMATCH THIS CREDENTIAL IS BURNED. Never call this twice and reuse a credential: W is
+         * scoped to (address, slotId) and slotId derives from the credential id, so an attacker's
+         * copy of W would come alive the moment a later attempt published a blob for the same
+         * credential. Every call mints a fresh one, which is what makes that safe by construction.
+         */
+        async mintAndWrap(qr: string): Promise<{ qr: string; sas: string; rpId: string }> {
+          const invite = decodePayload<PairInvite>(qr, "invite");
           const eph = generateEphemeral();
-          const nonce = randomNonce();
-          pairing = { role: "B", eph, nonce };
-          return { qr: encodePayload(buildRequest(eph, nonce)) };
-        },
-
-        async receiveAck(qr: string): Promise<{ sas: string }> {
-          if (!pairing || pairing.role !== "B") throw new Error("no enrolment session — call begin() first");
-          const ack = decodePayload<PairAck>(qr, "ack");
-          if (ack.nonce !== pairing.nonce) throw new Error("pairing nonce mismatch");
           const { key, sas } = await deriveSession({
-            myPrivate: pairing.eph.privateKey,
-            myPublic: pairing.eph.publicKey,
-            theirPublic: base64UrlToBytes(ack.aPub),
-            iAmInitiator: true,
-            nonce: pairing.nonce,
+            myPrivate: eph.privateKey,
+            myPublic: eph.publicKey,
+            theirPublic: base64UrlToBytes(invite.aPub),
+            iAmEnroller: true,
+            nonce: invite.nonce,
+            offer: { evm: invite.evm, anchorChainId: invite.anchorChainId },
           });
-          pairing.key = key;
-          pairing.offer = await openAck(key, ack); // the wallet + chain we are about to enrol into
-          return { sas };
-        },
-
-        async enroll(args: { sasConfirmed: true }): Promise<{ qr: string; rpId: string }> {
-          if (!pairing || pairing.role !== "B" || !pairing.key || !pairing.offer) {
-            throw new Error("no enrolment session — call receiveAck() first");
-          }
-          // SAS interlock: W goes out on this channel next, and W plus the public blob yields K. An
-          // unconfirmed channel here is a stolen wallet — the same stake the old K-shipping flow had.
-          if (args.sasConfirmed !== true)
-            throw new Error("pairing.enroller.enroll requires sasConfirmed: true (user must confirm the SAS matches)");
           const credential = await createPasskeyCredential({
             passkey: opts.passkey,
             networkName: opts.operatorName ?? opts.rpId,
-            evm: pairing.offer.evm,
-            anchorChainId: pairing.offer.anchorChainId,
+            evm: invite.evm as Address,
+            anchorChainId: invite.anchorChainId,
           });
-          const wrap = await sealWrap(pairing.key, credential);
+          const wrap = await sealWrap(key, { bPub: eph.publicKey, ...credential });
           credential.wrappingKey.fill(0); // sealed and sent; W is as powerful as K for this wallet
-          pairing = null;
           // The caller now waits for the holder to land the write, then calls continue() to log in.
           // It cannot log in before that: its blob is what it decrypts, and the blob is not there yet.
-          return { qr: encodePayload(wrap), rpId: credential.rpId };
+          return { qr: encodePayload(wrap), sas, rpId: credential.rpId };
         },
 
         /**
@@ -620,12 +644,20 @@ export function createOwnOriginConnection(opts: {
          * this credential. A repair that produced a different W would be the original bug with extra
          * steps.
          */
-        async repair(args: { sasConfirmed: true }): Promise<{ qr: string; rpId: string }> {
-          if (!pairing || pairing.role !== "B" || !pairing.key || !pairing.offer) {
-            throw new Error("no enrolment session — call receiveAck() first");
-          }
-          if (args.sasConfirmed !== true)
-            throw new Error("pairing.enroller.repair requires sasConfirmed: true (user must confirm the SAS matches)");
+        async repair(qr: string): Promise<{ qr: string; sas: string; rpId: string }> {
+          // Same shape as mintAndWrap, and it must be: repair IS an enrolment whose credential already
+          // exists. It takes the invite directly rather than reading session state, because there is
+          // no earlier round left to have established any — that was the round the reduction removed.
+          const invite = decodePayload<PairInvite>(qr, "invite");
+          const eph = generateEphemeral();
+          const { key, sas } = await deriveSession({
+            myPrivate: eph.privateKey,
+            myPublic: eph.publicKey,
+            theirPublic: base64UrlToBytes(invite.aPub),
+            iAmEnroller: true,
+            nonce: invite.nonce,
+            offer: { evm: invite.evm, anchorChainId: invite.anchorChainId },
+          });
           // The orphan proves it holds the credential by authenticating it — and that same ceremony is
           // how it gets the PRF that reproduces its wrapping key.
           const discovered = await opts.passkey.discover();
@@ -633,12 +665,11 @@ export function createOwnOriginConnection(opts: {
             passkey: opts.passkey,
             credentialId: discovered.credentialId,
             rpId: opts.rpId,
-            evm: pairing.offer.evm,
+            evm: invite.evm as Address,
           });
-          const wrap = await sealWrap(pairing.key, credential);
+          const wrap = await sealWrap(key, { bPub: eph.publicKey, ...credential });
           credential.wrappingKey.fill(0);
-          pairing = null;
-          return { qr: encodePayload(wrap), rpId: credential.rpId };
+          return { qr: encodePayload(wrap), sas, rpId: credential.rpId };
         },
       },
     },
