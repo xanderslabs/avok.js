@@ -10,7 +10,10 @@ Covers:
 - `secureStoreStorage` round-trips via injected fake SecureStore (TDD Step 1).
 - `secureStoreStorage` localStorage fallback in jsdom environment.
 - `AvokProvider` + `useAccount` reactivity with a fake `AvokClient`.
-- `useSend` + `useCreate` pending/error state with a fake client.
+- `useCreate` pending/error state with a fake client (`useSend` is gone — sending goes through the
+  EIP-1193 provider, not a hook).
+- `useEnroll` / `useExport` / `useAccessSlots` management verbs, including the optimistic remove.
+- `useSelfCustody` throwing on a use-only client.
 - `usePairingCeremony` phase machine (SAS gate, camera-error retry, reject) over a fake transport.
 - `createExpoCameraTransport` permission + barcode→promise bridge over a fake injected camera module.
 
@@ -49,10 +52,13 @@ Expected: value survives the round-trip from the Keychain (iOS) or Keystore (And
 
 ### 3. Bundle purity check
 
-In a React Native (Metro) or Expo (hermes) build, verify that:
-- Calling only `createOwnOriginConnection` does NOT pull `@avokjs/shared-origin` into
-  the bundle (check Metro bundle output / source-map explorer).
-- Calling `createSharedOriginConnection` DOES add the network chunk.
+In a React Native (Metro) or Expo (hermes) build, verify that the bundle contains no `react-dom`
+(`tsup.config.ts` externalizes it and builds `platform: "neutral"`) — check the Metro bundle output or
+a source-map explorer.
+
+There is no shared-origin check to run here. This package is own-origin only: the native auth-session
+channel was deleted, and `@avokjs/shared-origin` no longer exists as a package — it was collapsed into
+`@avokjs/core`.
 
 ### 4. Real camera QR pairing (`createExpoCameraTransport`)
 

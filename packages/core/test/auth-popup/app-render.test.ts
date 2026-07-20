@@ -33,7 +33,7 @@ describe("the popup's config", () => {
 });
 
 // The popup's runtime is now the framework-free driver + plain-DOM view + mount wiring in
-// src/auth-popup/ (mountAuthPopup), replacing the two React app entries. The BEHAVIOURAL contracts the
+// src/auth-popup/ (mountAuthPopup). The BEHAVIOURAL contracts the
 // old regex source-guards approximated — the ChannelResult reply shape, the `ready` handshake, the
 // reject-only-on-failed-decode blind-signing guard, the credentialId-constrain-then-fallback — are now
 // pinned end-to-end in src/auth-popup/ceremony.test.ts (a fake window + fake view), which is strictly

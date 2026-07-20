@@ -10,7 +10,7 @@ import {
 
 /**
  * ERC-7677 paymaster client — the standard `pm_getPaymasterStubData` → `pm_getPaymasterData`
- * handshake, replacing the bespoke `paymaster-client.ts` REST protocol. A thin, typed wrapper over
+ * handshake. A thin, typed wrapper over
  * viem's `createPaymasterClient` so `sdk-core` never imports viem's account-abstraction surface
  * directly, and so the EntryPoint defaults to Avok's v0.8 target. The per-send fee token rides in
  * `context` and is forwarded to the RPC as the 4th ERC-7677 param.

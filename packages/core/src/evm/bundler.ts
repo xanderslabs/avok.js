@@ -9,8 +9,7 @@ import {
 } from "viem/account-abstraction";
 
 /**
- * ERC-4337 bundler client — submits and tracks fully-built UserOperations, replacing the
- * `evm-relayer` submitter. A thin wrapper over viem's `createBundlerClient` that sends the raw
+ * ERC-4337 bundler client — submits and tracks fully-built UserOperations. A thin wrapper over viem's `createBundlerClient` that sends the raw
  * (already-signed) v0.8 UserOp directly (no viem SmartAccount preparation), so the Avok
  * `Connection`/`userop.ts` stays the single source of the UserOp and its signature. Passes the v0.8
  * EntryPoint explicitly since there is no viem account to derive it from.
