@@ -1,20 +1,55 @@
-import type {
-  EstimateTransactionFeeResponse,
-  GetPayerSignerResponse,
-  GetSupportedTokensResponse,
-  SignAndSendTransactionResponse,
-} from "@solana/kora";
+import type { FetchLike } from "../http.js";
 
 /**
- * TYPE-ONLY import, deliberately. `@solana/kora`'s runtime `KoraClient` calls global `fetch` with no
- * injection seam (this package hands a bound `FetchLike` down from `config.deps.fetch` — an unbound
- * browser fetch throws "Illegal invocation"), and its `client.js` statically imports node's `crypto`
- * for an optional HMAC we do not use, which a browser bundler cannot resolve. Its index also re-exports
- * kit plugins whose peers we do not install. Kora is plain JSON-RPC, so we speak it directly and keep
- * the SDK's published types as the source of truth for the wire format.
+ * Kora's wire shapes, DECLARED HERE rather than imported from `@solana/kora`.
+ *
+ * We never use that package at runtime: its `KoraClient` calls global `fetch` with no injection seam
+ * (this package hands a bound `FetchLike` down from `config.deps.fetch` — an unbound browser fetch
+ * throws "Illegal invocation"), its `client.js` statically imports node's `crypto` for an optional
+ * HMAC we do not use, which a browser bundler cannot resolve, and its index re-exports kit plugins
+ * whose peers we do not install. Kora is plain JSON-RPC, so we speak it directly.
+ *
+ * It was previously a type-only devDependency import, which worked only because the old bundled-dts
+ * build inlined these shapes into the published .d.ts. Declaration emit is now plain `tsc`, which
+ * would have emitted `import type ... from "@solana/kora"` into published types a consumer does not
+ * have installed. Mirroring the four response shapes here is the honest fix, and it is what the
+ * comment above always described: the SDK's own types are the source of truth for the wire format.
+ *
+ * snake_case is Kora's, not ours — these are transport shapes, converted at the edge in `createKora`.
  */
+/** Exported because it is the return type of `KoraClient.getPayerSigner`, part of the public surface. */
+export interface GetPayerSignerResponse {
+  /** Public key of the payment destination. */
+  payment_address: string;
+  /** Public key of the payer signer. */
+  signer_address: string;
+}
 
-import type { FetchLike } from "../http.js";
+interface GetSupportedTokensResponse {
+  /** Supported token mint addresses. */
+  tokens: string[];
+}
+
+interface EstimateTransactionFeeResponse {
+  /** Transaction fee in lamports. */
+  fee_in_lamports: number;
+  /** Fee in the requested token, in that token's decimals (e.g. 10^6 for USDC). */
+  fee_in_token: number;
+  /** Public key of the payment destination. */
+  payment_address: string;
+  /** Public key of the signer used to estimate the fee. */
+  signer_pubkey: string;
+}
+
+interface SignAndSendTransactionResponse {
+  /** Transaction signature. */
+  signature: string;
+  /** Base64-encoded signed transaction. */
+  signed_transaction: string;
+  /** Public key of the signer used to send the transaction. */
+  signer_pubkey: string;
+}
+
 export type { FetchLike };
 
 /**

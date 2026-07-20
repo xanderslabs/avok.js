@@ -7,7 +7,9 @@ export default defineConfig({
   entry: ["src/index.ts"],
   format: ["esm"],
   platform: "browser",
-  dts: { resolve: true },
+  // Declarations come from `tsc --emitDeclarationOnly` (see package.json `build`), NOT from tsup.
+  // tsup emits .d.ts via a vendored rollup-plugin-dts, which supports TypeScript <=6 only.
+  dts: false,
   sideEffects: false,
   treeshake: true,
   external: ["react", "react/jsx-runtime", "react-dom", "viem", /^viem\//, /^@avokjs\//, /^node:/],

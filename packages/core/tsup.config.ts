@@ -20,7 +20,9 @@ export default defineConfig({
   ],
   format: ["esm"],
   platform: "neutral",
-  dts: { resolve: true },
+  // Declarations come from `tsc --emitDeclarationOnly` (see package.json `build`), NOT from tsup.
+  // tsup emits .d.ts via a vendored rollup-plugin-dts, which supports TypeScript <=6 only.
+  dts: false,
   sideEffects: false,
   treeshake: true,
   external: ["viem", /^viem\//],

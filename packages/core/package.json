@@ -76,7 +76,7 @@
     }
   },
   "scripts": {
-    "build": "tsup && pnpm run emit:auth-page",
+    "build": "tsc -p tsconfig.json --emitDeclarationOnly && tsup && pnpm run emit:auth-page",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json && tsc -p auth-page/app/tsconfig.json",
     "emit:auth-page": "node auth-page/scripts/build-app.mjs && node auth-page/scripts/inline-app.mjs && node auth-page/scripts/verify-inlined.mjs"
@@ -101,7 +101,6 @@
     "viem": "^2.55.4"
   },
   "devDependencies": {
-    "@solana/kora": "^0.2.1",
     "@types/node": "^26.1.1",
     "@types/qrcode": "^1.5.0",
     "@wallet-standard/app": "^1.1.0",

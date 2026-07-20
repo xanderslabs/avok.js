@@ -41,7 +41,7 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsc -p tsconfig.json --emitDeclarationOnly && tsup",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json",
     "test": "vitest run"
   },
