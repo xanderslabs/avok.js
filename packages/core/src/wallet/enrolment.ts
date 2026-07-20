@@ -162,14 +162,61 @@ export async function sealWrap(
   return { v: ENROLMENT_VERSION, kind: "wrap", ...(await seal(key, "wrap", body)) };
 }
 
-export async function openWrap(
-  key: CryptoKey,
-  p: AccessSlotWrap,
-): Promise<{ credentialId: string; rpId: string; wrappingKey: Uint8Array }> {
+/** What `openWrap` hands back: a wrap that has been DECRYPTED but is not yet USABLE. */
+export interface PendingAccessSlotWrap {
+  /**
+   * Yield the enroller's material, for sealing K under it.
+   *
+   * `sasConfirmed` is the human's answer to the SAS comparison, and it is the only thing standing
+   * between this wallet and a MITM's wrapping key. Anything but a literal `true` refuses.
+   *
+   * Single use: the material is released once and the handle is spent. A second call throws rather
+   * than handing the same wrapping key to a second sealing.
+   */
+  confirm(sasConfirmed: boolean): { credentialId: string; rpId: string; wrappingKey: Uint8Array };
+}
+
+/**
+ * Decrypt a wrap, WITHOUT releasing what is inside it.
+ *
+ * Decryption proves the sender holds the session key. It does not prove the session key was
+ * negotiated with the intended peer — a MITM who substituted its own ephemeral key has a perfectly
+ * valid session too, and its wrap decrypts perfectly. Sealing K under THAT wrapping key hands the
+ * attacker a passkey into the wallet. The six digits the user compares are what rule this out, and
+ * they are compared AFTER this function returns.
+ *
+ * So this returns a gate rather than the goods. There is no path from a decrypted wrap to a wrapping
+ * key that does not pass through `confirm(true)`, which means "seal only after the SAS matched" is a
+ * property of the type rather than a rule each call site is trusted to remember. It previously lived
+ * as a hand-written `if (sasConfirmed !== true) throw` at one caller; a second caller, or a refactor
+ * that dropped the check, would have silently removed the interlock.
+ */
+export async function openWrap(key: CryptoKey, p: AccessSlotWrap): Promise<PendingAccessSlotWrap> {
   const body = await open<{ credentialId: string; rpId: string; wrappingKey: string }>(key, "wrap", p);
   const wrappingKey = base64UrlToBytes(body.wrappingKey);
   if (wrappingKey.length !== WRAPPING_KEY_BYTES) throw new Error("Enrolment wrap carries a malformed wrapping key");
-  return { credentialId: body.credentialId, rpId: body.rpId, wrappingKey };
+
+  let material: { credentialId: string; rpId: string; wrappingKey: Uint8Array } | null = {
+    credentialId: body.credentialId,
+    rpId: body.rpId,
+    wrappingKey,
+  };
+
+  return {
+    confirm(sasConfirmed: boolean) {
+      if (sasConfirmed !== true) {
+        // Wipe on refusal. A rejected ceremony must not leave the attacker's wrapping key sitting in
+        // a closure the caller still holds a reference to.
+        if (material) material.wrappingKey.fill(0);
+        material = null;
+        throw new Error("Enrolment requires sasConfirmed: true — the user must confirm the SAS matches");
+      }
+      if (!material) throw new Error("Enrolment wrap already consumed");
+      const out = material;
+      material = null;
+      return out;
+    },
+  };
 }
 
 /** Holder side. Seal K under the received W and produce the access slot's roster metadata.

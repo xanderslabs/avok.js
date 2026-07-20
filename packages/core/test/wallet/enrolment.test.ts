@@ -109,7 +109,8 @@ describe("passkey enrolment (the one ceremony)", () => {
     // Nothing the enroller sends contains the wallet key — it does not have it, and cannot.
     expect(JSON.stringify(wire)).not.toContain(Buffer.from(K.key).toString("base64"));
 
-    const got = await openWrap(holder, wire);
+    // openWrap decrypts but withholds — the wrapping key is only released by confirm(true).
+    const got = (await openWrap(holder, wire)).confirm(true);
     expect(got.credentialId).toBe(CRED);
     expect(got.rpId).toBe("independent.example");
 
@@ -159,5 +160,57 @@ describe("passkey enrolment (the one ceremony)", () => {
     const { holder, enroller, eph, nonce } = await session();
     const ack = await buildAck(eph, nonce, holder, { evm: EVM, anchorChainId: 10 });
     await expect(openWrap(enroller, { ...ack, kind: "wrap" } as never)).rejects.toThrow();
+  });
+});
+
+/**
+ * The confirm gate on `openWrap`.
+ *
+ * Decryption proves the sender held the session key. It does NOT prove that key was negotiated with
+ * the intended peer — a MITM has a valid session of its own, and its wrap decrypts perfectly. Sealing
+ * K under that wrapping key hands the attacker a passkey into the wallet, so the gate is what stands
+ * between "we decrypted something" and "we will seal our key under it".
+ *
+ * MUTATION: make `confirm` ignore its argument (`if (false)` on the sasConfirmed check) and the
+ * refusal tests below must fail. Verified when written.
+ */
+describe("openWrap is confirm-gated", () => {
+  async function wireUp() {
+    const { enroller, holder } = await session();
+    const wire = await sealWrap(enroller, {
+      credentialId: CRED,
+      rpId: "independent.example",
+      wrappingKey: new Uint8Array(32).fill(7),
+    });
+    return await openWrap(holder, wire);
+  }
+
+  test("REFUSES to release the wrapping key without an explicit true", async () => {
+    const pending = await wireUp();
+    expect(() => pending.confirm(false)).toThrow(/sasConfirmed/);
+  });
+
+  test("refuses truthy-but-not-true values — no accidental coercion past the interlock", async () => {
+    // A caller threading a user's answer through an untyped layer can easily produce "true" or 1.
+    // The interlock is the last thing before K is sealed under a stranger's key; it takes true only.
+    for (const value of ["true", 1, {}, [], "yes"] as unknown as boolean[]) {
+      const pending = await wireUp();
+      expect(() => pending.confirm(value)).toThrow(/sasConfirmed/);
+    }
+  });
+
+  test("WIPES the wrapping key on refusal, so a rejected ceremony leaves nothing behind", async () => {
+    // The caller still holds a reference to the handle after refusing. A MITM's wrapping key must not
+    // be sitting inside it, recoverable by a later confirm(true).
+    const pending = await wireUp();
+    expect(() => pending.confirm(false)).toThrow();
+    expect(() => pending.confirm(true)).toThrow(/already consumed/);
+  });
+
+  test("is single use — the same wrapping key cannot be sealed twice", async () => {
+    const pending = await wireUp();
+    const first = pending.confirm(true);
+    expect(first.credentialId).toBe(CRED);
+    expect(() => pending.confirm(true)).toThrow(/already consumed/);
   });
 });

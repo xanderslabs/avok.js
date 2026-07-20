@@ -512,9 +512,13 @@ export function createOwnOriginConnection(opts: {
           // SAS interlock. This is the payload that matters: a MITM who substituted its OWN wrapping
           // key would have us seal K under it — handing that attacker a passkey into the wallet. The 6
           // digits the user compared are what rule that out.
-          if (args.sasConfirmed !== true)
-            throw new Error("pairing.holder.complete requires sasConfirmed: true (user must confirm the SAS matches)");
-          const wrap = await openWrap(pairing.key, decodePayload<AccessSlotWrap>(args.qr, "wrap"));
+          //
+          // The check is no longer written here. `openWrap` decrypts but withholds, and the only way
+          // to a wrapping key is `confirm(sasConfirmed)` — so the interlock cannot be dropped by a
+          // refactor of this function, and a second caller of openWrap inherits it rather than having
+          // to remember it.
+          const pending = await openWrap(pairing.key, decodePayload<AccessSlotWrap>(args.qr, "wrap"));
+          const wrap = pending.confirm(args.sasConfirmed);
           pairing = null;
 
           // The slot id is derived from the CREDENTIAL ID, not taken off the wire — a hostile enroller
