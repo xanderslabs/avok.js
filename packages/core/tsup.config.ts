@@ -16,6 +16,7 @@ export default defineConfig({
     "src/provider/index.ts",
     "src/helpers/index.ts",
     "src/helpers/qr.ts",
+    "src/helpers/pairing-window.ts",
     "src/auth-popup/index.ts",
   ],
   format: ["esm"],

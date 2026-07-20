@@ -70,6 +70,10 @@
       "types": "./dist/helpers/qr.d.ts",
       "import": "./dist/helpers/qr.js"
     },
+    "./pairing-window": {
+      "types": "./dist/helpers/pairing-window.d.ts",
+      "import": "./dist/helpers/pairing-window.js"
+    },
     "./auth-popup": {
       "types": "./dist/auth-popup/index.d.ts",
       "import": "./dist/auth-popup/index.js"
