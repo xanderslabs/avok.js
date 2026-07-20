@@ -63,9 +63,21 @@ In a React Native (Metro) or Expo (hermes) build, verify that the bundle contain
 (`tsup.config.ts` externalizes it and builds `platform: "neutral"`) — check the Metro bundle output or
 a source-map explorer.
 
-There is no shared-origin check to run here. This package is own-origin only: the native auth-session
-channel was deleted, and `@avokjs/shared-origin` no longer exists as a package — it was collapsed into
-`@avokjs/core`.
+There is no shared-origin check to run here. This package is own-origin only, and
+`@avokjs/shared-origin` no longer exists as a package — it was collapsed into `@avokjs/core`.
+
+### 3b. PRF inside an in-app browser tab (DONE — 2026-07-20)
+
+Recorded because it is expensive to reacquire and documented nowhere public. A WebAuthn ceremony
+requesting the PRF extension was run on real hardware inside **iOS ASWebAuthenticationSession** and
+**Android Chrome Custom Tabs**. PRF returned key material on BOTH. That is the feasibility gate for
+native shared-origin — Avok derives the wallet key from PRF, so a container that strips the extension
+would have ruled the approach out entirely.
+
+Re-run this if the minimum supported OS moves, or if a platform ships a WebAuthn change: load a PRF
+test page (or the operator's own auth page, which exercises the real adapter) inside each container
+via `expo-web-browser`'s `openAuthSessionAsync`, register, then authenticate, and confirm PRF is
+non-empty rather than `NoPrfError`. iOS floor is **18.0** — PRF shipped in Safari 18.0, not 18.4.
 
 ### 4. Real camera QR pairing (`createExpoCameraTransport`)
 

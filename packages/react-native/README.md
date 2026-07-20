@@ -72,16 +72,31 @@ no page to announce into — so reach for the provider directly.
 
 The hook surface otherwise matches [`@avokjs/react`](https://www.npmjs.com/package/@avokjs/react).
 
-## Shared-origin is not supported on native
+## Shared-origin: not shipped yet, but proven possible
 
-There is **no shared-origin path in this package**. The native auth-session channel
-(`ASWebAuthenticationSession` / Custom Tabs) was deleted because it never worked, and nothing replaced
-it. `@avokjs/react-native` is own-origin only.
+This package is **own-origin only today**. There is no shared-origin connection in it, and
+`@avokjs/core`'s `createSharedOriginConnection` takes an injected `channel: SigningChannel` whose only
+shipped implementation is DOM-only (`window.open`). So there is nothing to point a native app at yet.
 
-`@avokjs/core` does export `createSharedOriginConnection`, but it takes an injected
-`channel: SigningChannel`, and the only channel shipped anywhere is DOM-only (`window.open`). A native
-app would have to implement that transport itself over `expo-web-browser` or similar. That is
-unsupported territory, not a documented path.
+That is a missing feature, **not a platform limitation** — a distinction worth stating because the
+older note here claimed otherwise. Shared-origin exists precisely for apps that do *not* own the
+wallet's rpId domain and therefore cannot host its `apple-app-site-association` or `assetlinks.json`.
+The answer on native is the same as on web: run the ceremony in a context that genuinely *is* that
+origin — an in-app browser tab — and bring back only the result.
+
+**Measured on device (2026-07-20):** a WebAuthn ceremony with the **PRF extension** succeeds inside
+both **iOS ASWebAuthenticationSession** and **Android Chrome Custom Tabs**. Since Avok derives the
+wallet key from PRF, that was the make-or-break question, and it passes on both platforms. RFC 8252 §6
+endorses this shape and names both APIs.
+
+What is left is building a native `SigningChannel` over that tab. Note
+`ASWebAuthenticationSession` is one-shot — request → redirect, with no `postMessage` equivalent — so
+the result returns via the callback URL. Keep returned payloads to a few KB: Android's Binder buffer
+is shared process-wide, and iOS documents no limit at all.
+
+If you need shared-origin on native before that ships, you can implement the `SigningChannel`
+yourself against `@avokjs/core`'s `createSharedOriginConnection`. That is unsupported territory, but
+it is not blocked.
 
 ## Device pairing
 

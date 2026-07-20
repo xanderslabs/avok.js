@@ -6,9 +6,31 @@
  *   - createOwnOriginConnection — wires the native passkey adapter + SecureStore.
  *   - secureStoreStorage — platform-resolved StorageAdapter.
  *
- * OWN-ORIGIN ONLY. There is no shared-origin connection here: #8 deleted the native auth-session
- * channel (ASWebAuthenticationSession / Custom Tabs) because it had never worked. A native app that
- * needs shared-origin has no supported path today — do not infer one from an older comment.
+ * OWN-ORIGIN ONLY, FOR NOW — and the reason has changed, so do not read the old one as current.
+ *
+ * #8 deleted the native auth-session channel (ASWebAuthenticationSession / Custom Tabs) because it
+ * had never worked, and the note here concluded that native shared-origin therefore had no viable
+ * path. That conclusion is WRONG, and the correction is worth stating precisely because the evidence
+ * for it is expensive to reacquire.
+ *
+ * MEASURED ON DEVICE, 2026-07-20: a WebAuthn ceremony with the PRF extension — the whole basis of
+ * `K = HKDF(PRF(credential, rpId))` — evaluates successfully inside BOTH iOS
+ * ASWebAuthenticationSession and Android Chrome Custom Tabs. PRF returns key material in both. The
+ * shared-origin architecture is therefore reproducible on native: open the operator's origin in an
+ * in-app browser tab, let the ceremony run in a context that genuinely IS that origin (which is the
+ * entire point — the app cannot host .well-known files for a domain it does not own), and return
+ * only the result.
+ *
+ * That result is not documented anywhere. No vendor publishes a per-context PRF matrix, no spec
+ * covers it, and none of the nine embedded-wallet SDKs surveyed (Privy, Turnkey, Para, Dynamic,
+ * Web3Auth, Coinbase, Lit, Clave, Magic) uses the PRF extension at all — they keep the secret
+ * elsewhere and use the passkey only to authenticate. The public record is empty because nobody is
+ * doing this, not because it fails. It was established by running the ceremony on real hardware.
+ *
+ * What remains is BUILD work, not a feasibility question: a native SigningChannel over the in-app
+ * browser tab. Until it ships this package stays own-origin only. RFC 8252 §6 endorses the shape and
+ * names both APIs; ASWebAuthenticationSession is one-shot (request → redirect, no postMessage), so
+ * the result comes back through the callback URL.
  *
  * Peer deps: react, react-native, expo-secure-store (all injected; not static).
  * No DOM imports in this graph.
