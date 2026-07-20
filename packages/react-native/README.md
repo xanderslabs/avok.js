@@ -91,13 +91,14 @@ imperatively. Both the ceremony phase machine and the transport are unit-tested.
 
 ## Status
 
-Unit-tested: SecureStore storage and its fallbacks, provider reactivity, the management hooks, the
-pairing phase machine, and the camera transport. The passkey adapter is tested in `@avokjs/core`.
+Unit-tested: `createOwnOriginConnection` and its required-`passkey` refusal, the native passkey
+adapter seam, the provider wiring (including that it builds no DOM dependency), SecureStore storage
+and its fallbacks, provider reactivity and resync, the full hook surface, the pairing phase machine,
+and the camera transport. The passkey adapter's own logic is tested in `@avokjs/core`.
 
 **Not exercised on a device:** real passkey biometrics, the real SecureStore keychain, and camera
-pairing. Untested in this package: `createOwnOriginConnection`, the provider wiring, `useLogin` and
-`useLogout`. Treat this package as functional but less-travelled than the web facade — see
-`VERIFICATION.md`.
+pairing — see `VERIFICATION.md` for the device checklist. Everything a unit test can reach is
+covered; what remains needs hardware.
 
 ## Removing a device's access
 

@@ -12,8 +12,15 @@ Covers:
 - `AvokProvider` + `useAccount` reactivity with a fake `AvokClient`.
 - `useCreate` pending/error state with a fake client (`useSend` is gone — sending goes through the
   EIP-1193 provider, not a hook).
+- `useLogin` / `useLogout` pending, error and sync-void-return handling.
+- `AvokProvider` resync when the `client` prop identity changes (PROV-1).
 - `useEnroll` / `useExport` / `useAccessSlots` management verbs, including the optimistic remove.
 - `useSelfCustody` throwing on a use-only client.
+- `createOwnOriginConnection`: the required-`passkey` refusal, that construction never fires the
+  passkey module (no biometric prompt on app launch), and the storage default/override.
+- `createAvokClient` provider wiring: the client keeps the core surface, the EIP-1193 provider is
+  DOM-free and stable across calls, the operator's identity is announced and no Avok brand is
+  substituted, and construction survives having no `window` at all.
 - `usePairingCeremony` phase machine (SAS gate, camera-error retry, reject) over a fake transport.
 - `createExpoCameraTransport` permission + barcode→promise bridge over a fake injected camera module.
 
