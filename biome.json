@@ -5,9 +5,6 @@
     "includes": [
       "packages/*/src/**/*.ts",
       "packages/*/test/**/*.ts",
-      "examples/*/src/**/*.ts",
-      "examples/*/src/**/*.tsx",
-      "examples/*/test/**/*.ts",
       "contracts/src-ts/**/*.ts",
       "scripts/**/*.mjs",
       "!**/dist/**",

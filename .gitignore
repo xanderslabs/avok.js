@@ -11,8 +11,6 @@ contracts/cache
 contracts/broadcast
 .env
 .env.local
-examples/.certs/
-examples/*/vite.config.harness.ts
 *.env.local.bak
 artifacts
 *.tsbuildinfo
@@ -21,4 +19,3 @@ artifacts
 docs/grants
 docs/superpowers
 docs
-examples/*/vite.config.tunnel.ts

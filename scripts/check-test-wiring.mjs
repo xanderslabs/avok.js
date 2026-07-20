@@ -36,12 +36,4 @@ if (build < 0 || build > typecheck) {
   );
 }
 
-if (!test.includes("demos:typecheck")) {
-  fail(
-    "`test` no longer runs `demos:typecheck`.\n" +
-      "  #8 added it to `check`, and #10 collapsed `check` into `test` — so dropping it here silently\n" +
-      "  undoes #8 and lets the examples' types rot again.",
-  );
-}
-
-console.log("Test wiring intact: build precedes typecheck; demos are typechecked.");
+console.log("Test wiring intact: build precedes typecheck.");

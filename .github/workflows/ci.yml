@@ -36,12 +36,6 @@ jobs:
 
       - run: pnpm --filter @avokjs/contracts test:ts
 
-      # The demos' OWN unit tests (store/el/pairing-controller/routes + the domain-harness
-      # prepare suite). These existed but nothing ran them in CI, so they could not catch a
-      # regression: the harness shipped an OIDC client registered with only ["openid"], which
-      # silently stripped the avok-gated claims and broke shared-origin login for every demo user.
-      - run: pnpm run demos:test
-
   # Solidity custody contracts (EIP-7702 wallet account).
   # The `build` job only runs contracts `test:ts`; the Foundry suite must run
   # too so on-chain custody logic cannot regress undetected.
