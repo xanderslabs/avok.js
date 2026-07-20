@@ -11,6 +11,19 @@ export class CameraUnavailableError extends Error {
   }
 }
 
+/** Thrown when the enrolment window cannot be opened — the browser blocked the popup. Sits beside
+ *  CameraUnavailableError, and for the same reason: it is the window transport's equivalent failure,
+ *  it is RECOVERABLE (the user allows popups, or clicks again from a real gesture), and the ceremony
+ *  hooks narrow on it to offer a retry instead of surfacing a dead end. Popup blocking is not an edge
+ *  case — a browser blocks any window.open not traceable to a user gesture, which is exactly what
+ *  happens when an app tries to start enrolment from an effect rather than a click. */
+export class PopupBlockedError extends Error {
+  constructor() {
+    super("Enrolment window blocked — open it from a direct user gesture, or allow popups for this site");
+    this.name = "PopupBlockedError";
+  }
+}
+
 /** Transport that moves the opaque pairing codes between devices. The browser implementation is in
  *  `@avokjs/core/qr`; a React-Native app implements the same interface over its native camera. The
  *  driver below is transport-agnostic — it knows nothing about QR, DOM, or cameras. */

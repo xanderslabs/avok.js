@@ -26,7 +26,7 @@
  *   3. Shape validation before use — a message with a missing or garbage kind is ignored, never
  *      coerced.
  */
-import type { PairingTransport } from "./pairing.js";
+import { PopupBlockedError, type PairingTransport } from "./pairing.js";
 
 /** Wire envelope. Namespaced because the peer window is a full application that may use postMessage
  *  for its own purposes, and a bare `{ kind }` would collide with the signing channel's messages. */
@@ -156,4 +156,72 @@ export function createWindowPairingTransport(opts: {
       this.stop();
     },
   };
+}
+
+// ─── Ergonomics: the two sides of a same-device enrolment ─────────────────────────────────────────
+//
+// The transport above is symmetric — both sides need a peer window and the origin it must be. These
+// two helpers supply that from the only asymmetry that exists in practice: one side OPENED the other.
+//
+// Who opens whom is decided by the direction of the request. The app that wants access opens the
+// wallet's origin, because that is the origin able to run the ceremony for a wallet it holds — the
+// app cannot, which is the entire premise of shared enrolment.
+
+/**
+ * REQUESTING side. Open the holder's enrolment page and get a transport to it.
+ *
+ * Call this from a direct user gesture (a click). A browser blocks `window.open` it cannot trace to
+ * one, and the failure is silent — `open()` returns null rather than throwing — so it is converted
+ * into a named error the ceremony hooks already know how to present.
+ *
+ * The holder's page must be told which origin is asking. It CANNOT be trusted from a query parameter
+ * alone, so the convention is: pass it, display it, and let the transport enforce it. A forged value
+ * does not grant anything — it only makes the real opener's messages fail the origin check, because
+ * `postMessage` origins come from the browser and not from the URL.
+ */
+export function openEnrolmentWindow(opts: {
+  /** The holder's enrolment page, e.g. `https://wallet.example.com/enrol`. */
+  holderUrl: string;
+  /** Window features. Defaults to a modest centred popup rather than a bare tab. */
+  features?: string;
+  /** Injectable for tests. Defaults to `globalThis`. */
+  self?: Window;
+}): { transport: WindowPairingTransport; window: Window; close(): void } {
+  const opener = (opts.self ?? (globalThis as unknown as Window)) as Window;
+  const holderOrigin = new URL(opts.holderUrl).origin;
+
+  const url = new URL(opts.holderUrl);
+  // The requester's own origin, for the holder to DISPLAY. Authority still comes from postMessage.
+  url.searchParams.set("avokRequester", (opener as Window & { origin?: string }).origin ?? "");
+
+  const child = opener.open(url.toString(), "avok-enrolment", opts.features ?? "popup,width=420,height=640");
+  if (!child) throw new PopupBlockedError();
+
+  const transport = createWindowPairingTransport({ peer: child, peerOrigin: holderOrigin, self: opener });
+  return {
+    transport,
+    window: child,
+    close(): void {
+      transport.stop();
+      child.close();
+    },
+  };
+}
+
+/**
+ * HOLDER side, running inside the window that was opened. Build a transport back to the opener.
+ *
+ * `peerOrigin` is the origin being granted access, and the page MUST show it to the user before they
+ * confirm anything — it is the whole subject of their decision. Read it from the `avokRequester`
+ * query parameter for display, and pass it here so the transport pins to it: a value that does not
+ * match the real opener simply stops any message from being accepted.
+ */
+export function enrolmentWindowFromOpener(opts: { peerOrigin: string; self?: Window }): WindowPairingTransport {
+  const here = (opts.self ?? (globalThis as unknown as Window)) as Window & { opener?: Window | null };
+  const peer = here.opener;
+  // A holder page reached directly — bookmarked, refreshed into a new tab, or opened by a navigation
+  // rather than window.open — has nobody to talk to. Say so, rather than constructing a transport
+  // that can never receive anything and leaving the ceremony to hang on its first scan.
+  if (!peer) throw new Error("enrolmentWindowFromOpener: no opener — this page must be opened by the requesting app");
+  return createWindowPairingTransport({ peer, peerOrigin: opts.peerOrigin, self: here });
 }

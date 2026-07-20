@@ -10,7 +10,12 @@
  * Verified when written: each guard, removed individually, fails exactly its own test and no other.
  */
 import { describe, it, expect } from "vitest";
-import { createWindowPairingTransport } from "../../src/helpers/pairing-window.js";
+import {
+  createWindowPairingTransport,
+  openEnrolmentWindow,
+  enrolmentWindowFromOpener,
+} from "../../src/helpers/pairing-window.js";
+import { PopupBlockedError } from "../../src/helpers/pairing.js";
 
 const PEER_ORIGIN = "https://wallet.example.com";
 
@@ -236,5 +241,92 @@ describe("window pairing transport — end to end with a real peer", () => {
 
     appSide.stop();
     walletSide.stop();
+  });
+});
+
+describe("openEnrolmentWindow — the requesting side", () => {
+  const mkOpener = (child: Window | null) => {
+    const listeners = new Set<(e: MessageEvent) => void>();
+    let openedWith: { url: string; name: string; features: string } | null = null;
+    const self = {
+      origin: "https://app.example.com",
+      open: (url: string, name: string, features: string) => {
+        openedWith = { url, name, features };
+        return child;
+      },
+      addEventListener: (_t: string, fn: EventListener) => listeners.add(fn as (e: MessageEvent) => void),
+      removeEventListener: (_t: string, fn: EventListener) => listeners.delete(fn as (e: MessageEvent) => void),
+    } as unknown as Window;
+    return { self, opened: () => openedWith, listenerCount: () => listeners.size };
+  };
+
+  const child = () => ({ postMessage: () => {}, close: () => {} }) as unknown as Window;
+
+  it("throws PopupBlockedError when the browser refuses the window", () => {
+    // window.open returns null on a blocked popup — it does not throw. Left unconverted, the caller
+    // gets "cannot read property of null" instead of a condition the ceremony hooks can present.
+    const o = mkOpener(null);
+    expect(() => openEnrolmentWindow({ holderUrl: "https://wallet.example.com/enrol", self: o.self })).toThrow(
+      PopupBlockedError,
+    );
+  });
+
+  it("carries the requester's origin for the holder to display", () => {
+    const o = mkOpener(child());
+    openEnrolmentWindow({ holderUrl: "https://wallet.example.com/enrol", self: o.self });
+
+    const url = new URL(o.opened()!.url);
+    expect(url.origin + url.pathname).toBe("https://wallet.example.com/enrol");
+    expect(url.searchParams.get("avokRequester")).toBe("https://app.example.com");
+  });
+
+  it("pins the transport to the holder's origin, not to the full URL", () => {
+    // The transport must accept messages from https://wallet.example.com even though the page it
+    // opened was .../enrol. Pinning the whole URL would reject every reply.
+    const c = child();
+    const o = mkOpener(c);
+    const { transport } = openEnrolmentWindow({ holderUrl: "https://wallet.example.com/enrol", self: o.self });
+    expect(transport).toBeDefined();
+    expect(o.listenerCount()).toBe(1);
+  });
+
+  it("close() stops the transport and shuts the window", () => {
+    let closed = false;
+    const c = { postMessage: () => {}, close: () => (closed = true) } as unknown as Window;
+    const o = mkOpener(c);
+    const handle = openEnrolmentWindow({ holderUrl: "https://wallet.example.com/enrol", self: o.self });
+
+    handle.close();
+
+    expect(closed).toBe(true);
+    expect(o.listenerCount()).toBe(0); // transport detached, not merely orphaned
+  });
+});
+
+describe("enrolmentWindowFromOpener — the holder side", () => {
+  it("REFUSES to build a transport when there is no opener", () => {
+    // A holder page that was bookmarked, refreshed into a new tab, or navigated to directly has
+    // nobody to talk to. Failing here beats returning a transport whose first scan hangs forever.
+    const orphan = { opener: null, addEventListener: () => {}, removeEventListener: () => {} } as unknown as Window;
+    expect(() => enrolmentWindowFromOpener({ peerOrigin: "https://app.example.com", self: orphan })).toThrow(
+      /no opener/,
+    );
+  });
+
+  it("builds a transport pinned to the requesting origin", () => {
+    const listeners = new Set<(e: MessageEvent) => void>();
+    const opener = { postMessage: () => {} } as unknown as Window;
+    const here = {
+      opener,
+      addEventListener: (_t: string, fn: EventListener) => listeners.add(fn as (e: MessageEvent) => void),
+      removeEventListener: (_t: string, fn: EventListener) => listeners.delete(fn as (e: MessageEvent) => void),
+    } as unknown as Window;
+
+    const transport = enrolmentWindowFromOpener({ peerOrigin: "https://app.example.com", self: here });
+
+    expect(typeof transport.scanCode).toBe("function");
+    expect(listeners.size).toBe(1);
+    transport.stop();
+    expect(listeners.size).toBe(0);
   });
 });
