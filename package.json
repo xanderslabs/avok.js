@@ -2,7 +2,7 @@
   "name": "avok.js",
   "private": true,
   "version": "0.0.1",
-  "description": "Avok monorepo: EIP-7702 passkey wallet infrastructure for app developers.",
+  "description": "avok.js: SDK for passkey-authenticated, self-custodial smart wallets — EVM and Solana.",
   "type": "module",
   "license": "MIT",
   "homepage": "https://github.com/xanderslabs/avok.js#readme",

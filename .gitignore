@@ -16,6 +16,4 @@ artifacts
 *.tsbuildinfo
 .DS_Store
 .superpowers/
-docs/grants
-docs/superpowers
-docs
+misc/
