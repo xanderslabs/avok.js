@@ -60,6 +60,13 @@ const matches = (pattern) => {
   return projects.some((p) => rx.test(isPath && !pattern.startsWith("@") ? p.path : p.name));
 };
 
+/** Does ONE project match ONE filter? `matches` above asks "does anything match"; this asks which. */
+const projectMatches = (pattern, project) => {
+  const isPath = pattern.startsWith(".") || pattern.includes("/");
+  const rx = new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*")}$`);
+  return rx.test(isPath && !pattern.startsWith("@") ? project.path : project.name);
+};
+
 const ci = readFileSync(".github/workflows/ci.yml", "utf8");
 const sources = [...Object.entries(scripts).map(([n, body]) => [`package.json script \`${n}\``, body]), ["ci.yml", ci]];
 
@@ -141,6 +148,45 @@ for (const project of projects) {
         "  indistinguishable from a passing one. Add the tests back, or drop the script.",
     );
   }
+}
+
+// 3. A `--filter` that resolves is not enough: `pnpm -r --filter X <script>` SKIPS any matched
+//    project that does not define <script>, and exits 0 having done so. A package that quietly loses
+//    its `typecheck` is then never typechecked again, and the gate keeps reporting success — the same
+//    absence-reads-as-success shape as an empty filter, one level in.
+for (const [where, body] of sources) {
+  for (const [, line] of body.matchAll(/pnpm -r ([^\n&|]*)/g)) {
+    const filters = [...line.matchAll(/--filter\s+["']?([^"'\s]+)["']?/g)].map((m) => m[1]);
+    if (filters.length === 0) continue;
+    // The script is the trailing bare word: everything else is a flag or a flag's value.
+    const tail = line.trim().split(/\s+/).pop();
+    if (!tail || tail.startsWith("-") || tail.startsWith('"') || tail.startsWith("'")) continue;
+    if (tail === "exec") continue; // `pnpm -r exec <cmd>` runs a binary, not a package script
+
+    for (const project of projects) {
+      if (project.path === ".") continue;
+      if (!filters.some((f) => matches(f) && projectMatches(f, project))) continue;
+      const { scripts: own = {} } = JSON.parse(readFileSync(`${project.path}/package.json`, "utf8"));
+      if (!own[tail]) {
+        fail(
+          `${where} runs \`${tail}\` over ${project.name}, which does not define that script.\n` +
+            "  pnpm SKIPS a project missing the script and still exits 0, so this step silently does\n" +
+            "  less than it claims. Add the script, or narrow the filter so it stops matching.",
+        );
+      }
+    }
+  }
+}
+
+// 4. `forge test` passes when there are no tests to run. The contracts carry the custody logic, so a
+//    suite that silently emptied would be the most expensive green in the repo.
+const forgeTests = repoFiles.filter((f) => f.startsWith("contracts/test/") && f.endsWith(".t.sol"));
+if (ci.includes("forge test") && forgeTests.length === 0) {
+  fail(
+    "CI runs `forge test` but contracts/test/ holds no *.t.sol files.\n" +
+      "  forge exits 0 with nothing to run, so the custody contracts would be reported as passing\n" +
+      "  while going entirely unexercised.",
+  );
 }
 
 console.log(

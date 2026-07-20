@@ -2,7 +2,7 @@
   "name": "avok.js",
   "private": true,
   "version": "0.0.1",
-  "description": "avok.js: SDK for passkey-authenticated, self-custodial smart wallets — EVM and Solana.",
+  "description": "avok.js: SDK for passkey-authenticated, self-custodial smart wallets \u2014 EVM and Solana.",
   "type": "module",
   "license": "MIT",
   "homepage": "https://github.com/xanderslabs/avok.js#readme",
@@ -40,5 +40,14 @@
     "typescript": "^7.0.2",
     "vite": "^8.1.5",
     "vitest": "^4.1.10"
+  },
+  "pnpm": {
+    "overrides": {
+      "uuid@<11.1.1": ">=11.1.1",
+      "esbuild@>=0.27.3 <0.28.1": ">=0.28.1",
+      "read-yaml-file>js-yaml": ">=4.2.0",
+      "@changesets/parse>js-yaml": ">=4.2.0",
+      "@expo/xcpretty>js-yaml": ">=4.2.0"
+    }
   }
 }
