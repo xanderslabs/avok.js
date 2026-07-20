@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 // Guards the gate itself.
@@ -36,4 +37,43 @@ if (build < 0 || build > typecheck) {
   );
 }
 
-console.log("Test wiring intact: build precedes typecheck.");
+// A `--filter` that matches nothing is the same bug one level up: `pnpm -r --filter X test` EXITS 0
+// when X resolves to zero projects, so the step passes having run nothing. That is not hypothetical —
+// CI carried `--filter "./design"` through a build and a test step while design/ was three markdown
+// files with no package.json, and both reported green for as long as it was there. The demos hit the
+// same shape: delete the folder and `demos:test` would have kept passing.
+//
+// So every filter in the gate must resolve to at least one project. Scans the root scripts AND the
+// workflow, because a filter is just as dead in either, and a green CI step is the more expensive lie.
+
+const workspace = JSON.parse(execFileSync("pnpm", ["list", "-r", "--depth", "-1", "--json"], { encoding: "utf8" }));
+const projects = workspace.map((p) => ({
+  name: p.name ?? "",
+  path: `./${p.path.slice(process.cwd().length + 1)}`.replace(/^\.\/$/, "."),
+}));
+
+// pnpm treats a filter containing a path separator or leading `.` as a PATH glob, anything else as a
+// package-NAME glob. Only `*` is used here; matching it as "anything but a separator" mirrors pnpm.
+const matches = (pattern) => {
+  const isPath = pattern.startsWith(".") || pattern.includes("/");
+  const rx = new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*")}$`);
+  return projects.some((p) => rx.test(isPath && !pattern.startsWith("@") ? p.path : p.name));
+};
+
+const ci = readFileSync(".github/workflows/ci.yml", "utf8");
+const sources = [...Object.entries(scripts).map(([n, body]) => [`package.json script \`${n}\``, body]), ["ci.yml", ci]];
+
+for (const [where, body] of sources) {
+  for (const [, pattern] of body.matchAll(/--filter\s+["']?([^"'\s]+)["']?/g)) {
+    if (!matches(pattern)) {
+      fail(
+        `${where} filters on \`${pattern}\`, which matches no workspace project.\n` +
+          "  `pnpm -r --filter` exits 0 on an empty match, so this runs nothing and still reports\n" +
+          "  success. Either the filter is stale and should go, or the project it names is missing\n" +
+          "  from pnpm-workspace.yaml.",
+      );
+    }
+  }
+}
+
+console.log(`Test wiring intact: build precedes typecheck; every --filter resolves (${projects.length} projects).`);

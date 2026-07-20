@@ -30,9 +30,9 @@ jobs:
       # `biome lint` exits 0 on warnings, which would make this step decorative.
       - run: pnpm format:check && pnpm lint
 
-      - run: pnpm -r --filter "./packages/*" --filter "./contracts" --filter "./design" build
+      - run: pnpm -r --filter "./packages/*" --filter "./contracts" build
 
-      - run: pnpm -r --filter "./packages/*" --filter "./design" test
+      - run: pnpm -r --filter "./packages/*" test
 
       - run: pnpm --filter @avokjs/contracts test:ts
 
