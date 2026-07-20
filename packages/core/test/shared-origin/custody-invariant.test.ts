@@ -8,6 +8,16 @@
  *    actual plaintext key NEVER appears in that calldata or in the returned result.
  *  - Shared-origin: the channel-mediated access-slot surface exposes only { kind, slotId, chainId, call }
  *    with no key/blob/PRF/secret field.
+ *
+ * MUTATION: in wallet/crypto/blob.ts `sealUnder`, emit the plaintext instead of the ciphertext —
+ *   const ciphertext = plaintext.slice(0);
+ * — and the own-origin case must fail. Verified: it does.
+ *
+ * Take the `.slice(0)`. The obvious mutation, `const ciphertext = plaintext`, PASSES — not because
+ * this test is weak, but because the next line wipes that buffer (`new Uint8Array(plaintext).fill(0)`)
+ * and an alias gets zeroed with it, so the "leak" emits zeros and leaks nothing. A mutation that
+ * defeats itself reads exactly like a test that cannot fail. Copy before the wipe, or the check of
+ * the check is wrong.
  */
 import { describe, it, expect } from "vitest";
 import type { Call } from "../../src/evm/index.js";

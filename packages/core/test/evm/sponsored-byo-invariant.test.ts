@@ -24,6 +24,16 @@
  * bundler+paymaster exist") — the transaction still goes through, paid natively. It is pinned here
  * because it also means a sponsored REQUEST can be silently self-paid, and `receipt.rail` is the
  * only thing that says which actually happened.
+ *
+ * MUTATION: give canSponsor() a default endpoint —
+ *   return Boolean((paymasterUrl || deps?.paymaster || "https://…") && (bundlerUrl || deps?.bundler || "https://…"))
+ * — and the two "WITHOUT infra" tests must fail. Verified when written: 2 of 4 fail, and the 2 that
+ * survive are the WITH-infra case and the construction check, which that mutation does not touch.
+ *
+ * An earlier draft of this file asserted only `rejects.not.toThrow(/unsupported fee token/i)` on a
+ * send with no RPC. It passed the mutation above, because the send was already failing upstream for
+ * an unrelated reason — a negative assertion on a path that can fail earlier proves nothing. That is
+ * why the assertions here are a PAIR on `receipt.rail` rather than a single negative.
  */
 import { describe, it, expect, vi, type Mock } from "vitest";
 import type { Address, Hex } from "viem";
