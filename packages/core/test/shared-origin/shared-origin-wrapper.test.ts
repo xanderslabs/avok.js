@@ -5,26 +5,18 @@ import { makeFakeChannel } from "../client/fakes.js";
 
 describe("createSharedOriginConnection", () => {
   it("continue() runs the OIDC authorize flow and exposes the account", async () => {
-    const channel = makeFakeChannel({
-      address: "0xabc...",
-      subname: "alice.qudi.fi",
-      solanaAddress: "So1anaAddrBase58...",
-    });
+    const channel = makeFakeChannel({ subname: "alice.qudi.fi", solanaAddress: "So1anaAddrBase58..." });
     const conn = createSharedOriginConnection({
       authOrigin: "https://auth.qudi.fi",
       channel,
     });
     const acct = await conn.continue();
-    expect(acct.evm.address.toLowerCase()).toBe("0xabc...".toLowerCase());
+    expect(acct.evm.address).toBe(channel.address);
     expect(conn.status()).toBe(true);
   });
 
   it("account() maps the shared-origin session to { evm, solana }", async () => {
-    const channel = makeFakeChannel({
-      address: "0xabc...",
-      subname: "alice.qudi.fi",
-      solanaAddress: "So1anaAddrBase58...",
-    });
+    const channel = makeFakeChannel({ subname: "alice.qudi.fi", solanaAddress: "So1anaAddrBase58..." });
     const conn = createSharedOriginConnection({
       authOrigin: "https://auth.qudi.fi",
       channel,
@@ -39,7 +31,7 @@ describe("createSharedOriginConnection", () => {
   // without the `avok` scope — grantScopes() narrows it away silently). Fail loud; clearing it
   // here would disguise a config bug as an ordinary failed sign-in.
   it("continue() throws if a freshly minted session lacks a solana_address claim", async () => {
-    const channel = makeFakeChannel({ address: "0xabc...", subname: "alice.qudi.fi" });
+    const channel = makeFakeChannel({ subname: "alice.qudi.fi" });
     const conn = createSharedOriginConnection({
       authOrigin: "https://auth.qudi.fi",
       channel,
@@ -58,7 +50,7 @@ describe("createSharedOriginConnection", () => {
     // token pair. The BEHAVIOUR under test is unchanged: an account sdk-core cannot shape must be
     // purged, not thrown, or the app renders signed-in against something it will refuse to use.)
     function storageWithStaleSession(): NetStorage {
-      const map = new Map<string, string>([["avok.account", JSON.stringify({ evmAddress: "0xabc..." })]]);
+      const map = new Map<string, string>([["avok.account", JSON.stringify({ evmAddress: "0xstale" })]]);
       return {
         get: (k) => map.get(k) ?? null,
         set: (k, v) => void map.set(k, v),
@@ -67,7 +59,7 @@ describe("createSharedOriginConnection", () => {
     }
 
     it("account() returns null instead of throwing", () => {
-      const channel = makeFakeChannel({ address: "0xabc..." });
+      const channel = makeFakeChannel();
       const conn = createSharedOriginConnection({
         authOrigin: "https://auth.qudi.fi",
         channel,
@@ -79,7 +71,7 @@ describe("createSharedOriginConnection", () => {
 
     it("purges the dead session from storage so it is not re-read on the next mount", () => {
       const storage = storageWithStaleSession();
-      const channel = makeFakeChannel({ address: "0xabc..." });
+      const channel = makeFakeChannel();
       const conn = createSharedOriginConnection({
         authOrigin: "https://auth.qudi.fi",
         channel,
@@ -93,7 +85,7 @@ describe("createSharedOriginConnection", () => {
     // Without the clear, status() would keep reporting a session that account() denies — the app
     // would render as signed-in with no account.
     it("leaves status() reporting signed-out, so the app agrees with account()", () => {
-      const channel = makeFakeChannel({ address: "0xabc..." });
+      const channel = makeFakeChannel();
       const conn = createSharedOriginConnection({
         authOrigin: "https://auth.qudi.fi",
         channel,
@@ -105,7 +97,7 @@ describe("createSharedOriginConnection", () => {
 
     // The user must be able to recover by signing in again — the whole point of not throwing.
     it("still allows a fresh continue() to sign in afterwards", async () => {
-      const channel = makeFakeChannel({ address: "0xabc...", solanaAddress: "So1anaAddrBase58..." });
+      const channel = makeFakeChannel({ solanaAddress: "So1anaAddrBase58..." });
       const conn = createSharedOriginConnection({
         authOrigin: "https://auth.qudi.fi",
         channel,
@@ -119,7 +111,7 @@ describe("createSharedOriginConnection", () => {
   });
 
   it("signMessage delegates to the remote signer via the channel", async () => {
-    const channel = makeFakeChannel({ address: "0xabc...", solanaAddress: "So1anaAddrBase58..." });
+    const channel = makeFakeChannel({ solanaAddress: "So1anaAddrBase58..." });
     const openSpy = vi.spyOn(channel, "open");
     const conn = createSharedOriginConnection({
       authOrigin: "https://auth.qudi.fi",
@@ -136,7 +128,7 @@ describe("createSharedOriginConnection", () => {
   });
 
   it("logout() clears status and account()", async () => {
-    const channel = makeFakeChannel({ address: "0xabc...", solanaAddress: "So1anaAddrBase58..." });
+    const channel = makeFakeChannel({ solanaAddress: "So1anaAddrBase58..." });
     const conn = createSharedOriginConnection({
       authOrigin: "https://auth.qudi.fi",
       channel,
@@ -150,7 +142,7 @@ describe("createSharedOriginConnection", () => {
   });
 
   it("is a use-only Connection — exposes no custody-management verbs (create/export/addPasskey/canExport)", async () => {
-    const channel = makeFakeChannel({ address: "0xabc...", solanaAddress: "So1anaAddrBase58..." });
+    const channel = makeFakeChannel({ solanaAddress: "So1anaAddrBase58..." });
     const conn = createSharedOriginConnection({
       authOrigin: "https://auth.qudi.fi",
       channel,

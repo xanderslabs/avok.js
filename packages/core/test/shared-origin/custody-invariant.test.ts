@@ -61,10 +61,7 @@ describe("self-custody invariant — access-slot surface", () => {
   });
 
   it("shared-origin: the use-only Connection has NO custody-management verbs — no path to key material", async () => {
-    const channel = makeFakeChannel({
-      address: "0xabc0000000000000000000000000000000000abc",
-      solanaAddress: "So1anaAddrBase58...",
-    });
+    const channel = makeFakeChannel({ solanaAddress: "So1anaAddrBase58..." });
     const conn = createSharedOriginConnection({
       authOrigin: "https://auth.qudi.fi",
       channel,

@@ -3,6 +3,7 @@ import { saveAccount, loadAccount, clearAccount, memoryStorage } from "./storage
 import type { StorageAdapter } from "./storage.js";
 import { createRemoteSigner } from "./signer.js";
 import type { SigningChannel } from "./channels/port.js";
+import { randomAuthorizeNonce, verifyAuthorizeProof } from "./authorize-proof.js";
 import type { SharedAccount, Signer, SignedAuthorizationLike, SiweParams } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -42,6 +43,8 @@ export function createSharedOriginConnection(opts: {
 }): SharedOriginConnection {
   const storage = opts.storage ?? memoryStorage();
   const channel = opts.channel;
+  // The origin the authorize proof is bound to — a signature from operator A must not verify at B.
+  const authOrigin = opts.authOrigin;
 
   // In-memory cache — set by connect(), cleared by logout().
   let current: SharedAccount | null = null;
@@ -66,11 +69,36 @@ export function createSharedOriginConnection(opts: {
 
   return {
     async connect(): Promise<SharedAccount> {
-      const result = await channel.open({ kind: "authorize" });
+      // Fresh per connect. A reused nonce is a replayable proof, which would defeat the point.
+      const nonce = randomAuthorizeNonce();
+      const result = await channel.open({ kind: "authorize", nonce });
       if (result.kind !== "authorize") {
         throw new Error(`Unexpected channel result kind: expected "authorize", got "${result.kind}"`);
       }
       const account = result.account;
+
+      // VERIFY, do not trust. The address decides where a user believes their funds live, and on a
+      // transport that answers over a callback URL nothing about the reply says who sent it. The
+      // signature over our nonce is unforgeable without the wallet key, so it settles the question
+      // regardless of how the reply travelled.
+      //
+      // Checked on EVERY transport, including the web popup where postMessage already proves the
+      // origin. The channel is injectable, so the connection cannot know which guarantees the one it
+      // was handed actually provides — and a check that only runs on the transports someone
+      // remembered to weaken is not a check.
+      const verified = await verifyAuthorizeProof({
+        evmAddress: account.evmAddress,
+        nonce,
+        authOrigin,
+        proof: result.proof,
+      });
+      if (!verified) {
+        throw new Error(
+          "Shared-origin authorization failed verification: the reply did not prove control of the " +
+            "address it returned. Refusing to connect.",
+        );
+      }
+
       saveAccount(storage, account);
       current = account;
       return account;

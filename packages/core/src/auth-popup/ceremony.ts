@@ -20,6 +20,8 @@
  * DEVICE-GATED: the real gesture + cross-origin postMessage need a live browser. The gesture is
  * injected (readAccount / signWith) so the protocol logic here is pure.
  */
+import type { Hex } from "viem";
+import { authorizeChallenge } from "../channel/authorize-proof.js";
 import { decodeSignConsent, type SignConsentRequest } from "./sign/consent.js";
 import { formatConsentDisplay } from "./sign/consent-display.js";
 
@@ -75,12 +77,18 @@ interface WindowLike {
   removeEventListener(type: "message", fn: (e: MessageEvent) => void): void;
   /** Optional: closed after a sign reply (mirrors the old sign.tsx). Tests omit it. */
   close?(): void;
+  /** This page's own origin — the authorize proof is bound to it, so a signature obtained here
+   *  cannot be replayed against a different operator. */
+  location: { origin: string };
 }
 
 export interface AuthPopupCeremonyDeps {
   view: AuthPopupView;
   /** ONE gesture: reconstruct the wallet from the passkey PRF and return the (public) account. */
-  readAccount(): Promise<AuthPopupAccount>;
+  /** ONE gesture: reconstruct the wallet, return the (public) account AND a signature over the
+   *  caller's challenge. The signature is what makes the returned address verifiable — see
+   *  channel/authorize-proof.ts for why trusting the transport is not enough. */
+  readAccount(challenge: string): Promise<{ account: AuthPopupAccount; proof: Hex }>;
   /** ONE gesture: reconstruct the wallet, sign the request, discard the key. Returns performSign's
    *  result. `credentialId` (from the sign message) constrains the assertion, with a fallback to an
    *  unconstrained discover() handled inside the implementation. */
@@ -121,12 +129,23 @@ export function runAuthPopup(deps: AuthPopupCeremonyDeps): () => void {
     const replyOrigin = pinnedOrigin;
 
     if (kind === "authorize") {
+      const nonce = (data as { nonce?: unknown }).nonce;
+      // No challenge, no reply. An authorize without a nonce cannot be proved, and answering it
+      // anyway would hand back an address the caller has no way to verify — exactly the situation
+      // the proof exists to remove.
+      if (typeof nonce !== "string" || nonce.length === 0) {
+        view.failure("Authorization request carried no challenge nonce");
+        return;
+      }
       view.connecting();
+      // Bound to THIS page's own origin. The wallet signs a challenge naming where it lives, so the
+      // signature cannot be replayed against a different operator.
+      const challenge = authorizeChallenge({ nonce, authOrigin: win.location.origin });
       deps
-        .readAccount()
-        .then((account) => {
+        .readAccount(challenge)
+        .then(({ account, proof }) => {
           // Reply in the channel's ChannelResult shape. Targeted at the pinned origin, never "*".
-          win.opener?.postMessage({ kind: "authorize", account }, replyOrigin);
+          win.opener?.postMessage({ kind: "authorize", account, proof }, replyOrigin);
         })
         .catch((e: Error) => view.failure(e.message));
       return;

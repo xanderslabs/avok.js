@@ -1,3 +1,5 @@
+import { privateKeyToAccount } from "viem/accounts";
+import { authorizeChallenge } from "../../src/channel/authorize-proof.js";
 import type { Address, Hex } from "viem";
 import type { Call } from "../../src/evm/index.js";
 import type { SigningChannel, ChannelRequest } from "../../src/channel/index.js";
@@ -181,21 +183,31 @@ export type FakeChannel = SigningChannel;
  * #8 removed `fakeTokenFetch`. It stubbed `/token` + `/jwks` with a real ES256-signed id_token so
  * the OIDC code exchange would verify — there is no code, no token, and no endpoint to stub.
  */
-export function makeFakeChannel(opts: { address: string; subname?: string; solanaAddress?: string }): FakeChannel {
-  const { address, solanaAddress } = opts;
+export function makeFakeChannel(
+  opts: { subname?: string; solanaAddress?: string; authOrigin?: string } = {},
+): FakeChannel & { address: `0x${string}` } {
+  const { solanaAddress } = opts;
+  // A REAL key, because connect() now VERIFIES the authorize proof by recovering the signer. A
+  // placeholder address can no longer round-trip, and that is the point: the fake has to behave like
+  // a wallet that actually controls what it claims.
+  const signer = privateKeyToAccount("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
+  const address = signer.address;
+  const authOrigin = opts.authOrigin ?? "https://auth.qudi.fi";
 
-  const channel: FakeChannel = {
+  const channel: FakeChannel & { address: `0x${string}` } = {
+    address,
     async open(req: ChannelRequest) {
       if (req.kind === "authorize") {
-        // #8: the popup returns the ACCOUNT it just read from the wallet. No code, no state, no
-        // token to exchange.
+        // The popup returns the ACCOUNT it just read from the wallet, plus a signature over the
+        // caller's challenge proving it controls that address.
         return {
           kind: "authorize" as const,
           account: {
-            evmAddress: address as `0x${string}`,
+            evmAddress: address,
             ...(solanaAddress ? { solanaAddress } : {}),
             credentialId: "cred-1",
           },
+          proof: await signer.signMessage({ message: authorizeChallenge({ nonce: req.nonce, authOrigin }) }),
         };
       }
       if (req.kind === "sign") {

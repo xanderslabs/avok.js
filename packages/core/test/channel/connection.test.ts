@@ -3,10 +3,16 @@ import { createSharedOriginConnection } from "../../src/channel/connection.js";
 import { loadAccount, memoryStorage } from "../../src/channel/storage.js";
 import type { SigningChannel, ChannelRequest } from "../../src/channel/channels/port.js";
 import type { Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { authorizeChallenge } from "../../src/channel/authorize-proof.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-const TEST_ADDRESS = "0xaabbccddaabbccddaabbccddaabbccddaabbccdd" as Hex;
+// A REAL key, because connect() now verifies the authorize proof by recovering the signer. A canned
+// address can no longer pass, which is exactly the property under test.
+const TEST_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as Hex;
+const TEST_SIGNER = privateKeyToAccount(TEST_KEY);
+const TEST_ADDRESS = TEST_SIGNER.address as Hex;
 const TEST_SOLANA = "AvokSoLDemoAddress11111111111111111111111111";
 /** The passkey this account was established with — lets the popup skip the account picker. */
 const TEST_CREDENTIAL = "credential-id-abc";
@@ -24,9 +30,14 @@ function makeFakeChannel(): SigningChannel {
   return {
     open: vi.fn().mockImplementation(async (req: ChannelRequest) => {
       if (req.kind === "authorize") {
+        // Sign the caller's challenge exactly as a real wallet page would.
+        const proof = await TEST_SIGNER.signMessage({
+          message: authorizeChallenge({ nonce: req.nonce, authOrigin: AUTH_ORIGIN }),
+        });
         return {
           kind: "authorize",
           account: { evmAddress: TEST_ADDRESS, solanaAddress: TEST_SOLANA, credentialId: TEST_CREDENTIAL },
+          proof,
         };
       }
       if (req.kind === "sign") {

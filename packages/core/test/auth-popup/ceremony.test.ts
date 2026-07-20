@@ -15,6 +15,9 @@ function harness() {
   const opener = { postMessage: (data: unknown, origin: string) => posted.push({ data, origin }) };
   const win = {
     opener,
+    // The proof is bound to the page's own origin, so a signature obtained at one operator cannot
+    // be replayed at another.
+    location: { origin: "https://wallet.example" },
     addEventListener: (_t: "message", fn: (e: MessageEvent) => void) => {
       listener = fn;
     },
@@ -55,7 +58,7 @@ const request: SignConsentRequest = { op: "signMessage", message: "hi" };
 function deps(over: Partial<AuthPopupCeremonyDeps>): AuthPopupCeremonyDeps {
   return {
     view: fakeView(),
-    readAccount: vi.fn().mockResolvedValue(account),
+    readAccount: vi.fn().mockResolvedValue({ account, proof: "0xproof" }),
     signWith: vi.fn().mockResolvedValue({ signature: "0xsig" }),
     win: harness().win,
     ...over,
@@ -71,13 +74,20 @@ describe("runAuthPopup", () => {
 
   it("authorize: runs the gesture and replies with the account to the pinned origin", async () => {
     const h = harness();
-    const readAccount = vi.fn().mockResolvedValue(account);
+    const readAccount = vi.fn().mockResolvedValue({ account, proof: "0xproof" });
     const view = fakeView();
     runAuthPopup(deps({ win: h.win, readAccount, view }));
-    h.emit({ kind: "authorize" }, "https://dapp.example");
+    h.emit({ kind: "authorize", nonce: "abc123" }, "https://dapp.example");
     await vi.waitFor(() => expect(readAccount).toHaveBeenCalled());
     expect(view.connecting).toHaveBeenCalled();
-    expect(h.posted).toContainEqual({ data: { kind: "authorize", account }, origin: "https://dapp.example" });
+    // The gesture signs the CHALLENGE, not the bare nonce — bound to this page's origin and tagged
+    // with its purpose, so the signature cannot be reused as any other kind of signature.
+    expect(readAccount).toHaveBeenCalledWith(expect.stringContaining("nonce: abc123"));
+    expect(readAccount).toHaveBeenCalledWith(expect.stringContaining("origin: https://wallet.example"));
+    expect(h.posted).toContainEqual({
+      data: { kind: "authorize", account, proof: "0xproof" },
+      origin: "https://dapp.example",
+    });
   });
 
   it("sign: shows consent, signs on approve, replies with the result", async () => {
@@ -165,8 +175,8 @@ describe("runAuthPopup", () => {
     const h = harness();
     const readAccount = vi.fn().mockResolvedValue(account);
     runAuthPopup(deps({ win: h.win, readAccount }));
-    h.emit({ kind: "authorize" }, "https://dapp.example");
-    h.emit({ kind: "authorize" }, "https://dapp.example"); // duplicate (eager + on ready)
+    h.emit({ kind: "authorize", nonce: "abc123" }, "https://dapp.example");
+    h.emit({ kind: "authorize", nonce: "abc123" }, "https://dapp.example"); // duplicate (eager + on ready)
     await vi.waitFor(() => expect(readAccount).toHaveBeenCalled());
     expect(readAccount).toHaveBeenCalledTimes(1);
   });
@@ -186,8 +196,8 @@ describe("runAuthPopup", () => {
     runAuthPopup(deps({ win: h.win, readAccount }));
     // First message pins dapp.example; a second from evil.example must be dropped (and it also would
     // be dropped by idempotency, so send the switch FIRST as a non-authorize kind to pin, then retry).
-    h.emit({ kind: "authorize" }, "https://dapp.example");
-    h.emit({ kind: "authorize" }, "https://evil.example");
+    h.emit({ kind: "authorize", nonce: "abc123" }, "https://dapp.example");
+    h.emit({ kind: "authorize", nonce: "abc123" }, "https://evil.example");
     await vi.waitFor(() => expect(readAccount).toHaveBeenCalled());
     // Only the pinned-origin reply exists.
     expect(h.posted.filter((p) => p.origin === "https://evil.example")).toHaveLength(0);

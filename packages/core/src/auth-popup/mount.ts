@@ -10,6 +10,7 @@
  * `authPopupDeps` exposes the non-view wiring so the React `<AuthPopup>` can drive the SAME gesture
  * with its own renderer — the money path has one implementation, not two.
  */
+import type { Hex } from "viem";
 import {
   WebAuthnPasskeyAdapter,
   withDiscoveredKeys,
@@ -46,14 +47,18 @@ export function authPopupDeps(config: AuthPopupConfig): Omit<AuthPopupCeremonyDe
   return {
     win: window as unknown as AuthPopupCeremonyDeps["win"],
 
-    async readAccount(): Promise<AuthPopupAccount> {
-      return withDiscoveredKeys({ passkey, vaultForChain }, async (_keys, walletState, meta) => {
+    async readAccount(challenge: string): Promise<{ account: AuthPopupAccount; proof: Hex }> {
+      return withDiscoveredKeys({ passkey, vaultForChain }, async (keys, walletState, meta) => {
         // Record WHICH passkey the user chose — it costs no extra prompt (it falls out of this gesture)
         // and lets later sign popups skip the account picker.
         const account: AuthPopupAccount = { evmAddress: walletState.evmAddress };
         if (walletState.solanaAddress !== undefined) account.solanaAddress = walletState.solanaAddress;
         if (meta.credentialId !== undefined) account.credentialId = meta.credentialId;
-        return account;
+        // The proof is signed INSIDE this gesture, so it costs the user nothing extra — the key is
+        // already reconstructed and about to be discarded. What it buys is that the caller can verify
+        // this address rather than trusting whatever delivered it.
+        const proof = await keys.evm.signMessage({ message: challenge });
+        return { account, proof };
       });
     },
 

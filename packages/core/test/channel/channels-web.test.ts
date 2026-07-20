@@ -265,9 +265,12 @@ describe("createWebChannel", () => {
   it("opens the popup to the SAME auth origin ROOT for an authorize request (no per-kind URL)", async () => {
     const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
 
-    const promise = channel.open({ kind: "authorize" });
+    const promise = channel.open({ kind: "authorize", nonce: "n1" });
     // The popup replies with the account (ChannelResult authorize shape); kind is what resolves it.
-    fireMessage({ kind: "authorize", account: { evmAddress: "0xabc", solanaAddress: "sol" } }, AUTH_ORIGIN);
+    fireMessage(
+      { kind: "authorize", account: { evmAddress: "0xabc", solanaAddress: "sol" }, proof: "0xsig" },
+      AUTH_ORIGIN,
+    );
     await promise;
 
     const openSpy = (window as unknown as { open: ReturnType<typeof vi.fn> }).open;
