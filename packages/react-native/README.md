@@ -126,12 +126,24 @@ apart — and `removeAccessSlot(slotId, { confirm: true })` deletes one. Both ar
 On a faithful client this **denies future access**: without its blob there is nothing left for that
 passkey to decrypt, so it cannot reconstruct the key on a fresh session.
 
-**Removal is housekeeping, not revocation**, and no UI may present it as a security control. It cannot
-*guarantee* the key was never kept — a device compromised or running a modified ceremony *while in use*
-could have exfiltrated `K` live, and no on-chain action un-copies it. The blob was public calldata and
-stays in chain history forever; and because every passkey signs as the same `K`, any passkey can remove
-any other. So:
+**Removal is real revocation, and it is bounded.** Both halves matter, so state both to users.
 
-> **If a paired device is lost or compromised, removal is not enough — move your funds to a new wallet.**
+`removeAccessSlot` **destroys the ciphertext on chain** — it does not merely flag the slot inactive.
+That is deliberate: a flagged-but-present blob could be read straight back out and decrypted with the
+PRF the removed passkey still holds, which would have protected against nothing. Destroying it means a
+removed passkey has nothing left to decrypt, so it cannot reconstruct the key on a fresh session. For
+the case this exists for — **a device that was lost, and never extracted the key while it worked** —
+removal genuinely ends that passkey's access.
 
-Tell your users that *before* they pair, and only pair devices you control.
+What removal cannot do is **un-copy a key that was already taken**. A device compromised *while in use*
+could have exfiltrated `K` at any point, and nothing on chain reverses that. The blob was also public
+calldata, so it persists in transaction history even after storage is cleared: an adversary who
+archived it can still decrypt with the PRF they hold. And because every passkey signs as the same `K`,
+any passkey can remove any other.
+
+So the line to draw for users is about *which* thing happened:
+
+> **Lost device that you believe was never used against you — removal is sufficient.**
+> **Compromised device, or any doubt — removal is not enough. Move your funds to a new wallet.**
+
+Tell them that *before* they pair, and only pair devices you control.

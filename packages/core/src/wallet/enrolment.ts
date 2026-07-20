@@ -36,6 +36,13 @@ import type { PairEphemeral, PairAck } from "./pairing.js";
  * and its slot is public on chain. So it can decrypt its way to K whenever it likes, not only during a
  * genuine recovery. ANY PASSKEY THAT CAN RECOVER THE WALLET CAN OBTAIN THE KEY. Enrolling a passkey is a
  * grant, deferred; no copy may claim otherwise.
+ *
+ * That is true FOR AS LONG AS THE SLOT EXISTS, and it is worth stating the other half so this is not
+ * misread as "enrolment can never be undone". `removeAccessSlot` DESTROYS the ciphertext on chain
+ * rather than flagging it (see PasskeyAccessVault.removeAccessSlot), so a removed passkey has nothing
+ * left to decrypt: the grant genuinely ends. What removal cannot do is un-copy a key already taken —
+ * a credential that extracted K while its slot was live keeps it, and the blob persists in transaction
+ * history even after storage is cleared. Removal revokes; it does not rewind.
  */
 const ENROLMENT_VERSION = 1 as const;
 
