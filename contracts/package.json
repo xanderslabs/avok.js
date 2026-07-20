@@ -1,6 +1,6 @@
 {
   "name": "@avokjs/contracts",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Avok EIP-7702 wallet implementation contracts and ABI metadata.",
   "keywords": [
     "eip-7702",
