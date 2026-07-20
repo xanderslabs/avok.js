@@ -1,0 +1,94 @@
+---
+title: "React Native setup"
+description: "Configure native platform prerequisites, then wire own-origin and shared-origin on React Native."
+---
+
+React Native needs native platform configuration before any passkey call works, and it wires
+connections a little differently from the web. This guide covers both.
+
+## Native prerequisites (required)
+
+An `rpId` is a domain claim, and the OS honors it only if the domain claims your app back. This is
+platform configuration, not Avok configuration; a passkey call fails at the OS layer without it.
+
+- **iOS**: add the `webcredentials:<your-rpId>` entitlement (Associated Domains) and serve
+  `/.well-known/apple-app-site-association` from that domain with your app's identifier.
+- **Android**: serve `/.well-known/assetlinks.json` from that domain with your package name and
+  signing-certificate fingerprint (Digital Asset Links).
+
+In Expo, both are config-plugin territory (`app.json` `associatedDomains` and the Android
+intent-filter setup); you cannot set them from JavaScript. The `rpId` you pass **must** be that same
+domain.
+
+## Own-origin
+
+Inject the passkey module and use SecureStore for non-secret state:
+
+```tsx
+import { Passkey } from "react-native-passkey";
+import {
+  AvokProvider, createAvokClient, createOwnOriginConnection, secureStoreStorage, useAccount,
+} from "@avokjs/react-native";
+
+const client = createAvokClient(
+  {
+    connection: createOwnOriginConnection({
+      rpId: "example.com",          // an input to the wallet key
+      passkey: Passkey,             // required
+      storage: secureStoreStorage(),
+    }),
+  },
+  { name: "Example Wallet", rdns: "com.example.wallet" },
+);
+
+export default () => (
+  <AvokProvider client={client}>
+    <Wallet />
+  </AvokProvider>
+);
+```
+
+## Shared-origin
+
+Shared-origin runs the ceremony in an in-app browser tab and brings back only the result. Use
+`createNativeSharedOrigin`, providing an `openAuthSession` that matches `expo-web-browser`'s
+`openAuthSessionAsync`:
+
+```tsx
+import * as WebBrowser from "expo-web-browser";
+import { createAvokClient, createNativeSharedOrigin } from "@avokjs/react-native";
+
+const connection = createNativeSharedOrigin({
+  authOrigin: "https://wallet.example.com",
+  redirectUri: "exampleapp://auth",
+  openAuthSession: (url, redirectUri) => WebBrowser.openAuthSessionAsync(url, redirectUri),
+});
+
+const client = createAvokClient(
+  { connection },
+  { name: "Example Wallet", rdns: "com.example.wallet" },
+);
+```
+
+Unlike the web popup, the callback URL carries no origin authenticity, so the account
+self-authenticates: `connect()` verifies a signature over a caller nonce before trusting the
+account. Keep returned payloads to a few kilobytes. Android's Binder buffer is shared
+process-wide.
+
+## Device pairing
+
+`usePairingCeremony` runs the pairing phase machine over an injected transport (`transport` is
+required on React Native, which ships no camera view). `createExpoCameraTransport` bridges
+`expo-camera`:
+
+```tsx
+import { usePairingCeremony, createExpoCameraTransport } from "@avokjs/react-native";
+
+const ceremony = usePairingCeremony({
+  role: "import",
+  transport: createExpoCameraTransport(Camera),
+});
+```
+
+Render a QR of `transport.currentCode` and feed scanned barcodes with `transport.feedBarcode`. See
+[Enroll a device](/guides/enroll-a-device).

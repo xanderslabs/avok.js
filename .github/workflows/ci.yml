@@ -63,3 +63,55 @@ jobs:
 
       - run: forge test --offline --disable-labels
         working-directory: contracts
+
+  # Documentation site: link integrity and prose hygiene.
+  # The prose docs are the part of this repo with a history of drifting out of sync
+  # with the code, so they get their own gate. `broken-links` catches dead cross-page
+  # links; the punctuation guard keeps the humanized prose free of AI-writing tells
+  # (see CLAUDE.md sections 16-17). mintlify's CLI rejects Node 25+, so this pins 24.
+  # The banned codepoints are built with chr() so this file stays pure ASCII; a literal
+  # invisible character here could silently normalize to a space and break the check.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - run: npx --yes mintlify@4.2.715 broken-links
+        working-directory: docs
+
+      - name: No AI-punctuation tells in docs or package READMEs
+        run: |
+          python3 - <<'PY'
+          import glob, re, sys
+          from collections import Counter
+          files = sorted(glob.glob("docs/**/*.mdx", recursive=True)) + [
+              "README.md",
+              "packages/core/README.md",
+              "packages/react/README.md",
+              "packages/react-native/README.md",
+          ]
+          # em-dash, en-dash, ellipsis, right/left arrow, open/close single and double
+          # curly quotes, non-breaking space, zero-width space, byte-order mark.
+          codepoints = [0x2014, 0x2013, 0x2026, 0x2192, 0x2190,
+                        0x2018, 0x2019, 0x201C, 0x201D, 0x00A0, 0x200B, 0xFEFF]
+          bad = re.compile("[" + "".join(map(chr, codepoints)) + "]")
+          fail = False
+          for f in files:
+              try:
+                  s = open(f, encoding="utf-8").read()
+              except FileNotFoundError:
+                  continue
+              hits = bad.findall(s)
+              if hits:
+                  fail = True
+                  counts = {("U+%04X" % ord(c)): n for c, n in Counter(hits).items()}
+                  print(f + ": " + str(counts))
+          if fail:
+              print("AI-punctuation tells found. See CLAUDE.md sections 16-17; use plain punctuation.")
+              sys.exit(1)
+          print("clean: no AI-punctuation tells")
+          PY

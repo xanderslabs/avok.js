@@ -8,7 +8,7 @@
  * published package rather than in CI.
  *
  * What is pinned here is the behaviour the copies must AGREE on:
- *  - `wallet` is required and never defaulted to an Avok brand
+ *  - `wallet` is optional; an omitted name/rdns derives from the real origin, never an Avok brand
  *  - the returned client keeps the full core surface and gains getEip1193Provider()
  *  - the EIP-1193 provider is DOM-free, so it exists on pure native
  *  - the ANNOUNCE (EIP-6963 + Solana Wallet Standard) is window-gated and no-ops on native
@@ -18,6 +18,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import type { Connection } from "@avokjs/core";
+import { rdnsFromOrigin } from "@avokjs/core/engine";
 import { createAvokClient } from "../src/provider-wiring.js";
 
 // Use-only on purpose: the provider wiring is custody-agnostic (it builds a provider and announces),
@@ -111,6 +112,28 @@ describe("createAvokClient (native provider wiring)", () => {
         .find((info) => info?.rdns === WALLET.rdns);
 
       expect(announced?.name).toBe("Example Wallet");
+      expect(JSON.stringify(announced ?? {}).toLowerCase()).not.toContain("avok");
+    } finally {
+      dispatch.mockRestore();
+    }
+  });
+
+  it("derives name and rdns from the origin when the wallet is omitted", () => {
+    // The operator identity is optional. When it is absent, the announce is filled in from the page's
+    // own origin — honest (named after where it runs), never anonymous. Expected values are computed
+    // from window.location so the assertion holds under any test URL.
+    const origin = globalThis.window.location.origin;
+    const host = new URL(origin).hostname;
+    const expectedRdns = rdnsFromOrigin(origin);
+    const dispatch = vi.spyOn(globalThis.window, "dispatchEvent");
+    try {
+      createAvokClient({ connection: fakeConnection() }); // no wallet argument
+      const announced = dispatch.mock.calls
+        .map(([e]) => (e as CustomEvent<{ info?: { name?: string; rdns?: string } }>).detail?.info)
+        .find((info) => info?.name === host);
+
+      expect(announced?.name).toBe(host);
+      expect(announced?.rdns).toBe(expectedRdns);
       expect(JSON.stringify(announced ?? {}).toLowerCase()).not.toContain("avok");
     } finally {
       dispatch.mockRestore();

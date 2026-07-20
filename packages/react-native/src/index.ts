@@ -53,6 +53,10 @@ import { secureStoreStorage } from "./native-storage.js";
 // createAvokClient is the RN provider-wiring (symmetric with @avokjs/react): takes the operator's
 // WalletInfo and exposes getEip1193Provider(). The browser-only announce is window-gated inside.
 export { createAvokClient } from "./provider-wiring.js";
+
+// Compute the EIP-6963 reverse-DNS wallet id from an origin (the wiring applies it automatically when
+// `wallet.rdns` is omitted; exported so an operator can set it explicitly).
+export { rdnsFromOrigin } from "@avokjs/core/engine";
 export type { WiredAvokClient } from "./provider-wiring.js";
 export type {
   StorageAdapter,

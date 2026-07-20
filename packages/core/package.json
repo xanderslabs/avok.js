@@ -1,7 +1,7 @@
 {
   "name": "@avokjs/core",
   "version": "0.0.1",
-  "description": "Avok core: passkey/access-vault smart-EOA wallet engine — wallet primitives, EVM (7702) + Solana tx, client, provider, shared-origin channel. Framework-agnostic.",
+  "description": "Avok core: passkey/access-vault smart-EOA wallet engine. Wallet primitives, EVM (7702) + Solana tx, client, provider, shared-origin channel. Framework-agnostic.",
   "keywords": [
     "passkey",
     "eip-7702",
@@ -23,6 +23,10 @@
     "directory": "packages/core"
   },
   "sideEffects": false,
+  "files": ["dist", "README.md", "SPONSORED.md"],
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

@@ -34,6 +34,7 @@ export {
   createOwnOriginConnection,
   createSharedOriginConnection,
   webStorage,
+  rdnsFromOrigin,
 } from "@avokjs/core";
 
 // ─── Types (re-exported from @avokjs/core so the published .d.ts is self-contained) ───

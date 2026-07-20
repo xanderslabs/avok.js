@@ -1,0 +1,55 @@
+---
+title: "Sponsorship"
+description: "Avok's sponsored rail is a token paymaster: the user pays the fee in a token, and you bring your own infrastructure."
+---
+
+Avok can send transactions whose fee the user pays in an **ERC-20 token or SPL mint** instead of
+the chain's native gas asset. Be precise about what "sponsored" means here, because the word is
+overloaded across the ecosystem.
+
+## A token paymaster, not a verifying paymaster
+
+Avok's sponsored rail is a **token paymaster**: the user holds a paymaster-supported token, the
+fee is charged in that token, and the paymaster and bundler collect it and pay the chain in native
+gas on the user's behalf. The user still pays, just not in a currency they may not hold.
+
+It is **not** a verifying paymaster, where an operator absorbs the fee and the user pays nothing.
+A fee token is therefore required to reach this rail: the token *is* the payment. A send with no
+fee token has nothing to charge, so it is self-pay by definition. An operator who wants to absorb
+the cost does that as a policy at their own paymaster; from the SDK, the call is identical.
+
+## Bring your own infrastructure
+
+There is no default bundler, no default paymaster, and no default Kora endpoint, and there never
+will be. A sponsored send is reachable only through a URL or a client you pass in. Supply nothing,
+and every send is self-pay. That is the default posture, not a failure mode.
+
+The reason is trust. Whoever runs the paymaster sees every sponsored transaction before it lands
+and decides whether to relay it. A default endpoint would silently make that party a dependency of
+every app that never configured one, and a counterparty the user never agreed to.
+
+- **EVM** needs an ERC-4337 `bundlerUrl` (EntryPoint v0.8) **and** an ERC-7677 `paymasterUrl`,
+  together. With only one, the chain falls back to self-pay.
+- **Solana** needs a single `koraUrl`. Kora is both the fee payer and the submitter.
+
+See [Sponsor EVM sends](/guides/sponsor-evm) and [Sponsor Solana sends](/guides/sponsor-solana).
+
+## The fee token is per-send
+
+A fee token is a payment the user makes, so a wallet must not choose one on their behalf. There is
+no client-level default fee token; you pass it per send. Omit it, and the send is self-pay.
+
+By default, asking for a fee token on a chain with no bundler and paymaster **degrades silently to
+self-pay**. That lets one codebase sponsor on the chains where infrastructure exists and pay
+natively on the ones where it does not, without branching. If your product promises users they can
+pay fees in a token, set `requireSponsorship: true`, and a fee-token send that cannot reach the
+sponsored rail throws before anything is signed, naming which side is missing.
+
+## Check which rail ran
+
+Every receipt carries `rail`, either `"sponsored"` or `"self-pay"`. It is the only thing that
+tells you which path actually ran. If your app promises gasless transactions, check it rather than
+assuming your configuration took effect. See [Receipts](/reference/receipts).
+
+For the complete contract, including the custom `Bundler`, `Paymaster7677`, and `KoraClient`
+interfaces, read `SPONSORED.md` in `@avokjs/core`.

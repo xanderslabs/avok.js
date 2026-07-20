@@ -1,0 +1,46 @@
+---
+title: "@avokjs/react-native"
+description: "Hooks, factories, and the native adapter for React Native and Expo apps."
+---
+
+`@avokjs/react-native` is the React Native layer over `@avokjs/core/engine`. It keeps the dependency
+graph DOM-free and adds native platform adapters. See [React Native
+setup](/guides/react-native-setup).
+
+## Hooks
+
+The same nine lifecycle hooks as `@avokjs/react`: `useAvok`, `useSelfCustody`, `useAccount`,
+`useCreate`, `useLogin`, `useLogout`, `useEnroll`, `useExport`, `useAccessSlots`, with identical
+signatures, plus `usePairingCeremony`.
+
+<Warning>
+There is no `useAvokConnect` on React Native; it is a web-only hook.
+</Warning>
+
+`usePairingCeremony(opts)` differs from the web version:
+
+- `opts: { role: "import" | "export"; transport: PairingTransport }`; `transport` is **required**
+  (React Native ships no camera view).
+- The returned `PairingCeremony` has **no** `qrRef`/`videoRef`. It keeps `phase`, `step`, `sas`,
+  `error: string | null`, `canFinish`, `triggerScan()`, `retryCamera()`, `confirmSas(matches)`, and
+  `finish()`.
+
+## Provider
+
+`AvokProvider`, props `{ client: UseOnlyAvokClient; children?: ReactNode }`. Unlike the web
+package, `children` is optional here.
+
+## Factories and utilities
+
+| Export | Signature | Notes |
+| --- | --- | --- |
+| `createAvokClient` | `createAvokClient(config, wallet): WiredAvokClient` | A local definition (not the core re-export); exposes `getEip1193Provider()`. The EIP-6963 / Wallet Standard announce is `window`-gated, firing on React Native Web only. |
+| `createOwnOriginConnection` | `createOwnOriginConnection({ rpId, passkey, operatorName?, storage?, anchorChainId? })` | Own-origin only. `passkey` is required. Defaults storage to `secureStoreStorage()`. |
+| `createNativeSharedOrigin` | `createNativeSharedOrigin({ authOrigin, redirectUri, openAuthSession, storage? })` | Shared-origin over an in-app browser tab. |
+| `secureStoreStorage` | `secureStoreStorage(opts?: { secureStore? }): StorageAdapter` | Wraps Expo SecureStore; falls back to `localStorage`, then memory. Non-secret state only. |
+| `createExpoCameraTransport` | `createExpoCameraTransport(camera): ExpoCameraTransport` | Bridges an injected `expo-camera` module for pairing. |
+
+## Re-exports
+
+`createNativeChannel` and `AuthSessionCancelledError` from `@avokjs/core/channel`, plus the same
+catchable error classes as the web package. See [Errors](/reference/errors).

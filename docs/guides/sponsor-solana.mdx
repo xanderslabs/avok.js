@@ -1,0 +1,45 @@
+---
+title: "Sponsor Solana sends"
+description: "Let users pay Solana fees in an SPL token, using your own Kora endpoint."
+---
+
+On Solana, a sponsored send lets the user pay the fee in an SPL token instead of native SOL. You
+bring your own Kora endpoint. For the model, see [Sponsorship](/concepts/sponsorship).
+
+## Configure Kora
+
+Set a single `koraUrl` on the client config. Kora is both the fee payer and the submitter, so this
+one endpoint is the Solana analogue of `bundlerUrl` and `paymasterUrl` together.
+
+```ts
+const client = createAvokClient(
+  {
+    connection,
+    koraUrl: "https://your-kora.example",
+  },
+  wallet,
+);
+```
+
+Without `koraUrl`, Solana sends fall back to self-pay.
+
+## Pass the fee token per send
+
+A fee token is a per-send choice, expressed as the SPL mint address. Supply it when you build the
+send; omit it, and the send is self-pay. When Kora is configured and the mint is supported, the fee
+is charged in that token and native SOL is untouched.
+
+<Warning>
+Solana has no `requireSponsorship` equivalent. A sponsored request that cannot reach Kora degrades
+**silently** to self-pay. If your product promises fee-in-token on Solana, verify `receipt.rail`
+after each send rather than relying on configuration.
+</Warning>
+
+## Confirm which rail ran
+
+A sponsored Solana receipt has `rail: "sponsored"`, a real `signature`, and `status: "pending"`
+until the network confirms it. A self-pay receipt has `status: "submitted"`. Neither means
+confirmed. See [Receipts](/reference/receipts).
+
+If Kora refuses the transaction, the send throws `KoraRejectedError`, naming the reason and code.
+See [Errors](/reference/errors).

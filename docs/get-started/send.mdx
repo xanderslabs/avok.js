@@ -1,0 +1,35 @@
+---
+title: "Send a transaction"
+description: "Send through the announced EIP-1193 provider with stock viem; sending is never a hook."
+---
+
+Avok does not give you a `useSend` hook. Instead, `createAvokClient` announces an **EIP-1193
+provider** over [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) and registers a **Solana
+Wallet Standard** wallet. You send and sign with the standard ecosystem tools (wagmi, viem,
+ethers, or `@solana/wallet-adapter`), which discover Avok like any other wallet.
+
+## Send with viem
+
+Get the provider directly and hand it to viem:
+
+```ts
+import { createWalletClient, custom, parseEther } from "viem";
+
+const provider = client.getEip1193Provider();
+const wallet = createWalletClient({ transport: custom(provider) });
+
+const [address] = await wallet.requestAddresses();   // eth_requestAccounts
+const hash = await wallet.sendTransaction({
+  account: address,
+  to: "0xRecipient",
+  value: parseEther("0.01"),
+});                                                   // eth_sendTransaction
+```
+
+`client.getEip1193Provider()` returns the provider for direct use. If you use a connector
+library such as wagmi, you don't need it: wagmi discovers the announced provider through
+EIP-6963.
+
+To learn how the provider surface maps to your wallet lifecycle, read
+[The provider, not hooks](/concepts/provider-not-hooks). To pay fees in a token instead of native
+gas, see [Sponsor EVM sends](/guides/sponsor-evm).

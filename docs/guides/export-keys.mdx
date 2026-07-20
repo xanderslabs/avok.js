@@ -1,0 +1,39 @@
+---
+title: "Export keys"
+description: "Let a user export their raw private keys from a self-custody wallet."
+---
+
+A self-custody wallet can export its raw private keys. This is the user's escape hatch: their keys
+are theirs, and they can take them elsewhere.
+
+## Export
+
+`exportEvmKey()` and `exportSolanaKey()` each run a passkey gesture and return the raw private key
+as a hex string. They are available only on a self-custody (own-origin) client.
+
+```ts
+const evmKey = await client.exportEvmKey();
+const solanaKey = await client.exportSolanaKey();
+```
+
+In React, use `useExport`, which exposes both mutations with shared `pending` and `error`:
+
+```tsx
+import { useExport } from "@avokjs/react";
+
+function Export() {
+  const { exportEvmKey, exportSolanaKey, pending, error } = useExport();
+  // Call inside a user gesture; each triggers a passkey prompt.
+}
+```
+
+<Info>
+The EVM key is the root; the Solana key is a leaf derived from it. Export returns raw keys, never a
+mnemonic phrase. Avok never mints one.
+</Info>
+
+<Warning>
+An exported key is plaintext custody. Once it leaves the passkey sandbox, Avok's guarantees no
+longer apply to that copy. Handle it in a user gesture, show it once, and never persist or transmit
+it.
+</Warning>

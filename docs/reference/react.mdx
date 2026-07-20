@@ -1,0 +1,47 @@
+---
+title: "@avokjs/react"
+description: "Hooks and components for React web apps."
+---
+
+`@avokjs/react` is a thin React layer over `@avokjs/core`. It provides lifecycle hooks and
+components; sending and signing go through the announced provider, not hooks. See [The provider,
+not hooks](/concepts/provider-not-hooks).
+
+## Hooks
+
+| Hook | Returns | Notes |
+| --- | --- | --- |
+| `useAvok()` | `UseOnlyAvokClient` | The use-only client from context. Works on any connection. |
+| `useSelfCustody()` | `FullAvokClient` | Throws if the connection is not self-custody. |
+| `useAccount()` | `{ account: Account \| null; status: boolean }` | Reactive snapshot. |
+| `useCreate()` | `{ create: (o?: CreateOpts) => Promise<Account>; pending: boolean; error: Error \| null }` | Self-custody only. |
+| `useLogin()` | `{ login: (o?: ContinueOpts) => Promise<Account>; pending: boolean; error: Error \| null }` | Any connection. |
+| `useLogout()` | `{ logout: () => Promise<void>; pending: boolean; error: Error \| null }` | Any connection. |
+| `useEnroll()` | `{ enroll: () => Promise<...>; pending: boolean; error: Error \| null }` | Self-custody only. |
+| `useExport()` | `{ exportEvmKey; exportSolanaKey; pending: boolean; error: Error \| null }` | Self-custody only; shared pending/error. |
+| `useAccessSlots()` | `{ slots; count; refresh; remove; pending: boolean; error: Error \| null }` | Self-custody only. `slots`/`count` are `null` until `refresh()`. |
+| `useAvokConnect()` | `{ connect: () => Promise<void>; isPending: boolean; error: Error \| null; account: Account \| null; isConnected: boolean }` | Shared-origin connect trigger. Note `isPending`/`isConnected`, not `pending`. |
+| `usePairingCeremony(opts)` | `PairingCeremony` | `opts: { role: "import" \| "export"; transport?: PairingTransport }`. Defaults to a browser camera transport. |
+
+`PairingCeremony` includes `phase`, `step`, `sas`, `error: string | null`, `canFinish`,
+`triggerScan()`, `retryCamera()`, `confirmSas(matches)`, `finish()`, and the DOM refs `qrRef` and
+`videoRef`.
+
+<Info>
+`usePairingCeremony`'s `error` is a `string | null`. The mutation hooks' `error` is an `Error |
+null`.
+</Info>
+
+## Components
+
+| Component | Props |
+| --- | --- |
+| `AvokProvider` | `{ client: UseOnlyAvokClient; children: ReactNode }` (both required) |
+| `AuthPopup` | `{ config: AuthPopupConfig }` |
+| `SharedOrigin` | `{ auth: string; wallet: WalletInfo; children: ReactNode }`, plus optional `paymasterUrl?`, `bundlerUrl?`, `koraUrl?`, `managementUrl?`, `fallback?`, `onError?` |
+| `PairDevice` | `{ role: "import" \| "export"; captions?; onDone? }` |
+
+## Re-exports
+
+`createAvokClient`, `createOwnOriginConnection`, `createSharedOriginConnection`, `webStorage`,
+`operatorNameFromOrigin`, and the catchable error classes. See [Errors](/reference/errors).

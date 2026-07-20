@@ -1,0 +1,67 @@
+---
+title: "Create your first wallet"
+description: "Build an own-origin passkey wallet on the web with @avokjs/react."
+---
+
+This tutorial builds an **own-origin** wallet: your app owns the passkey's `rpId`, so signing
+runs in-app. You create the wallet with a passkey and read its address.
+
+## Wire the client
+
+Create the Avok client once and provide it to your component tree:
+
+```tsx
+import {
+  AvokProvider, createAvokClient, createOwnOriginConnection, useAccount, useCreate,
+} from "@avokjs/react";
+
+const client = createAvokClient(
+  { connection: createOwnOriginConnection({ rpId: "example.com" }) },
+  { name: "Example Wallet", rdns: "com.example.wallet" },
+);
+
+function Wallet() {
+  const { account } = useAccount();
+  const { create, pending, error } = useCreate();
+  if (!account) {
+    return (
+      <button disabled={pending} onClick={() => create()}>
+        Create wallet
+      </button>
+    );
+  }
+  return <p>{account.evm.address}{error && <span>{error.message}</span>}</p>;
+}
+
+export default function App() {
+  return (
+    <AvokProvider client={client}>
+      <Wallet />
+    </AvokProvider>
+  );
+}
+```
+
+## Understand the arguments
+
+`createAvokClient(config, wallet)` takes two arguments:
+
+- **`config.connection`**: how the wallet signs. `createOwnOriginConnection({ rpId })` builds an
+  own-origin connection for the web. Set `rpId` explicitly to your app's domain. Because `rpId`
+  is an input to the wallet key, the SDK refuses to start without it, and changing it produces a
+  different wallet.
+- **`wallet`**: the **operator's** identity, shown in wallet pickers. Set `name` and `rdns` for a
+  proper display name and a stable id. If you omit either, the wiring derives it from your app's
+  origin, so the identity is still honest and is never an "Avok" brand. `icon` is optional.
+
+## Create the wallet
+
+`create()` runs the passkey ceremony and returns the account. The user completes a biometric or
+device prompt, and the wallet key is derived from the resulting passkey. `useCreate` returns
+`pending` and `error` so a failed gesture surfaces where you render it, not as an unhandled
+rejection.
+
+`account.evm.address` is the EVM address; `account.solana.address` is the Solana address. Both
+come from the same passkey.
+
+Next, [send a transaction](/get-started/send).

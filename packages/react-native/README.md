@@ -1,29 +1,30 @@
 # @avokjs/react-native
 
-Avok for React Native / Expo. **The passkey *is* the wallet** — `K = HKDF(PRF(credential, rpId))`,
+Avok for React Native and Expo. **The passkey *is* the wallet**: `K = HKDF(PRF(credential, rpId))`,
 derived on every use and stored nowhere.
 
 ```bash
 npm i @avokjs/react-native react react-native react-native-passkey expo-secure-store
 ```
 
-Peer deps: `react`, `react-native`, `expo-secure-store`. The passkey module is **injected**, not a
-dependency of this package — pass `react-native-passkey` (or any object matching
-`ReactNativePasskeyLike`, which is what tests do). Passkeys require a PRF-capable provider: iCloud
+Peer dependencies: `react >=19.2.7`, `react-native >=0.86.0`, and `expo-secure-store >=57.0.0`. The
+passkey module is injected, not a dependency of this package. Pass `react-native-passkey`, or any
+object that matches `ReactNativePasskeyLike`. Passkeys need a PRF-capable provider, such as iCloud
 Keychain or Google Password Manager.
 
-## Native setup — required, and nothing works without it
+## Native setup
 
-An `rpId` is a domain claim, and the OS refuses to honour it unless the domain claims you back. This
-is not Avok configuration; it is the platform's, and a passkey call fails at the OS layer without it.
+An `rpId` is a domain claim, and the OS honors it only if the domain claims your app back. This is
+platform configuration, not Avok configuration, and a passkey call fails at the OS layer without it.
 
-- **iOS** — add the `webcredentials:<your-rpId>` entitlement (Associated Domains) and serve
+- **iOS**: add the `webcredentials:<your-rpId>` entitlement (Associated Domains) and serve
   `/.well-known/apple-app-site-association` from that domain with your app's identifier.
-- **Android** — serve `/.well-known/assetlinks.json` from that domain with your package name and
+- **Android**: serve `/.well-known/assetlinks.json` from that domain with your package name and
   signing-certificate fingerprint (Digital Asset Links).
 
-Expo: both are config-plugin territory (`app.json` `associatedDomains` and the Android intent-filter
-setup); they cannot be set from JavaScript. The `rpId` you pass below **must** be that same domain.
+In Expo, both are config-plugin territory (`app.json` `associatedDomains` and the Android
+intent-filter setup); you cannot set them from JavaScript. The `rpId` you pass must be that same
+domain.
 
 ## Quickstart
 
@@ -36,13 +37,12 @@ import {
 const client = createAvokClient(
   {
     connection: createOwnOriginConnection({
-      rpId: "example.com",          // explicit — it is an input to the wallet key
+      rpId: "example.com",          // an input to the wallet key
       passkey: Passkey,             // required
       storage: secureStoreStorage(),
     }),
   },
-  // The OPERATOR's identity. Required, and never defaulted to an Avok brand: a wallet cannot
-  // honestly announce itself anonymously.
+  // The operator's identity. `name` and `rdns` are required and are never defaulted to an Avok brand.
   { name: "Example Wallet", rdns: "com.example.wallet" },
 );
 
@@ -55,95 +55,72 @@ export default () => (
 
 ## Hooks
 
-| | |
-|---|---|
-| `useAvok` `useSelfCustody` | raw client, custody introspection |
-| `useAccount` `useCreate` `useLogin` `useLogout` | account lifecycle |
-| `useEnroll` `useExport` `useAccessSlots` | management verbs (self-custody) |
-| `usePairingCeremony` | QR device pairing |
+The hooks match `@avokjs/react`, without `useAvokConnect`, which is web-only: `useAvok`,
+`useSelfCustody`, `useAccount`, `useCreate`, `useLogin`, `useLogout`, `useEnroll`, `useExport`,
+`useAccessSlots`, and `usePairingCeremony`. Each mutation hook returns `pending` and `error` next to
+its action. The [React Native reference](../../docs/reference/react-native.mdx) has the exact return
+shapes.
 
-Each returns `{ pending, error }` alongside its action, so a failed passkey gesture surfaces where you
-render it rather than as an unhandled rejection.
+## Sending and signing are not hooks
 
-**Sending and signing are not hooks.** They go through the EIP-1193 provider
-(`client.getEip1193Provider()`) and the Solana Wallet Standard wallet, driven by stock wagmi/viem and
-`@solana/wallet-adapter`. On pure native the EIP-6963 / Wallet Standard announce is a no-op — there is
-no page to announce into — so reach for the provider directly.
+They go through the EIP-1193 provider (`client.getEip1193Provider()`) and the Solana Wallet Standard
+wallet, driven by stock wagmi and viem or `@solana/wallet-adapter`. On pure native there is no page
+to announce into, so the EIP-6963 and Wallet Standard announce is a no-op. Reach for the provider
+directly.
 
-The hook surface otherwise matches [`@avokjs/react`](https://www.npmjs.com/package/@avokjs/react).
+## Shared-origin
 
-## Shared-origin: not shipped yet, but proven possible
+Shared-origin ships on native. Use `createNativeSharedOrigin` to run the signing ceremony in an
+in-app browser tab at the operator's origin and bring back only the result. This is the path for apps
+that do not own the wallet's `rpId` domain, and so cannot host its `apple-app-site-association` or
+`assetlinks.json`.
 
-This package is **own-origin only today**. There is no shared-origin connection in it, and
-`@avokjs/core`'s `createSharedOriginConnection` takes an injected `channel: SigningChannel` whose only
-shipped implementation is DOM-only (`window.open`). So there is nothing to point a native app at yet.
+```tsx
+import * as WebBrowser from "expo-web-browser";
+import { createAvokClient, createNativeSharedOrigin } from "@avokjs/react-native";
 
-That is a missing feature, **not a platform limitation** — a distinction worth stating because the
-older note here claimed otherwise. Shared-origin exists precisely for apps that do *not* own the
-wallet's rpId domain and therefore cannot host its `apple-app-site-association` or `assetlinks.json`.
-The answer on native is the same as on web: run the ceremony in a context that genuinely *is* that
-origin — an in-app browser tab — and bring back only the result.
+const connection = createNativeSharedOrigin({
+  authOrigin: "https://wallet.example.com",
+  redirectUri: "exampleapp://auth",
+  openAuthSession: (url, redirectUri) => WebBrowser.openAuthSessionAsync(url, redirectUri),
+});
 
-**Measured on device (2026-07-20):** a WebAuthn ceremony with the **PRF extension** succeeds inside
-both **iOS ASWebAuthenticationSession** and **Android Chrome Custom Tabs**. Since Avok derives the
-wallet key from PRF, that was the make-or-break question, and it passes on both platforms. RFC 8252 §6
-endorses this shape and names both APIs.
+const client = createAvokClient(
+  { connection },
+  { name: "Example Wallet", rdns: "com.example.wallet" },
+);
+```
 
-What is left is building a native `SigningChannel` over that tab. Note
-`ASWebAuthenticationSession` is one-shot — request → redirect, with no `postMessage` equivalent — so
-the result returns via the callback URL. Keep returned payloads to a few KB: Android's Binder buffer
-is shared process-wide, and iOS documents no limit at all.
+A native callback URL carries no origin authenticity, so the account self-authenticates: `connect()`
+verifies a signature over a caller nonce before trusting the account. Keep returned payloads to a few
+kilobytes, because Android's Binder buffer is shared process-wide.
 
-If you need shared-origin on native before that ships, you can implement the `SigningChannel`
-yourself against `@avokjs/core`'s `createSharedOriginConnection`. That is unsupported territory, but
-it is not blocked.
+Measured on device (2026-07-20): a WebAuthn ceremony with the PRF extension succeeds inside both iOS
+ASWebAuthenticationSession and Android Chrome Custom Tabs, the feasibility gate for deriving the
+wallet key from PRF inside the tab.
 
 ## Device pairing
 
-`usePairingCeremony` runs the three-round QR ceremony over an injected transport;
-`createExpoCameraTransport` bridges `expo-camera`, which is render-driven and so cannot be called
-imperatively. Both the ceremony phase machine and the transport are unit-tested.
-
-## Status
-
-Unit-tested: `createOwnOriginConnection` and its required-`passkey` refusal, the native passkey
-adapter seam, the provider wiring (including that it builds no DOM dependency), SecureStore storage
-and its fallbacks, provider reactivity and resync, the full hook surface, the pairing phase machine,
-and the camera transport. The passkey adapter's own logic is tested in `@avokjs/core`.
-
-**Not exercised on a device:** real passkey biometrics, the real SecureStore keychain, and camera
-pairing — see `VERIFICATION.md` for the device checklist. Everything a unit test can reach is
-covered; what remains needs hardware.
+`usePairingCeremony` runs the two-round QR ceremony over an injected transport. The `transport` is
+required on React Native, which ships no camera view. `createExpoCameraTransport` bridges
+`expo-camera`. Both the phase machine and the transport are unit-tested.
 
 ## Removing a device's access
 
-Pairing gives the other device **its own key to this wallet**, wrapped under **its own passkey**. The
-SDK never keeps `K` at rest — it is derived per gesture and wiped immediately after (`wipeSecrets`), so
-a device's lasting access is exactly *its passkey* plus *its encrypted access slot on chain*.
+`removeAccessSlot(slotId, { confirm: true })` destroys the access key's ciphertext on chain, so a
+removed passkey has nothing left to decrypt on a fresh session. Removal is real revocation, and it is
+bounded: it cannot un-copy a key a compromised device already took. Read [Remove
+access](../../docs/guides/remove-access.mdx) for the exact guarantees and the guidance to give users.
 
-`listAccessSlots()` enumerates them — each carries the `rpId` that enrolled it, so you can tell them
-apart — and `removeAccessSlot(slotId, { confirm: true })` deletes one. Both are on `useAccessSlots()`.
-On a faithful client this **denies future access**: without its blob there is nothing left for that
-passkey to decrypt, so it cannot reconstruct the key on a fresh session.
+## What is verified
 
-**Removal is real revocation, and it is bounded.** Both halves matter, so state both to users.
+Unit tests cover `createOwnOriginConnection` and its required-`passkey` refusal, the native passkey
+adapter seam, the provider wiring (including that it builds no DOM dependency), SecureStore and its
+fallbacks, provider reactivity and resync, the hook surface, the pairing phase machine, and the
+camera transport. Real passkey biometrics, the real SecureStore keychain, and camera pairing need
+hardware. See `VERIFICATION.md` for the device checklist.
 
-`removeAccessSlot` **destroys the ciphertext on chain** — it does not merely flag the slot inactive.
-That is deliberate: a flagged-but-present blob could be read straight back out and decrypted with the
-PRF the removed passkey still holds, which would have protected against nothing. Destroying it means a
-removed passkey has nothing left to decrypt, so it cannot reconstruct the key on a fresh session. For
-the case this exists for — **a device that was lost, and never extracted the key while it worked** —
-removal genuinely ends that passkey's access.
+## Documentation
 
-What removal cannot do is **un-copy a key that was already taken**. A device compromised *while in use*
-could have exfiltrated `K` at any point, and nothing on chain reverses that. The blob was also public
-calldata, so it persists in transaction history even after storage is cleared: an adversary who
-archived it can still decrypt with the PRF they hold. And because every passkey signs as the same `K`,
-any passkey can remove any other.
-
-So the line to draw for users is about *which* thing happened:
-
-> **Lost device that you believe was never used against you — removal is sufficient.**
-> **Compromised device, or any doubt — removal is not enough. Move your funds to a new wallet.**
-
-Tell them that *before* they pair, and only pair devices you control.
+This package is a thin React Native layer over [`@avokjs/core`](../core), built on
+`@avokjs/core/engine`. Full documentation lives in the repo's [`docs/`](../../docs) site.

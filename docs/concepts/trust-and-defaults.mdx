@@ -1,0 +1,49 @@
+---
+title: "Trust and defaults"
+description: "Why Avok ships no default RPC, paymaster, or Kora endpoint, and how the operator's identity is announced."
+---
+
+Avok ships no third-party infrastructure as a default. Each endpoint an app talks to is a trust
+boundary, so the integrator chooses who to trust. This is a deliberate posture, not an omission.
+
+## No default RPC
+
+An RPC endpoint answers questions like "what address does `vitalik.eth` resolve to?" A dishonest
+one can redirect a user's funds. So Avok never picks an RPC for you.
+
+Set `rpcUrls` per chain on the client config. You have three options, none of which requires Avok
+to run anything:
+
+- **Your own provider URL.** A domain-allowlisted key is safe in a browser bundle. It is useless
+  from any other origin, so a serverless app needs no backend.
+- **A proxy you host,** which keeps the provider key server-side.
+- **A URL your end user supplies,** the way Jupiter and Solflare expose a custom-RPC field.
+
+<Warning>
+An unset chain falls back to the registry's public endpoint, which is **development-only**. Public
+endpoints are rate-limited, carry no SLA, and block the indexed reads a wallet needs. Public Solana
+endpoints, for example, reject or hang on `getTokenAccountsByOwner`, so SPL balances silently read
+zero. Set `rpcUrls` before production.
+</Warning>
+
+## No default paymaster or Kora endpoint
+
+The same reasoning applies to sponsorship. A fee payer sees, prices, and can refuse every
+transaction you send, so Avok never defaults one. Supply `bundlerUrl` and `paymasterUrl` (EVM) or
+`koraUrl` (Solana) yourself. See [Sponsorship](/concepts/sponsorship).
+
+This holds even if the SDK's authors run sponsorship infrastructure. Any such service is one you
+may choose to point at, configured exactly like any other provider's, with no baked-in URL and no
+fallback status.
+
+## The operator owns the identity
+
+Avok is a white-label SDK: the operator ships *their* wallet on it. The name, icon, and reverse-DNS
+id that a dapp discovers in its wallet picker (over EIP-6963 for EVM and the Solana Wallet
+Standard) are the **operator's**, supplied at wiring time through the `wallet` argument to
+`createAvokClient`.
+
+- `wallet.name` and `wallet.rdns` are recommended. Set them for a proper display name and a stable
+  id. If you omit either, the wiring derives it from the page's own origin, so the identity is still
+  honest: named after the real origin, never anonymous and never an Avok brand.
+- `wallet.icon` is optional; a neutral blank placeholder is used until you provide one.

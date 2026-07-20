@@ -1,0 +1,90 @@
+---
+title: "Core client"
+description: "createAvokClient, the ClientConfig contract, and the client surface."
+---
+
+## createAvokClient
+
+There are two factories named `createAvokClient`. They differ by entry point.
+
+| Import | Signature | Returns |
+| --- | --- | --- |
+| `@avokjs/core` | `createAvokClient(config, wallet)` | A wired client with `getEip1193Provider()`, plus an announced EIP-6963 provider and Solana Wallet Standard wallet. |
+| `@avokjs/core/engine` | `createAvokClient(config)` | The core client, no browser announce (the React Native base). |
+
+The two-argument wired factory is what most apps use. `wallet` is the operator identity, a
+`WalletInfo`: `{ name?: string; rdns?: string; icon?: string }`. Every field is optional. Set `name`
+and `rdns` for a proper display name and a stable id; if you omit either, the wiring derives it from
+the page's own origin (`name` from the hostname, `rdns` from its reverse-DNS form) so the announced
+identity is honest, never anonymous and never an Avok brand. `rdnsFromOrigin(origin)` is exported if
+you want to compute the id yourself.
+
+## ClientConfig
+
+Passed as the first argument to `createAvokClient`.
+
+| Field | Type | Required | Default | Purpose |
+| --- | --- | --- | --- | --- |
+| `connection` | `Connection` | Yes | - | The connection managing account and signing (own-origin or shared-origin). |
+| `managementUrl` | `string` | No | - | The operator's own-origin management URL, surfaced to shared-origin apps. |
+| `paymasterUrl` | `string` | No | - | ERC-7677 paymaster for sponsored EVM sends. Requires `bundlerUrl` too. |
+| `bundlerUrl` | `string` | No | - | ERC-4337 bundler (EntryPoint v0.8) for sponsored EVM sends. Requires `paymasterUrl` too. |
+| `requireSponsorship` | `boolean` | No | `false` | Throw instead of silently self-paying when a fee-token send cannot reach the sponsored rail. |
+| `rpcUrls` | `RpcOverrides` | No | registry public endpoint (development only) | RPC endpoints per chain. Set for production. |
+| `storage` | `StorageAdapter` | No | - | Adapter for non-secret state (e.g. session metadata). |
+| `nonceAllocator` | `NonceAllocator` | No | random 256-bit | Intent-nonce allocation. Use `createSequentialNonceAllocator(storage)` on L1. |
+| `defaultDeadlineSeconds` | `number` | No | `3600` | Deadline window for sponsored batch signatures. |
+| `koraUrl` | `string` | No | - | Kora endpoint for sponsored Solana sends (fee payer and submitter). |
+
+<Info>
+`deps` is an internal test-injection seam. `SPONSORED.md` documents how to inject a custom
+`Bundler`, `Paymaster7677`, or `KoraClient` through it when a URL is not enough.
+</Info>
+
+## The client surface
+
+Every client has the use-only surface. A self-custody (own-origin) connection additionally gets the
+management verbs.
+
+### UseOnlyAvokClient
+
+| Member | Signature |
+| --- | --- |
+| `login` | `login(o?: ContinueOpts): Promise<Account>` |
+| `account` | `account(): Account \| null` |
+| `status` | `status(): boolean` |
+| `logout` | `logout(): Promise<void> \| void` |
+| `subscribe` | `subscribe(listener: () => void): () => void` |
+| `isActivated` | `isActivated(chainId: number): Promise<boolean>` |
+| `custody` | `readonly custody: "self" \| "use-only"` |
+
+### FullAvokClient (adds, self-custody only)
+
+| Member | Signature |
+| --- | --- |
+| `create` | `create(o?: CreateOpts): Promise<Account>` |
+| `exportEvmKey` | `exportEvmKey(): Promise<Hex>` |
+| `exportSolanaKey` | `exportSolanaKey(): Promise<Hex>` |
+| `enrollAccessSlot` | `enrollAccessSlot(o?: { feeToken?: Address \| null }): Promise<{ slotId: Hex; txId: string; passkeyCount: number }>`, with `.viaPairing.{ holder, enroller }` |
+| `listAccessSlots` | `listAccessSlots(): Promise<(AccessSlotEntry & { rpId: string \| null })[]>` |
+| `accessSlotCount` | `accessSlotCount(): Promise<number>` |
+| `removeAccessSlot` | `removeAccessSlot(slotId: Hex, opts: { confirm: true }): Promise<{ txId: string }>` |
+
+The wired client (from `@avokjs/core`) also has `getEip1193Provider(): Eip1193Provider`.
+
+<Warning>
+The public client has no `.evm.send` or `.solana.send` method. Sending and signing go through the
+announced provider. See [The provider, not hooks](/concepts/provider-not-hooks).
+</Warning>
+
+## Account
+
+```ts
+type Account = {
+  evm: { address: Address };
+  solana: { address: string };
+};
+```
+
+There is no name field. A name is add-on data an app resolves and holds itself. See [Resolve
+names](/guides/resolve-names).

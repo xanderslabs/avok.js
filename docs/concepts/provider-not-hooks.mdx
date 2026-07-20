@@ -1,0 +1,47 @@
+---
+title: "The provider, not hooks"
+description: "Sending and signing go through the announced EIP-1193 provider and the Solana Wallet Standard, driven by stock tools."
+---
+
+Avok does not wrap sending and signing in framework hooks. `createAvokClient` announces a standard
+provider, and you transact with the standard ecosystem tools. There is nothing Avok-specific in
+how you send.
+
+## What gets announced
+
+- **EVM:** an EIP-1193 provider, announced over [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963).
+  wagmi, viem, ethers, and RainbowKit discover it like any other injected wallet.
+- **Solana:** a wallet registered through the
+  [Solana Wallet Standard](https://github.com/wallet-standard/wallet-standard).
+  `@solana/wallet-adapter` discovers it automatically.
+
+The announced identity (name, icon, and reverse-DNS id) is the **operator's**, supplied at config. See [Trust and defaults](/concepts/trust-and-defaults).
+
+## Supported EIP-1193 methods
+
+The provider answers these JSON-RPC methods:
+
+| Method | Purpose |
+| --- | --- |
+| `eth_requestAccounts` | Connect and return the active account. |
+| `eth_accounts` | Return the active account without prompting. |
+| `eth_chainId` | Return the current chain id. |
+| `personal_sign` | Sign a message ([EIP-191](https://eips.ethereum.org/EIPS/eip-191)). |
+| `eth_signTypedData_v4` | Sign typed data ([EIP-712](https://eips.ethereum.org/EIPS/eip-712)). |
+| `wallet_sendCalls` | Send a batch ([EIP-5792](https://eips.ethereum.org/EIPS/eip-5792)), with ERC-7677 paymaster capabilities. |
+| `wallet_getCapabilities` | Report per-chain capabilities, including fee tokens. |
+| `wallet_getCallsStatus` | Report the status of a submitted bundle. |
+| `eth_sendTransaction` | Send a single transaction. |
+| `wallet_switchEthereumChain` | Switch the active chain. |
+
+## Supported Solana Wallet Standard features
+
+`standard:connect`, `standard:disconnect`, `standard:events`, `solana:signMessage`,
+`solana:signTransaction`, and `solana:signAndSendTransaction`, on chains `solana:mainnet` and
+`solana:devnet`.
+
+## Get the provider directly
+
+If you are not using a connector library, `client.getEip1193Provider()` hands you the EIP-1193
+provider for direct use with viem's `custom()` transport. See [Send a
+transaction](/get-started/send).

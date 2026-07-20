@@ -1,0 +1,41 @@
+---
+title: "Access keys and the vault"
+description: "One wallet reachable from many origins, each through its own passkey, enforced on chain."
+---
+
+One underlying Avok wallet can be reached from many origins, each through its own passkey. Each
+per-origin passkey is an **access key**. The model is enforced on chain by the
+`PasskeyAccessVault` contract.
+
+The analogy is the way one seed shows up in both MetaMask and Trust, except here each origin gets
+its own passkey access key, and the wallet stays fully self-custodial. A wallet created in a
+wallet app can be used on a third-party dapp through the shared-origin path, and linked to further
+origins by adding access keys.
+
+## Enrolling an access key
+
+Adding a device or an origin runs a two-round enrollment ceremony between the existing wallet (the
+**holder**) and the new device (the **enroller**):
+
+1. **Invite round.** The holder publishes its wallet address and anchor chain.
+2. **Wrap round.** The enroller mints a passkey, seals its own wrapping key, and sends it back.
+
+Both sides then compare a **short authentication string (SAS)**, six digits committing to both
+public keys. If the digits do not match, either side aborts, and the enroller burns its new
+credential. Only after both confirm does the holder seal the wallet key under the enroller's
+wrapping key and write the access slot on chain.
+
+The write is atomic: it lands, or the enrollment fails. There is no queued access slot. The
+enroller is **not** logged in by the ceremony; the app calls `login()` after the holder's write
+confirms. For the full recipe, see [Enroll a device](/guides/enroll-a-device).
+
+## Removing an access key
+
+`removeAccessSlot(slotId, { confirm: true })` **destroys the ciphertext on chain**: it deletes
+the encrypted blob, rather than flagging the slot inactive. A removed passkey then has nothing
+left to decrypt on a fresh session.
+
+Removal is genuine revocation, and it is bounded. It cannot un-copy a key that a compromised
+device already exfiltrated while it was in use, and the blob persists in public transaction
+history. See [Remove access](/guides/remove-access) for the exact guarantees and the guidance to
+give users.

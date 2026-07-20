@@ -1,0 +1,53 @@
+---
+title: "Choose your signing path"
+description: "Decide between own-origin and shared-origin, and configure the connection accordingly."
+---
+
+You know at build time which signing path your app uses. This recipe helps you pick and wire it.
+For the underlying model, see [Signing paths](/concepts/signing-paths).
+
+## Do you own the wallet's domain?
+
+Ask one question: **is the passkey's `rpId` a domain you control and can serve
+`.well-known` files from?**
+
+- **Yes, use own-origin.** Set `rpId`. Signing runs in your app, in code. This is the path for
+  wallet apps and any app that owns its wallet UX.
+- **No, use shared-origin.** Set `authOrigin`, pointing at the operator origin that hosts the
+  wallet. Signing happens in a popup or in-app browser tab at that origin; your app receives only
+  the result.
+
+<Info>
+`rpId` and `authOrigin` are mutually exclusive. Set exactly one.
+</Info>
+
+## Own-origin
+
+```ts
+import { createOwnOriginConnection } from "@avokjs/core";
+
+const connection = createOwnOriginConnection({ rpId: "example.com" });
+```
+
+On React Native, also pass the injected `passkey` module:
+
+```ts
+import { Passkey } from "react-native-passkey";
+import { createOwnOriginConnection } from "@avokjs/react-native";
+
+const connection = createOwnOriginConnection({ rpId: "example.com", passkey: Passkey });
+```
+
+## Shared-origin
+
+```ts
+import { createSharedOriginConnection } from "@avokjs/core";
+
+const connection = await createSharedOriginConnection({ authOrigin: "https://wallet.example.com" });
+```
+
+On React Native, use `createNativeSharedOrigin` over an in-app browser tab. See [React Native
+setup](/guides/react-native-setup).
+
+Once you have a connection, pass it to `createAvokClient`. See [Create your first
+wallet](/get-started/first-wallet).

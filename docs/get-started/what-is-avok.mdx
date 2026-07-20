@@ -1,0 +1,49 @@
+---
+title: "What is Avok?"
+description: "A client-side SDK for self-custodial smart wallets authenticated by passkeys, on EVM and Solana."
+---
+
+Avok is an open-source, client-side SDK that gives any app a **self-custodial smart wallet**
+authenticated by **passkeys**. There is no seed phrase and no browser extension. Everything
+happens in the app.
+
+- **EVM** wallets are smart EOAs through [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702).
+- **Solana** is a first-class second rail.
+
+The same wallet is first-class both in its own wallet app and embedded in a third-party app.
+
+## The passkey is the wallet
+
+Avok derives the wallet key from the passkey itself:
+
+```
+K = HKDF(PRF(credential, rpId))
+```
+
+The key is derived for each signing gesture and wiped immediately after. It is never stored.
+Because `rpId` scopes the passkey's PRF, it is effectively an input to the key: change the
+`rpId` and every user gets a different wallet. For the full derivation, see
+[The passkey is the wallet](/concepts/passkey-is-the-wallet).
+
+## Two signing paths
+
+The passkey's WebAuthn `rpId` decides how signing happens:
+
+- **Own-origin**: the passkey's `rpId` is the app's own origin, so signing runs in-app, in
+  code. Set `rpId`.
+- **Shared-origin**: the passkey lives under a different origin, so signing happens in a popup
+  (web) or an in-app browser tab (React Native) opened to that origin. Set `authOrigin`.
+
+`rpId` and `authOrigin` are mutually exclusive; they select the path. See
+[Signing paths](/concepts/signing-paths).
+
+## Bring your own infrastructure
+
+Avok ships **no default** RPC, bundler, paymaster, or Kora endpoint. Each is a trust boundary
+you choose. You supply the URLs you trust; the SDK never picks one for you. See
+[Trust and defaults](/concepts/trust-and-defaults).
+
+## What you'll build
+
+In the next few pages you install Avok, create an own-origin wallet on the web, and send a
+transaction through the wallet's standard provider. Start with [Install](/get-started/install).

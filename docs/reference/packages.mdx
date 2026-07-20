@@ -1,0 +1,27 @@
+---
+title: "Packages"
+description: "The Avok packages and which one to install."
+---
+
+Avok publishes three packages plus a contracts package.
+
+| Package | Purpose |
+| --- | --- |
+| `@avokjs/core` | The framework-agnostic SDK and the plain-JS/browser SDK. Engine, client, provider, shared-origin channel, name resolution, and the auth-popup mountable. Exposed through 13 subpaths. |
+| `@avokjs/react` | React lifecycle hooks and components over `@avokjs/core`. |
+| `@avokjs/react-native` | React Native lifecycle and management hooks, plus the native platform adapter, over `@avokjs/core/engine`. |
+| `@avokjs/contracts` | Published addresses, ABIs, and EIP-712 types the SDK consumes, not the Solidity. |
+
+The three SDK packages are independent; none imports another. The browser platform (default web
+passkey and storage) lives in `@avokjs/core`; React Native swaps it through `@avokjs/core/engine`
+plus its own native adapter.
+
+## Which package do I install?
+
+| You are building | Install |
+| --- | --- |
+| A plain-JS or browser app | `@avokjs/core` |
+| A React web app | `@avokjs/react` |
+| A React Native or Expo app | `@avokjs/react-native` |
+
+See [Install](/get-started/install) for the commands and peer dependencies.

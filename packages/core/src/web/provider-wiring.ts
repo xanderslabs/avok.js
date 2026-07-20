@@ -4,6 +4,7 @@ import {
   createEip1193Provider,
   announceEip6963,
   registerAvokSolanaWallet,
+  resolveAnnouncedIdentity,
   type Eip1193Provider,
   type WalletInfo,
 } from "../provider/index.js";
@@ -27,19 +28,22 @@ export type WiredAvokClient<C extends Connection> = AvokClientFor<C> & {
  * wallet — in-page, once, and only in a browser (SSR / non-DOM hosts no-op). Returns the client with a
  * `getEip1193Provider()` handle for direct (non-wagmi) use.
  *
- * `wallet` is the OPERATOR's identity (name/icon/rdns) — required, because a wallet cannot honestly
- * announce itself anonymously in a user's picker. It is never defaulted to an Avok brand.
+ * `wallet` is the OPERATOR's identity (name/icon/rdns). Every field is optional: an omitted `name` or
+ * `rdns` is derived from the page's own origin (`resolveAnnouncedIdentity`), which keeps the announce
+ * honest — named after the real origin, never anonymous and never an Avok brand. Pass them explicitly
+ * for a proper display name and a stable id.
  */
 export function createAvokClient<C extends Connection>(
   config: ClientConfig<C>,
-  wallet: WalletInfo,
+  wallet?: WalletInfo,
 ): WiredAvokClient<C> {
   const client = coreCreateAvokClient(config);
   const provider = createEip1193Provider(config, { subscribe: client.subscribe });
   if (typeof window !== "undefined") {
-    const icon = wallet.icon ?? BLANK_ICON; // resolve the fallback ONCE, hand the same icon to both surfaces
-    announceEip6963(provider, { uuid: crypto.randomUUID(), name: wallet.name, icon, rdns: wallet.rdns });
-    registerAvokSolanaWallet(config, { name: wallet.name, icon, subscribe: client.subscribe });
+    const icon = wallet?.icon ?? BLANK_ICON; // resolve the fallback ONCE, hand the same icon to both surfaces
+    const { name, rdns } = resolveAnnouncedIdentity(wallet, window.location.origin);
+    announceEip6963(provider, { uuid: crypto.randomUUID(), name, icon, rdns });
+    registerAvokSolanaWallet(config, { name, icon, subscribe: client.subscribe });
   }
   return Object.assign(client, { getEip1193Provider: () => provider });
 }

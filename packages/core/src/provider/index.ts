@@ -10,5 +10,8 @@ export { registerAvokSolanaWallet } from "./solana-standard.js";
 export type { SolanaStandardOptions } from "./solana-standard.js";
 
 // The operator's wallet identity (name/icon/rdns) both wirings announce. Lives here — not in web/ —
-// so the RN facade can share it via @avokjs/core/engine.
+// so the RN facade can share it via @avokjs/core/engine. `rdnsFromOrigin` is exported so an operator
+// can compute the reverse-DNS id explicitly; `resolveAnnouncedIdentity` is the shared fill-in both
+// wirings use when a field is omitted.
 export type { WalletInfo } from "./wallet-info.js";
+export { rdnsFromOrigin, resolveAnnouncedIdentity } from "./wallet-info.js";

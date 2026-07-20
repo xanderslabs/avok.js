@@ -1,0 +1,51 @@
+---
+title: "Remove access"
+description: "Revoke a device's access key, and understand exactly what revocation does and does not do."
+---
+
+`removeAccessSlot` revokes a device's access key. This page covers how to call it and, just as
+important, what to tell your users about its limits.
+
+## List and remove
+
+`listAccessSlots()` enumerates the access keys. Each entry names the `rpId` that enrolled it, so
+you can tell them apart. `removeAccessSlot(slotId, { confirm: true })` deletes one. In React, both
+are on `useAccessSlots()`.
+
+```ts
+const slots = await client.listAccessSlots();
+await client.removeAccessSlot(slots[0].slotId, { confirm: true });
+```
+
+The `confirm: true` flag is required; removal never happens implicitly.
+
+## Removal is real revocation
+
+`removeAccessSlot` **destroys the ciphertext on chain**: it deletes the encrypted blob, rather
+than flagging the slot inactive. This is deliberate. A flagged-but-present blob could be read
+straight back out and decrypted with the PRF the removed passkey still holds, which would protect
+against nothing. Because the blob is gone, a removed passkey has nothing left to decrypt, and it
+cannot reconstruct the key on a fresh session.
+
+For the case this exists for (a device that was lost, and never extracted the key while it worked),
+removal genuinely ends that passkey's access.
+
+## Removal is bounded
+
+Removal cannot un-copy a key that was already taken. A device compromised *while in use* could have
+exfiltrated the wallet key at any point, and nothing on chain reverses that. The blob was also
+public calldata, so it persists in transaction history even after storage is cleared: an adversary
+who archived it can still decrypt with the PRF they hold. And because every passkey signs as the
+same key, any passkey can remove any other.
+
+## What to tell users
+
+State both halves. The line to draw is about *which* thing happened:
+
+<Warning>
+**Lost device you believe was never used against you**: removal is sufficient.
+
+**Compromised device, or any doubt**: removal is not enough. Move your funds to a new wallet.
+</Warning>
+
+Tell users this *before* they pair, and advise them to pair only devices they control.

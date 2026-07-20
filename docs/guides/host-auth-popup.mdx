@@ -1,0 +1,45 @@
+---
+title: "Host the auth popup"
+description: "Build and host the single static page that serves shared-origin signing at your origin."
+---
+
+Shared-origin apps sign in a popup or in-app browser tab opened to an operator origin. The SDK
+opens and drives that surface; it does not host the page. As the operator, you host **one static
+page** at your `authOrigin`, once, ahead of time.
+
+## Build the page
+
+The page is built from the `@avokjs/core/auth-popup` mountable. Bake your operator config into a
+small entry that calls `mountAuthPopup()` (or renders `<AuthPopup>` in React), then run the
+hardened-page emitter:
+
+```bash
+pnpm emit:auth-page
+```
+
+The emitter produces one fully inlined, CSP-safe `index.html`. No server, no external assets.
+Host that file on any static host at your `authOrigin`.
+
+## What the page does
+
+One page services both request kinds, dispatching on the request:
+
+- **authorize**: proves the account to a connecting app.
+- **sign**: shows a consent screen, runs the passkey ceremony, and signs.
+
+Inside the page, the passkey ceremony runs and the wallet signs under the PRF. Only the result
+(the account on connect, or the signature on sign) is posted back. The key never leaves the page.
+
+## How replies are trusted
+
+The SDK's web channel opens the page with `window.open(authOrigin)`, posts the request in, and
+accepts a reply only when both of these hold:
+
+- `event.source` is the exact popup window it opened, and
+- `event.origin` equals `new URL(authOrigin).origin`.
+
+The popup times out after five minutes and rejects if it was blocked. This is what keeps "no Avok
+backend" true: the only thing hosted is your own static file.
+
+Point apps at the page by setting `authOrigin` on the connection. See [Choose your signing
+path](/guides/choose-signing-path).

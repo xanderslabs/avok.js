@@ -1,0 +1,92 @@
+---
+title: "Core subpaths"
+description: "Every @avokjs/core export subpath, its purpose, and its key exports."
+---
+
+`@avokjs/core` exposes 13 subpaths. Import from the narrowest one that serves your need.
+
+## `@avokjs/core` (`.`)
+
+The browser-wired surface. Exports `createAvokClient(config, wallet)`,
+`createOwnOriginConnection({ rpId, operatorName?, storage?, anchorChainId? })`,
+`createSharedOriginConnection({ authOrigin, storage? })` (async), `webStorage()`, and the catchable
+error classes. See [Errors](/reference/errors).
+
+## `@avokjs/core/engine`
+
+The full framework-agnostic surface, free of browser globals, the React Native base. Exports
+`createAvokClient(config)` (core, no announce), `memoryStorage()`, `randomNonceAllocator()`,
+`createSequentialNonceAllocator(storage)`, the connection factories, the passkey adapters
+(`WebAuthnPasskeyAdapter`, `createReactNativePasskeyAdapter`), `encodeOffchainMessage`, the provider
+surface (below), and the error classes.
+
+## `@avokjs/core/provider`
+
+The send/sign surface. Exports:
+
+- `createEip1193Provider(config, opts?): Eip1193Provider`
+- `announceEip6963(provider, info): () => void`
+- `registerAvokSolanaWallet(config, opts): () => void`
+- `WalletInfo` (type)
+
+See [The provider, not hooks](/concepts/provider-not-hooks) for the methods and features.
+
+## `@avokjs/core/wallet`
+
+Wallet primitives: encoding helpers, blob and slot-metadata crypto, the passkey adapters, the
+signing verbs (`signMessage`, `signTypedData`, `signSiwe`), the access-vault ABI and call builders
+(`buildAddAccessSlotCall`, `buildRemoveAccessSlotCall`), and roster reading. Low-level
+key-derivation primitives are deliberately not exported here.
+
+## `@avokjs/core/evm`
+
+The EVM engine types and building blocks: `Receipt`, `Rail`, `ReceiptStatus`, `SimulationResult`,
+the `Bundler` and `Paymaster7677` interfaces with `createBundler`/`createPaymaster7677`,
+`AvokUserOperation`, the userOp builder, and the chain/token registry re-exports from
+`@avokjs/contracts`. See [Receipts](/reference/receipts).
+
+## `@avokjs/core/solana`
+
+The Solana engine types and building blocks: `Receipt`, `Rail`, `ReceiptStatus` (adds `"expired"`),
+`SolanaRpcClient` with `createSolanaRpcClient`, `KoraClient` with `createKora`, `KoraRejectedError`,
+SPL transfer builders, priority-fee policy, and signers.
+
+## `@avokjs/core/decode`
+
+Solana transaction decoding for consent screens. Exports `decodeCompiledMessage(messageBytes)` and
+`classifySplTransfer(ix)`. Refuses messages that use Address Lookup Tables.
+
+## `@avokjs/core/channel`
+
+The client half of the shared-origin channel: the browser and native counterparts that drive the
+auth-popup page. Exports `createSharedOriginConnection({ authOrigin, channel, storage? })`,
+`createWebChannel({ authOrigin })`, `createNativeChannel({ authOrigin, redirectUri,
+openAuthSession })`, `UserRejectedError`, `AuthSessionCancelledError`, and the redirect-protocol
+codecs.
+
+## `@avokjs/core/helpers`
+
+Name resolution and send-flow utilities: `createNameResolver`, `createEnsResolver`,
+`createSnsResolver`, `resolveRecipient`, balance readers, chain metadata, amount formatting,
+explorer URLs, and the QR pairing ceremony runners. See [Resolve names](/guides/resolve-names).
+
+## `@avokjs/core/qr`
+
+The browser QR pairing transport. Exports `createBrowserQrTransport({ qrContainer, video })` and
+`CameraUnavailableError`. Requires a secure browser context.
+
+## `@avokjs/core/pairing-window`
+
+A `postMessage` pairing transport for enrolment between two origins on one device. Exports
+`createWindowPairingTransport`, `openEnrolmentWindow`, and `enrolmentWindowFromOpener`.
+
+## `@avokjs/core/auth-popup`
+
+The mountable behind the popup page an `rpId` owner hosts. Exports `mountAuthPopup(config, root?)`,
+`authPopupDeps(config)`, `runAuthPopup`, `runAuthRedirect`, `resolveAppConfig`, and
+`MissingRpIdError`. See [Host the auth popup](/guides/host-auth-popup).
+
+## `@avokjs/core/internal`
+
+A cross-package seam consumed by the provider layer: `createSendEngine`, `createSolanaEngine`, and
+the `SendEngine`/`SolanaEngine` types. This is not application API; use the provider instead.

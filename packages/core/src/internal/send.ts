@@ -15,7 +15,7 @@ export interface EngineCapabilities {
  * The send/status surface the EIP-1193 provider drives. It is the EXISTING EVM engine
  * (`createEvmNamespace`) built from the client config — no behavior change, and no dependency on the
  * public `client.evm` namespace (which a later step deletes). The provider is a separate package, so
- * this is reached through the `@avokjs/sdk-core/internal` subpath, not the main surface.
+ * this is reached through the `@avokjs/core/internal` subpath, not the main surface.
  */
 export interface SendEngine {
   send(calls: Call[], opts: { chainId: number; feeToken?: Address | null }): Promise<Receipt>;

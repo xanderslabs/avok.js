@@ -1,0 +1,44 @@
+---
+title: "The passkey is the wallet"
+description: "How Avok derives the wallet key from a passkey: K = HKDF(PRF(credential, rpId))."
+---
+
+Avok has no seed phrase because the passkey *is* the wallet. The private key is derived from the
+passkey on demand and wiped after each use.
+
+## The derivation
+
+```
+K = HKDF(PRF(credential, rpId))
+```
+
+Two steps produce the key:
+
+1. **PRF.** During the WebAuthn ceremony, Avok evaluates the authenticator's
+   [PRF extension](https://w3c.github.io/webauthn/#prf-extension) with a fixed salt,
+   `passkey-access-vault/prf-salt/v0`. The authenticator returns a secret that only a matching
+   credential can reproduce. WebAuthn scopes that evaluation to the pair `(credential, rpId)`.
+2. **HKDF.** Avok runs the PRF output through HKDF-SHA256 to produce a 256-bit key `K`, using
+   salt `passkey-access-vault/hkdf-salt/v0` and info `passkey-access-vault/wallet-key/v0`.
+
+`K` is the root. The EVM key is derived from `K` directly; the Solana ed25519 seed is derived
+from `K` with its own info string, `passkey-access-vault/solana-key/v0`. No mnemonic is ever
+created, so the entropy stays in bytes that Avok can zero.
+
+## rpId is the key's scope
+
+`rpId` does not enter the HKDF math. It enters as the WebAuthn scope of the PRF: only an origin
+that matches the `rpId` can obtain the PRF output, and therefore only that origin can reconstruct
+`K`. This has one practical consequence you must respect:
+
+<Warning>
+Changing the `rpId` changes the wallet. Every user gets a different address. Pin the `rpId`
+explicitly and never infer it from a hostname. The SDK refuses to start without it.
+</Warning>
+
+## The key is never at rest
+
+Key `K` is derived inside a sandbox for exactly one signing gesture, then wiped (along with the
+PRF output) in a `finally` block. There is no key in storage, in memory between gestures, or in
+any backend. A device's lasting access is exactly its passkey plus its encrypted access slot
+on chain. See [Access keys and the vault](/concepts/access-keys-and-the-vault).

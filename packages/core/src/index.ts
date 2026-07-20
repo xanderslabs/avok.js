@@ -11,6 +11,10 @@ import { webStorage } from "./web/web-storage.js";
 // wallet on construction (VISION §6 Surface 1). See provider-wiring.ts.
 export { createAvokClient } from "./web/provider-wiring.js";
 export type { WiredAvokClient, WalletInfo } from "./web/provider-wiring.js";
+// Compute the EIP-6963 reverse-DNS wallet id from an origin, e.g. "wallet.example.com" ->
+// "com.example.wallet". The wiring applies this automatically when `wallet.rdns` is omitted; exported
+// so an operator can set it explicitly too.
+export { rdnsFromOrigin } from "./provider/index.js";
 export type {
   StorageAdapter,
   Connection,

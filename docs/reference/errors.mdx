@@ -1,0 +1,36 @@
+---
+title: "Errors"
+description: "The catchable error classes, when they are thrown, and how to narrow them."
+---
+
+Both facade packages re-export the SDK's catchable error classes as values, so you can narrow with
+`instanceof`.
+
+| Error | Thrown when |
+| --- | --- |
+| `UnsupportedFeeTokenError` | A fee token is not in the target chain's registry, an address that means nothing on that chain. |
+| `SponsorshipUnavailableError` | A fee-token send cannot reach the sponsored rail and `requireSponsorship` is `true`. Names which side (bundler or paymaster) is missing. Thrown before signing. |
+| `UserRejectedError` | The user rejected a signing request in the shared-origin popup. A decision, not a failure. |
+| `NoPrfError` | The authenticator returned no PRF output. The passkey provider does not support the PRF extension. |
+| `KoraRejectedError` | The Kora paymaster refused a Solana transaction. Carries the reason and code. |
+| `EnrolmentUnaffordableError` | The wallet cannot afford the access-slot write. Carries the chain, token, required, and balance. |
+| `VaultUnreadableError` | A vault read failed because the chain did not answer. Never conflate this with a "no slot" result. |
+| `OrphanedCredentialError` | The chain answered, but no access slot exists for this credential. |
+| `SlotUnreachableError` | The anchor chain was unreachable while continuing a session. |
+| `EnrolmentBlockedError` | Enrolment preflight found the chain unreachable. |
+
+React Native additionally exports `AuthSessionCancelledError`, thrown when the native signing
+session is dismissed before it completes.
+
+## Not exported: MissingRpIdError
+
+`MissingRpIdError` is deliberately **not** re-exported from either facade. It is a fail-fast
+configuration error, an unset or empty `rpId`, not a condition to catch at runtime. Fix the
+configuration instead.
+
+## Pairing and redirect errors
+
+The pairing and channel subpaths throw their own errors during device pairing and native redirects:
+`CameraUnavailableError` and `PopupBlockedError` (from `@avokjs/core/helpers` and `@avokjs/core/qr`)
+and `RedirectPayloadTooLargeError` (from `@avokjs/core/channel`). Import them from the subpath you
+use.

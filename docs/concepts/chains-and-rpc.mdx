@@ -1,0 +1,75 @@
+---
+title: "Chains and RPC"
+description: "How Avok's chain registry works, and how you supply RPC endpoints per chain."
+---
+
+Avok ships a chain registry. Your app does not declare a list of chains; it picks one per send from
+the registry, and supplies its own RPC endpoints for production.
+
+## The registry
+
+`@avokjs/contracts` carries a profile for every supported chain: the EIP-7702 delegate address, the
+fee-token list, capability flags, and a default RPC. "Supported" is concrete. It means the Avok
+wallet implementation is deployed there. A chain that is not in the registry has no profile, so a
+send to it throws rather than guessing.
+
+| Rail | Chains |
+| --- | --- |
+| EVM mainnet | Ethereum, Optimism, Arbitrum, Base, BSC, Robinhood |
+| EVM testnet | Arc, Ethereum Sepolia |
+| Solana | Mainnet, Devnet |
+
+EVM wallets are smart EOAs through EIP-7702; Solana is a first-class second rail. To add a chain, you
+deploy the Avok contract there and add a profile to `@avokjs/contracts`.
+
+## You pick a chain per send
+
+There is no "register your chains" step. Each send names its chain: `chainId` on EVM, `cluster` on
+Solana. The value must be a registry chain, so an app opts into whichever chains it actually sends on
+by using their ids.
+
+## RPC endpoints
+
+You do not have to supply an RPC for the SDK to run. Every registry chain has a public default, and
+resolution is simple:
+
+```
+your override (rpcUrls) for that chain  ??  the registry's public default
+```
+
+<Warning>
+The public defaults are **development-only**. They are rate-limited, carry no SLA, and the public
+Solana endpoints reject or hang on `getTokenAccountsByOwner`, which makes SPL balances read zero. Set
+`rpcUrls` before production.
+</Warning>
+
+An RPC is a trust boundary, not just a data source. It answers "what address does this name resolve
+to," so a dishonest endpoint can redirect a user's funds. That is why Avok never picks one for you.
+Overrides are per chain, so you point the chains you use at endpoints you trust and leave the rest on
+defaults:
+
+```ts
+const client = createAvokClient(
+  {
+    connection,
+    rpcUrls: {
+      evm: { 8453: "https://base-mainnet.example.com/v2/..." },
+      solana: { mainnet: "https://mainnet.helius-rpc.com/?api-key=..." },
+    },
+  },
+  wallet,
+);
+```
+
+You have three ways to supply an endpoint, none of which needs Avok to run anything: your own
+provider URL (a domain-allowlisted key is safe in a browser bundle), a proxy you host that keeps the
+key server-side, or a URL your end user supplies.
+
+`isPublicDefaultRpc()` reports whether a chain is still on a public default, so your app can warn "you
+are on a public dev endpoint" instead of degrading silently.
+
+## Fee tokens
+
+Each chain profile also lists the fee tokens it supports for sponsored sends. A fee token is checked
+against the target chain's registry and rejected if it means nothing there, since an address that is
+USDC on one chain is not USDC on another. See [Sponsorship](/concepts/sponsorship).

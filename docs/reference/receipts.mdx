@@ -1,0 +1,58 @@
+---
+title: "Receipts"
+description: "The rail and status of a send, and what a receipt does and does not tell you."
+---
+
+Every send returns a receipt. The receipt tells you which rail ran and how far the send has
+progressed. Neither `"submitted"` nor `"pending"` means confirmed.
+
+## Rail
+
+`rail` is `"self-pay"` or `"sponsored"` on both chains. It is the only field that tells you which
+path actually ran. If your app promises fee-in-token, check it rather than assuming your
+configuration took effect.
+
+## EVM receipt
+
+```ts
+type Receipt = {
+  id: string;          // txHash (self-pay) or userOpHash (sponsored)
+  rail: "self-pay" | "sponsored";
+  status: "pending" | "submitted" | "confirmed" | "failed";
+  txHash?: Hex;
+  chainId: number;
+  error?: string;
+};
+```
+
+- **Self-pay:** `id` is a transaction hash; `status` starts at `"submitted"` (broadcast, not
+  mined).
+- **Sponsored:** `id` is a userOpHash, an intent id, not a transaction hash; `status` is
+  `"pending"` until the bundler reports a receipt.
+
+## Solana receipt
+
+```ts
+type Receipt = {
+  id: string;
+  rail: "self-pay" | "sponsored";
+  status: "pending" | "submitted" | "confirmed" | "failed" | "expired";
+  signature?: string;
+  cluster: "mainnet" | "devnet";
+  lastValidBlockHeight?: bigint;
+  error?: string;
+};
+```
+
+Solana adds an `"expired"` status, a transaction whose blockhash lapsed before it confirmed.
+
+- **Self-pay:** `status` starts at `"submitted"`.
+- **Sponsored:** `status` starts at `"pending"`.
+
+Both carry a real `signature`.
+
+## Confirming
+
+To advance a receipt's status, poll the send engine's status method (or the provider's
+`wallet_getCallsStatus` on EVM). Only `"confirmed"` means the transaction is on chain. See [Sponsor
+EVM sends](/guides/sponsor-evm) and [Sponsor Solana sends](/guides/sponsor-solana).

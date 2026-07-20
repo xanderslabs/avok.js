@@ -17,6 +17,7 @@ import {
   createEip1193Provider,
   announceEip6963,
   registerAvokSolanaWallet,
+  resolveAnnouncedIdentity,
 } from "@avokjs/core/engine";
 import type { ClientConfig, Connection, AvokClientFor, Eip1193Provider, WalletInfo } from "@avokjs/core/engine";
 
@@ -34,19 +35,22 @@ export type WiredAvokClient<C extends Connection> = AvokClientFor<C> & {
  * browser facade: builds an EIP-1193 provider over the config and, in a browser (RN-web), announces it via
  * EIP-6963 + registers the Solana Wallet Standard wallet. On pure native the announce no-ops.
  *
- * `wallet` is the OPERATOR's identity (name/icon/rdns) — required, symmetric with the browser facade: a
- * wallet cannot honestly announce itself anonymously, and it is never defaulted to an Avok brand.
+ * `wallet` is the OPERATOR's identity (name/icon/rdns), symmetric with the browser facade. Every field
+ * is optional: an omitted `name` or `rdns` is derived from the page's own origin
+ * (`resolveAnnouncedIdentity`), so the announce stays honest — named after the real origin, never
+ * anonymous and never an Avok brand. On pure native this branch never runs.
  */
 export function createAvokClient<C extends Connection>(
   config: ClientConfig<C>,
-  wallet: WalletInfo,
+  wallet?: WalletInfo,
 ): WiredAvokClient<C> {
   const client = coreCreateAvokClient(config);
   const provider = createEip1193Provider(config, { subscribe: client.subscribe });
   if (typeof window !== "undefined") {
-    const icon = wallet.icon ?? BLANK_ICON; // resolve the fallback ONCE, hand the same icon to both surfaces
-    announceEip6963(provider, { uuid: crypto.randomUUID(), name: wallet.name, icon, rdns: wallet.rdns });
-    registerAvokSolanaWallet(config, { name: wallet.name, icon, subscribe: client.subscribe });
+    const icon = wallet?.icon ?? BLANK_ICON; // resolve the fallback ONCE, hand the same icon to both surfaces
+    const { name, rdns } = resolveAnnouncedIdentity(wallet, window.location.origin);
+    announceEip6963(provider, { uuid: crypto.randomUUID(), name, icon, rdns });
+    registerAvokSolanaWallet(config, { name, icon, subscribe: client.subscribe });
   }
   return Object.assign(client, { getEip1193Provider: () => provider });
 }

@@ -1,0 +1,66 @@
+---
+title: "Sponsor EVM sends"
+description: "Let users pay EVM fees in a token, using your own ERC-4337 bundler and ERC-7677 paymaster."
+---
+
+On EVM, a sponsored send lets the user pay the fee in an ERC-20 token instead of native gas. You
+bring your own bundler and paymaster. For the model, see [Sponsorship](/concepts/sponsorship).
+
+## Configure the infrastructure
+
+Set both `bundlerUrl` and `paymasterUrl` on the client config. They are required together. With
+only one, the chain falls back to self-pay.
+
+```ts
+const client = createAvokClient(
+  {
+    connection,
+    bundlerUrl: "https://your-bundler.example",     // ERC-4337, EntryPoint v0.8
+    paymasterUrl: "https://your-paymaster.example", // ERC-7677
+    requireSponsorship: true, // fail loudly instead of silently self-paying
+  },
+  wallet,
+);
+```
+
+Many providers (Pimlico, Alchemy) serve both from one endpoint; pass the same URL twice.
+
+`requireSponsorship: true` makes a fee-token send throw `SponsorshipUnavailableError` (before
+anything is signed) if the sponsored rail is not reachable, naming which side is missing. Leave it
+`false` (the default) to let such a send degrade silently to self-pay.
+
+## Send with a fee token
+
+Trigger the send through the provider with an EIP-5792 `wallet_sendCalls` request. The per-send fee
+token rides in the `paymasterService` capability's `context`:
+
+```ts
+const provider = client.getEip1193Provider();
+
+const { id } = await provider.request({
+  method: "wallet_sendCalls",
+  params: [
+    {
+      chainId: "0x2105", // 8453 (Base), hex; optional, defaults to the active chain
+      calls: [{ to: "0xRecipient", value: "0x0", data: "0x" }],
+      capabilities: {
+        paymasterService: {
+          url: "https://your-paymaster.example",
+          context: { token: "0xFeeTokenAddress" },
+        },
+      },
+    },
+  ],
+});
+```
+
+A single-token paymaster (for example, Circle USDC) can omit `context.token`; the provider then
+falls back to the chain's default registry fee token. If you use wagmi, its `useSendCalls` produces
+the same request.
+
+## Confirm which rail ran
+
+The returned `id` is the intent id. Check the rail rather than assuming your configuration took
+effect: use `wallet_getCallsStatus`, or on the core send path inspect `receipt.rail`. A sponsored
+EVM receipt has `rail: "sponsored"`, an `id` that is a userOpHash, and `status: "pending"` until
+the bundler reports a receipt. See [Receipts](/reference/receipts).

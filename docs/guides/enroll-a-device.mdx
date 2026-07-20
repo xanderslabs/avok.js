@@ -1,0 +1,55 @@
+---
+title: "Enroll a device"
+description: "Add another device or origin to a wallet with the two-round pairing ceremony."
+---
+
+Enrolling gives another device (or another origin) its own access key to the same wallet. The two
+devices run a two-round ceremony, compare a short authentication string, and write the new access
+slot on chain. For the model, see [Access keys and the vault](/concepts/access-keys-and-the-vault).
+
+## The two roles
+
+- **Holder (export role):** the device that already has the wallet.
+- **Enroller (import role):** the new device joining the wallet.
+
+## The two rounds
+
+1. **Invite.** The holder publishes its wallet address and anchor chain.
+2. **Wrap.** The enroller mints a passkey, seals its own wrapping key, and sends it back.
+
+Both sides then see a six-digit **SAS** committing to both public keys. Each side confirms the
+digits match. If either side rejects, the ceremony aborts and the enroller burns its new
+credential. Only after both confirm does the holder seal the wallet key under the enroller's
+wrapping key and write the access slot.
+
+<Info>
+The write is atomic: it lands, or the enrollment fails. There is no queued access slot.
+</Info>
+
+## Drive it with the React hook
+
+`usePairingCeremony` runs the phase machine. Provide a transport that moves the codes between the
+two devices. On the web this defaults to a browser QR transport (camera plus on-screen QR):
+
+```tsx
+import { usePairingCeremony } from "@avokjs/react";
+
+function Enroll() {
+  const { phase, sas, confirmSas, triggerScan, finish, qrRef, videoRef } =
+    usePairingCeremony({ role: "import" });
+  // Render qrRef / videoRef per phase; call confirmSas(true) when the digits match.
+}
+```
+
+On React Native, pass a transport explicitly (`transport` is required there), for example
+`createExpoCameraTransport(Camera)`. See [React Native setup](/guides/react-native-setup).
+
+## After enrollment
+
+The enroller is **not** logged in by the ceremony. It was never handed the wallet key. After the
+holder's write confirms, call `login()` (or `useLogin`) on the new device to start a session.
+
+<Warning>
+Pairing gives the other device its own key to this wallet. Only pair devices you control, and read
+[Remove access](/guides/remove-access) before you do.
+</Warning>

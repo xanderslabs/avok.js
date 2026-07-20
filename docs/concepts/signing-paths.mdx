@@ -1,0 +1,50 @@
+---
+title: "Signing paths"
+description: "Own-origin versus shared-origin, and how the passkey's rpId decides where signing happens."
+---
+
+Avok has two signing paths. The passkey's WebAuthn `rpId` decides which one an app uses. You
+select the path at build time through configuration.
+
+## Own-origin
+
+The passkey's `rpId` is the app's own origin, so signing runs in the app, in code. This is the
+path for wallet apps and for any app that owns its wallet's domain.
+
+- **Config key:** `rpId`.
+- **Web:** `createOwnOriginConnection({ rpId })`.
+- **React Native:** `createOwnOriginConnection({ rpId, passkey })`.
+
+## Shared-origin
+
+The passkey lives under a *different* origin than the current app. The app cannot reconstruct the
+key, because WebAuthn will not let it request an `rpId` it does not own. Signing happens in a
+context that genuinely is that origin (a popup on the web, or an in-app browser tab on React
+Native), and only the result comes back.
+
+- **Config key:** `authOrigin`.
+- **Web:** `createSharedOriginConnection({ authOrigin })`.
+- **React Native:** `createNativeSharedOrigin({ authOrigin, redirectUri, openAuthSession })`.
+
+<Info>
+`rpId` and `authOrigin` are mutually exclusive. Setting `rpId` selects own-origin; setting
+`authOrigin` selects shared-origin.
+</Info>
+
+## Two API surfaces
+
+The two paths map to two developer surfaces. Keep them distinct.
+
+- **Surface 1: send and sign.** The EIP-1193 provider (announced over EIP-6963) and the Solana
+  Wallet Standard wallet. You plug them into stock wagmi, viem, ethers, or
+  `@solana/wallet-adapter`. This is all a **shared-origin** app needs. See
+  [The provider, not hooks](/concepts/provider-not-hooks).
+- **Surface 2: wallet lifecycle.** `create`, `login`, `logout`, account state, access-key
+  enrollment, and key export. No standard covers these operations, so Avok provides them on the
+  core client and the framework facades. Only **own-origin** apps that own the wallet UX need
+  this surface.
+
+A shared-origin dapp uses Surface 1 only. An own-origin app uses Surface 2 for lifecycle and
+Surface 1 for transacting.
+
+To choose a path for your app, see [Choose your signing path](/guides/choose-signing-path).
