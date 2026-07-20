@@ -19,8 +19,8 @@ actual EVM and Solana addresses the SDK derives. It is not a mock.
 
 It activates when two things are true:
 
-- **`@avokjs/core` is published to npm.** The demo imports it from `esm.sh`. Pin `SDK_URL` in the
-  demo script to the published version (it defaults to `@avokjs/core@0.0.1`).
+- **`@avokjs/core` is published to npm.** The demo imports it from `esm.sh`. `SDK_URL` in the demo
+  script pins the version (currently `@avokjs/core@0.1.0`); bump it when core releases a new version.
 - **The page is served over https or localhost.** WebAuthn requires a secure context. The demo
   degrades to an honest message anywhere it cannot run (an unpublished package, a blocked CDN, or an
   insecure or sandboxed context), so the page never breaks.
