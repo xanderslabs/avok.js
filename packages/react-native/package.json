@@ -1,6 +1,6 @@
 {
   "name": "@avokjs/react-native",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "React Native facade for Avok: AvokProvider + hooks + native passkey and SecureStore wiring (own-origin and shared-origin).",
   "keywords": [
     "react-native",
