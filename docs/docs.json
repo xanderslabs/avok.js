@@ -1,8 +1,8 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "maple",
   "name": "Avok",
-  "description": "Client-side SDK for passkey-authenticated, self-custodial smart wallets on EVM and Solana. No seed phrase, no extension.",
+  "description": "Client-side SDK for passkey-authenticated, self-custodial smart wallets. No seed phrase, no extension.",
   "favicon": "/favicon.svg",
   "colors": {
     "primary": "#2563EB",
@@ -80,5 +80,16 @@
         ]
       }
     ]
+  },
+  "logo": {
+    "light": "/docs/images/favicon.svg",
+    "dark": "/docs/images/favicon.svg",
+    "href": "https://avok.xyz"
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "icons": {
+    "library": "lucide"
   }
 }
