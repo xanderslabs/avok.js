@@ -47,11 +47,9 @@ jobs:
           title: "chore: release"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # First-publish auth for brand-new package names: a granular npm
-          # automation token (set the NPM_TOKEN repo secret). setup-node already
-          # wrote an .npmrc that reads NODE_AUTH_TOKEN. Provenance attestation
-          # still rides on OIDC (id-token: write above). Once the packages exist
-          # and a trusted publisher is configured you can drop NODE_AUTH_TOKEN to
-          # go pure-OIDC.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Pure OIDC publishing: no long-lived npm token. `id-token: write` (above) lets recent npm
+          # mint a short-lived credential from GitHub's OIDC, and npm accepts it because each package
+          # has a Trusted Publisher configured for repo xanderslabs/avok.js + workflow release.yml.
+          # Configure that per package on npmjs.com (Settings -> Trusted Publisher) before the next
+          # release, or this step fails with an auth error. Provenance rides on the same OIDC.
           NPM_CONFIG_PROVENANCE: "true"
