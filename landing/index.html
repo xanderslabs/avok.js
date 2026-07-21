@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Avok: the passkey is the wallet</title>
+  <title>Avok · Passkey wallet SDK for EVM and Solana</title>
   <meta name="description" content="Avok is a client-side SDK for passkey-authenticated, self-custodial smart wallets on EVM and Solana. No seed phrase, no extension." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
   <!-- Social / Open Graph. Update the absolute URLs to your deployed domain. -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Avok: the passkey is the wallet" />
+  <meta property="og:title" content="Avok · Passkey wallet SDK for EVM and Solana" />
   <meta property="og:description" content="Self-custodial smart-EOA wallets, powered by passkeys and EIP-7702. On EVM and Solana." />
   <meta property="og:image" content="https://avok.xyz/og.png" />
   <meta property="og:url" content="https://avok.xyz" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Avok: the passkey is the wallet" />
+  <meta name="twitter:title" content="Avok · Passkey wallet SDK for EVM and Solana" />
   <meta name="twitter:description" content="Self-custodial smart-EOA wallets, powered by passkeys and EIP-7702. On EVM and Solana." />
   <meta name="twitter:image" content="https://avok.xyz/og.png" />
   <style>
@@ -132,20 +132,17 @@
 
     /* live demo modal */
     .btn-sm { padding: 0.42rem 0.85rem; font-size: 13px; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-success); display: inline-block; }
     .modal[hidden] { display: none; }
     .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: var(--space-lg); }
     .modal-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); }
     .modal-card { position: relative; width: 100%; max-width: 420px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-card); overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); }
-    .modal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); padding: 0.6rem 1rem; border-bottom: 1px solid var(--color-border); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-3); }
-    .modal-head span { display: inline-flex; align-items: center; gap: var(--space-sm); }
-    .modal-x { background: transparent; border: none; color: var(--color-text-3); font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
+    .modal-x { position: absolute; top: 8px; right: 10px; z-index: 1; background: transparent; border: none; color: var(--color-text-3); font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 6px; }
     .modal-x:hover { color: var(--color-text); }
-    .demo-body { padding: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-lg); min-height: 170px; justify-content: center; }
+    .demo-body { padding: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-lg); min-height: 170px; justify-content: center; min-width: 0; }
     .demo-body p { margin: 0; color: var(--color-text-2); font-size: 0.95rem; }
-    .demo .kv { display: flex; flex-direction: column; gap: var(--space-xs); }
+    .demo .kv { display: flex; flex-direction: column; gap: var(--space-xs); min-width: 0; }
     .demo .kv .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-3); }
-    .demo .kv .v { font-family: var(--font-mono); font-size: 0.95rem; color: var(--color-text); word-break: break-all; }
+    .demo .kv .v { font-family: var(--font-mono); font-size: 0.9rem; color: var(--color-text); word-break: break-all; overflow-wrap: anywhere; }
     .demo-note { font-size: 0.85rem !important; color: var(--color-text-3) !important; }
     .demo-err { color: var(--color-text-2); font-size: 0.9rem; }
     .demo-err b { color: var(--color-text); }
@@ -423,11 +420,8 @@
 
   <div class="modal" id="demo-modal" hidden>
     <div class="modal-backdrop" data-close></div>
-    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Live demo">
-      <div class="modal-head">
-        <span><span class="dot"></span> Live demo</span>
-        <button class="modal-x" id="demo-close" aria-label="Close">×</button>
-      </div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Create a wallet demo">
+      <button class="modal-x" id="demo-close" aria-label="Close">×</button>
       <div class="demo-body" id="demo">
         <div data-state="idle">
           <p style="margin-bottom: var(--space-lg)">Create a real wallet from a passkey, right here in your browser.</p>
