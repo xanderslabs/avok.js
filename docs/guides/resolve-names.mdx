@@ -3,18 +3,11 @@ title: "Resolve names"
 description: "Resolve ENS and SNS names to addresses when sending, using @avokjs/core/helpers."
 ---
 
-Avok resolves `alice.eth` and `alice.sol` to addresses so a user can send to a name. Resolution is
-**read-only**: it needs no Avok contract and no backend, and it lives in `@avokjs/core/helpers`.
-
-<Info>
-Name **registration** is out of scope. Avok resolves names when sending; it does not mint or manage
-subnames.
-</Info>
+Avok resolves `alice.eth` and `alice.sol` to addresses so a user can send to a name. Resolution is **read-only**: it needs no contract and no backend, and it lives in `@avokjs/core/helpers`.
 
 ## Build a resolver
 
-Compose a cross-service resolver from an ENS resolver, an SNS resolver, or both. Each service takes
-the client you use to read its chain:
+Compose a cross-service resolver from an ENS resolver, an SNS resolver, or both. Each service takes the client you use to read its chain:
 
 ```ts
 import { createEnsResolver, createSnsResolver, createNameResolver } from "@avokjs/core/helpers";
@@ -25,14 +18,11 @@ const resolver = createNameResolver({
 });
 ```
 
-`createNameResolver` dispatches forward resolution by suffix (`.sol` goes to SNS, everything else
-to ENS) and verifies reverse lookups against a forward resolution, so a reverse hit is returned only
-if it maps back to the queried address.
+`createNameResolver` dispatches forward resolution by suffix (`.sol` goes to SNS, everything else to ENS) and verifies reverse lookups against a forward resolution, so a reverse hit is returned only if it maps back to the queried address.
 
 ## Resolve a recipient
 
-`resolveRecipient` accepts either a raw address for the rail or a name, and returns the resolved
-address:
+`resolveRecipient` accepts either a raw address for the rail or a name, and returns the resolved address:
 
 ```ts
 import { resolveRecipient } from "@avokjs/core/helpers";
@@ -45,6 +35,4 @@ if ("error" in result) {
 }
 ```
 
-The `rail` argument is `"evm"` or `"solana"`. A raw address for that rail passes through unchanged;
-a name is resolved through the resolver. For exact signatures, see the [core subpaths
-reference](/reference/core-subpaths).
+The `rail` argument is `"evm"` or `"solana"`. A raw address for that rail passes through unchanged; a name is resolved through the resolver. For exact signatures, see the [core subpaths reference](/reference/core-subpaths).
