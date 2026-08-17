@@ -16,6 +16,7 @@ import { type SecretContainer, produceEvmKey } from "./crypto/container.js";
 import { deriveWalletKey } from "./crypto/derive-wallet.js";
 import { evmAddress } from "./crypto/derive.js";
 import type { PasskeyAdapter, PasskeyRegistration } from "./passkey/adapter.js";
+import { decodeUserHandle } from "./passkey/label.js";
 
 /**
  * Local-only wallet state (D8): ONE credential, ONE derived key, ONE address, all on THIS device.
@@ -25,9 +26,16 @@ import type { PasskeyAdapter, PasskeyRegistration } from "./passkey/adapter.js";
  * derives its OWN independent K and address; the set of signers that can act for one wallet lives
  * on chain (the Calibur roster), not in local state. This type is just "what this device's own
  * passkey resolves to."
+ *
+ * `evmAddress` and `walletAddress` COINCIDE for the founding device and DIFFER for every device
+ * enrolled later: a roster device's own key is a registered Calibur signer, not the wallet's own
+ * EIP-7702 delegate address. Callers that sign ON BEHALF of the wallet (perform-sign.ts) need both —
+ * `evmAddress` says whose key actually signs, `walletAddress` says which account the signature must
+ * authorize.
  */
 export interface WalletState {
   evmAddress: Address;
+  walletAddress: Address;
   credentialId: string;
   rpId: string;
   createdAt: string;
@@ -143,15 +151,20 @@ export async function withDiscoveredKeys<T>(
   args: { passkey: PasskeyAdapter; credentialId?: string },
   fn: (keys: { evm: PrivateKeyAccount }, state: WalletState, meta: { credentialId: string }) => Promise<T>,
 ): Promise<T> {
-  const { credentialId, prfOutput } = await args.passkey.discover(
+  const { credentialId, prfOutput, userHandle } = await args.passkey.discover(
     args.credentialId ? { credentialId: args.credentialId } : undefined,
   );
   let container: SecretContainer | undefined;
   try {
     container = { key: await deriveWalletKey(prfOutput) };
     const account = evmAccountFrom(container);
+    // The handle says which wallet this credential signs for: itself (founding device) or a
+    // different one (roster device, enrolled later) — see WalletState's doc comment.
+    const handle = decodeUserHandle(userHandle);
+    const walletAddress = handle.kind === "roster" ? handle.walletAddress : account.address;
     const state: WalletState = {
       evmAddress: account.address,
+      walletAddress,
       credentialId,
       rpId: "",
       createdAt: new Date().toISOString(),

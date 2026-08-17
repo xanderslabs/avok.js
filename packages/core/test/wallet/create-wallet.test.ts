@@ -49,11 +49,12 @@ describe("createWallet (D8, PRF-derived)", () => {
     expect(JSON.stringify(state)).not.toMatch(/authorization|intent|signature/i);
   });
 
-  it("mints a fresh random user handle each time (no primary/secondary encoding under D8)", async () => {
+  it("mints a self-kind user handle each time (D8: no primary/secondary sharing a key)", async () => {
     const passkey = fakePasskey(3);
     await createWallet({ passkey, networkName: "Avok" });
     expect(passkey.lastHandle).toBeInstanceOf(Uint8Array);
-    expect(passkey.lastHandle!.length).toBe(32);
+    expect(passkey.lastHandle!.length).toBe(33);
+    expect(passkey.lastHandle![0]).toBe(0x01); // KIND_SELF
   });
 
   it("the same PRF output always yields the same addresses", async () => {

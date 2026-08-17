@@ -45,6 +45,10 @@ export { createBundler } from "./bundler.js";
 export type { BuildUserOpArgs } from "./userop.js";
 export { buildUserOp, getAvokUserOpHash } from "./userop.js";
 
+// Roster-signer signature wrapping (see roster-signature.ts's module header for exactly which
+// signing paths need this and which deliberately do not yet).
+export { computeSecp256k1KeyHash, wrapRosterSignature } from "./roster-signature.js";
+
 // Pipeline
 export { isDelegatedTo } from "./resolve.js";
 export type { SimulateDeps } from "./simulate.js";

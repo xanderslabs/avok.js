@@ -13,6 +13,7 @@ const keys: SignKeys = { evm };
 
 const STATE = {
   evmAddress: evm.address,
+  walletAddress: evm.address,
 } as unknown as WalletState;
 
 describe("performSign — the shared-origin money path (browser-side, one gesture)", () => {
@@ -82,7 +83,7 @@ describe("performSign — the shared-origin money path (browser-side, one gestur
  * authorization.
  */
 describe("composite ops — two signatures, one gesture", () => {
-  const state = { evmAddress: evm.address } as unknown as WalletState;
+  const state = { evmAddress: evm.address, walletAddress: evm.address } as unknown as WalletState;
   const AUTH = { chainId: 10, address: "0x2222222222222222222222222222222222222222" as const, nonce: 3 };
 
   it("signSend embeds the signed authorization into the transaction it returns", async () => {
@@ -180,4 +181,106 @@ describe("composite ops — two signatures, one gesture", () => {
     expect(out.signature.startsWith("0x")).toBe(true);
     expect(out.authorization).toBeUndefined();
   });
+
+  it("signUserOp for a ROSTER signer wraps the signature with its keyHash — never a raw ecrecover-shaped sig", async () => {
+    const rosterState = {
+      evmAddress: evm.address,
+      walletAddress: "0x2222222222222222222222222222222222222222",
+    } as unknown as WalletState;
+
+    const out = (await performSign({ op: "signUserOp", userOp: USEROP as never, chainId: 10 }, keys, rosterState)) as {
+      signature: `0x${string}`;
+    };
+
+    const { decodeAbiParameters } = await import("viem");
+    const { computeSecp256k1KeyHash } = await import("../../src/evm/roster-signature.js");
+    const [keyHash, signature] = decodeAbiParameters(
+      [{ type: "bytes32" }, { type: "bytes" }, { type: "bytes" }],
+      out.signature,
+    );
+    expect(keyHash).toBe(computeSecp256k1KeyHash(evm.address));
+    const expectedHash = getUserOperationHash({
+      chainId: 10,
+      entryPointAddress: entryPoint09Address,
+      entryPointVersion: "0.9",
+      userOperation: USEROP as never,
+    });
+    expect(await recoverAddress({ hash: expectedHash, signature })).toBe(evm.address);
+  });
+});
+
+describe("roster signers (D8): a device whose own key is not the wallet's own address", () => {
+  const rosterState = {
+    evmAddress: evm.address,
+    walletAddress: "0x2222222222222222222222222222222222222222",
+  } as unknown as WalletState;
+  const AUTH = { chainId: 10, address: "0x3333333333333333333333333333333333333333" as const, nonce: 3 };
+
+  it("signTransaction is unwrapped, ordinary — Calibur authorizes by caller identity on this path", async () => {
+    const raw = (await performSign(
+      {
+        op: "signTransaction",
+        tx: { chainId: 10, to: rosterState.walletAddress, value: 0n, data: "0x", nonce: 1, type: "eip1559" as const },
+      },
+      keys,
+      rosterState,
+    )) as `0x${string}`;
+    expect(raw.startsWith("0x")).toBe(true);
+  });
+
+  it("signSend without an authorization is unwrapped, ordinary", async () => {
+    const raw = (await performSign(
+      {
+        op: "signSend",
+        tx: { chainId: 10, to: rosterState.walletAddress, value: 0n, data: "0x", nonce: 1, type: "eip1559" as const },
+      },
+      keys,
+      rosterState,
+    )) as `0x${string}`;
+    expect(raw.startsWith("0x")).toBe(true);
+  });
+
+  it("signAuthorization refuses — a roster signer never authorizes the wallet's own EIP-7702 delegation", async () => {
+    await expect(performSign({ op: "signAuthorization", authorization: AUTH }, keys, rosterState)).rejects.toThrow(
+      /roster signer cannot authorize/i,
+    );
+  });
+
+  it("signSend WITH an authorization refuses for the same reason", async () => {
+    await expect(
+      performSign(
+        {
+          op: "signSend",
+          tx: { chainId: 10, to: rosterState.walletAddress, value: 0n, data: "0x", nonce: 1, type: "eip1559" as const },
+          authorization: AUTH,
+        },
+        keys,
+        rosterState,
+      ),
+    ).rejects.toThrow(/roster signer cannot authorize/i);
+  });
+
+  it.each(["signMessage", "signTypedData", "signSiwe"] as const)(
+    "%s refuses rather than produce a signature Calibur's ERC-1271 (ERC-7739) would reject silently",
+    async (op) => {
+      const request =
+        op === "signMessage"
+          ? ({ op, message: "hello" } as const)
+          : op === "signTypedData"
+            ? ({
+                op,
+                typedData: {
+                  domain: {},
+                  types: { X: [{ name: "a", type: "uint256" }] },
+                  primaryType: "X",
+                  message: { a: 1n },
+                },
+              } as const)
+            : ({
+                op,
+                params: { domain: "example.com", uri: "https://example.com", version: "1", chainId: 1 },
+              } as const);
+      await expect(performSign(request as never, keys, rosterState)).rejects.toThrow(/not yet supported for a roster/i);
+    },
+  );
 });

@@ -4,6 +4,14 @@ export type ChainKind = "evm";
 /** Namespaced id: "eip155:<chainId>". */
 export type ChainId = string;
 
+/**
+ * The receipts gate (PRD §2, §7): no chain is called "supported" in docs, the SDK, or the pitch
+ * until the fork E2E suite (contract-architecture §5: first-transaction batch + a full recovery)
+ * passes against it. "unverified" is the honest default for every chain until that run is green —
+ * it is not a claim the chain doesn't work, only that nobody has proven it does yet.
+ */
+export type ChainTier = "supported" | "unverified";
+
 export interface ChainCapabilities {
   /** `eth_simulateV1` available (viem `simulateCalls`). */
   simulateV1: boolean;
@@ -29,6 +37,8 @@ export interface EvmChainProfile {
   chainId: number;
   /** Human display name for UIs (e.g. "BSC", "Robinhood"). Not an identifier — do not parse it. */
   name: string;
+  /** Receipts-gated claim status — see {@link ChainTier}. */
+  tier: ChainTier;
   /** 7702 delegation target. */
   canonicalImplementation: Address;
   /** Marks a non-production/testnet chain (e.g. Arc testnet). Omitted on mainnet chains. */
@@ -63,6 +73,7 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:10",
     chainId: 10,
     name: "Optimism",
+    tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://optimistic.etherscan.io",
     rpcDefault: "https://mainnet.optimism.io",
@@ -77,6 +88,7 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:1",
     chainId: 1,
     name: "Ethereum",
+    tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://etherscan.io",
     rpcDefault: "https://ethereum-rpc.publicnode.com",
@@ -91,6 +103,7 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:42161",
     chainId: 42161,
     name: "Arbitrum",
+    tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://arbiscan.io",
     rpcDefault: "https://arb1.arbitrum.io/rpc",
@@ -105,6 +118,9 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:56",
     chainId: 56,
     name: "BSC",
+    // Additionally gated on a 7702 conformance test before any support claim (its EIP-7702
+    // implementation predates the final spec by two months) — PRD §7, contract-architecture §5.
+    tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://bscscan.com",
     rpcDefault: "https://bsc-dataseed.bnbchain.org",
@@ -119,6 +135,11 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:8453",
     chainId: 8453,
     name: "Base",
+    // The hero chain (PRD §7) — first in line for the fork E2E suite that flips this to
+    // "supported" (contract-architecture §5). That suite is deferred beyond this plan, so this
+    // stays "unverified" until it actually runs green — the receipts gate means a claim, not an
+    // aspiration.
+    tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://basescan.org",
     rpcDefault: "https://mainnet.base.org",
@@ -133,6 +154,7 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:4663",
     chainId: 4663,
     name: "Robinhood",
+    tier: "unverified",
     // AvokCalibur is not deployed on Robinhood Chain — PENDING fails loud
     // (txengine resolve throws on the zero delegate) until a real `forge script Deploy` here.
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
@@ -152,6 +174,7 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:5042002",
     chainId: 5042002,
     name: "Arc",
+    tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     isTestnet: true,
     // Arc's native gas token IS USDC (Circle's stablechain; verified docs.arc.io), so native/USD == USDC/USD.
@@ -168,6 +191,7 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:11155111",
     chainId: 11155111,
     name: "Ethereum Sepolia",
+    tier: "unverified",
     isTestnet: true,
     // ENS-enabled testnet (name resolution on Sepolia). canonicalImplementation (AvokCalibur) is
     // deploy-gated (both rails need the 7702 delegate deployed here first) — PENDING fails loud
@@ -200,17 +224,17 @@ export function getChainProfileById(id: ChainId): ChainProfile | undefined {
 }
 
 /**
- * DEFAULT operator-config value for the anchor chain (Optimism) — NOT a resolver
- * internal. Operators may override this via their deployment/operator config
- * (see `auth-popup`'s `OriginConfig.anchorChainId`); `resolveAnchorChain`
- * itself hardcodes no chain id.
+ * DEFAULT operator-config value for the anchor chain (Optimism) — NOT a resolver internal.
+ * Operators name their own anchor chain at vault build time (TDD §7); `resolveAnchorChain` itself
+ * hardcodes no chain id. As of this branch the vault's own build config does not yet carry an
+ * `anchorChainId` field — recovery/guardian wiring (a later task) is what actually consumes it.
  */
 export const DEFAULT_ANCHOR_CHAIN_ID: ChainId = "eip155:10";
 
 /**
- * Validates and resolves the operator-configured anchor chain (the single EVM
- * chain that hosts the wallet's PRF-encrypted access-slot blob).
- * Throws if the id is absent from the registry or is not an EVM chain.
+ * Validates and resolves the operator-configured anchor chain: the single EVM chain an
+ * origin-point deployment names to host guardian state, the reverse index, and recovery execution
+ * (TDD §7). Throws if the id is absent from the registry or is not an EVM chain.
  */
 export function resolveAnchorChain(anchorChainId: ChainId): EvmChainProfile {
   const profile = CHAIN_PROFILES[anchorChainId];

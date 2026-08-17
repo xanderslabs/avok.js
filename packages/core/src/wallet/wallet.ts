@@ -1,5 +1,5 @@
 import type { Address } from "viem";
-import { handleLabel } from "./passkey/label.js";
+import { encodeSelfHandle, handleLabel } from "./passkey/label.js";
 import type { PasskeyAdapter } from "./passkey/adapter.js";
 import { withNewPasskeyKey, type WalletState } from "./sandbox.js";
 
@@ -28,13 +28,14 @@ export async function createWallet(args: {
   networkName: string;
   now?: Date;
 }): Promise<BirthResult> {
-  const userHandle = crypto.getRandomValues(new Uint8Array(32));
+  const userHandle = encodeSelfHandle();
   return withNewPasskeyKey(
     { passkey: args.passkey, label: handleLabel(args.networkName, userHandle), userHandle },
     async (account, reg) => ({
       account: { evm: account.address },
       state: {
         evmAddress: account.address,
+        walletAddress: account.address,
         credentialId: reg.credentialId,
         rpId: reg.rpId,
         createdAt: (args.now ?? new Date()).toISOString(),
