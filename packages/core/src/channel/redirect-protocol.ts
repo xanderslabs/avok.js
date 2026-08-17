@@ -26,6 +26,21 @@
  * Apple documents no limit at all, so the iOS ceiling is genuinely unknown to the whole ecosystem.
  * Guessing high would trade a clear error for a silent, unreproducible failure, so the bound here is
  * deliberately conservative and refuses rather than hopes.
+ *
+ * REQUEST-SIZE LIMIT: `MAX_REDIRECT_PAYLOAD_BYTES` above governs BOTH legs — the outbound request
+ * fragment and the inbound result fragment share one ceiling, `encode()` enforces it on whichever is
+ * passed through, and `RedirectPayloadTooLargeError` fails loudly rather than truncating silently.
+ *
+ * RESULT-INTEGRITY ON THE RETURN LEG: a redirect proves nothing about who sent it — see
+ * `decodeResultUrl`'s docstring below. This module only PARSES the callback URL; the caller
+ * (`channel/authorize-proof.ts` for `connect`, the signature check for `sign-*`) verifies that what
+ * came back actually proves what it claims before trusting it.
+ *
+ * Both `encodeRequestUrl`/`decodeRequestUrl` and `encodeResultUrl`/`decodeResultUrl` are generic over
+ * the payload type, defaulting to the legacy `ChannelRequest`/`ChannelResult` shape so existing call
+ * sites (`channels/native.ts`) are unaffected. The vault protocol envelope (`./protocol.ts`) is the
+ * intended payload going forward: its `id` and `kind` fields travel through this encoding unchanged,
+ * which is what lets the app correlate a redirect reply to the request that produced it.
  */
 import type { ChannelRequest, ChannelResult } from "./channels/port.js";
 
@@ -76,9 +91,9 @@ function decode<T>(encoded: string): T {
 }
 
 /** Build the URL the in-app browser opens: the wallet page, with the request in its fragment. */
-export function encodeRequestUrl(args: {
+export function encodeRequestUrl<TRequest = ChannelRequest>(args: {
   authOrigin: string;
-  request: ChannelRequest;
+  request: TRequest;
   /** Where the wallet should send the result. The wallet echoes it; it is not trusted as authority. */
   redirectUri: string;
   limit?: number;
@@ -93,15 +108,21 @@ export function encodeRequestUrl(args: {
 }
 
 /** Wallet side: read the request out of `location.hash`. Returns null when there is none. */
-export function decodeRequestUrl(href: string): { request: ChannelRequest; redirectUri: string } | null {
+export function decodeRequestUrl<TRequest = ChannelRequest>(
+  href: string,
+): { request: TRequest; redirectUri: string } | null {
   const hash = new URL(href).hash.replace(/^#/, "");
   const encoded = new URLSearchParams(hash).get(REQ_PARAM);
   if (!encoded) return null;
-  return decode<{ request: ChannelRequest; redirectUri: string }>(encoded);
+  return decode<{ request: TRequest; redirectUri: string }>(encoded);
 }
 
 /** Wallet side: build the redirect that carries the result home. */
-export function encodeResultUrl(args: { redirectUri: string; result: ChannelResult; limit?: number }): string {
+export function encodeResultUrl<TResult = ChannelResult>(args: {
+  redirectUri: string;
+  result: TResult;
+  limit?: number;
+}): string {
   const url = new URL(args.redirectUri);
   url.hash = `${RES_PARAM}=${encode(args.result, args.limit ?? MAX_REDIRECT_PAYLOAD_BYTES)}`;
   return url.toString();
@@ -115,9 +136,9 @@ export function encodeResultUrl(args: { redirectUri: string; result: ChannelResu
  * payload it claims to sign, and an `authorize` result carries a signature over the caller's nonce
  * (channel/authorize-proof.ts). Parsing is not verification.
  */
-export function decodeResultUrl(href: string): ChannelResult | null {
+export function decodeResultUrl<TResult = ChannelResult>(href: string): TResult | null {
   const hash = new URL(href).hash.replace(/^#/, "");
   const encoded = new URLSearchParams(hash).get(RES_PARAM);
   if (!encoded) return null;
-  return decode<ChannelResult>(encoded);
+  return decode<TResult>(encoded);
 }
