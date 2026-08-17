@@ -2,18 +2,14 @@ import { describe, it, expect, vi, type Mock } from "vitest";
 import type { Address, Hex, TransactionSerializable } from "viem";
 import { createAvokClient } from "../../src/client/client.js";
 import { createEvmNamespace } from "../../src/client/evm.js";
-import { createOwnOriginConnection } from "../../src/own-origin/connection.js";
 import { getChainProfile } from "../../src/evm/index.js";
-import type { FetchLike } from "../../src/http.js";
-import { deriveSlotId } from "../../src/wallet/index.js";
-import type { Connection, SelfCustodyConnection } from "../../src/types.js";
-import { makeFakePasskey, makeFakeRpc } from "./fakes.js";
+import type { Connection } from "../../src/types.js";
+import { makeFakeRpc } from "./fakes.js";
 
 // chainId 10 (Optimism) is in the registry; first token is a real, priceable fee token.
 const CHAIN = getChainProfile(10)!;
 const FEE_TOKEN = Object.values(CHAIN.tokens)[0]!.address;
 const WALLET = "0x1111111111111111111111111111111111111111" as const;
-const SPONSOR = "0x3333333333333333333333333333333333333333" as const;
 const TO = "0x2222222222222222222222222222222222222222" as const;
 
 // Non-zero canonical implementation for tests that exercise the undelegated authorization path.
@@ -78,72 +74,35 @@ function makeFakeConnection(overrides: Partial<Connection> & { address?: Address
   return conn;
 }
 
-/** FetchLike double: GET /config → one-chain config; POST /relay → { id }. */
-function makeFakeRelayFetch(id = "r1"): FetchLike {
-  return async (url, _init) => {
-    if (url.endsWith("/config")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          chains: {
-            10: { sponsor: SPONSOR, supportedTokens: [FEE_TOKEN], bufferBps: 1500, marginBps: 500 },
-          },
-        }),
-      };
-    }
-    if (url.endsWith("/relay")) {
-      return { ok: true, status: 200, json: async () => ({ id }) };
-    }
-    throw new Error(`unexpected fetch ${url}`);
-  };
+function makeLoginConnection(): Connection {
+  let acct: { evm: { address: Address } } | null = null;
+  return {
+    continue: async () => {
+      acct = { evm: { address: WALLET } };
+      return acct;
+    },
+    logout: () => {
+      acct = null;
+    },
+    account: () => acct,
+    status: () => acct !== null,
+  } as unknown as Connection;
 }
 
 describe("createAvokClient — ceremony delegation", () => {
-  it("delegates create/account/status to the connection", async () => {
-    const connection = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
-    const client = createAvokClient({ connection });
-    const acct = await client.create();
+  it("delegates login/account/status to the connection", async () => {
+    const client = createAvokClient({ connection: makeLoginConnection() });
+    const acct = await client.login();
     expect(client.account()?.evm.address).toBe(acct.evm.address);
     expect(client.status()).toBe(true);
   });
 
   it("logout clears account", async () => {
-    const connection = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
-    const client = createAvokClient({ connection });
-    await client.create();
+    const client = createAvokClient({ connection: makeLoginConnection() });
+    await client.login();
     client.logout();
     expect(client.account()).toBeNull();
     expect(client.status()).toBe(false);
-  });
-});
-
-describe("createAvokClient — capability gating", () => {
-  it("export delegates when canExport is true", async () => {
-    const connection = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
-    const client = createAvokClient({ connection });
-    await client.create();
-    expect(await client.exportEvmKey()).toMatch(/^0x/);
-  });
-
-  // Self-custody guard path still lives in client.ts: export() throws when the (self-custody)
-  // connection reports it cannot export. A minimal SelfCustodyConnection fake exercises the throw
-  // branch without reaching sc.export(). (Import is gone: a PRF-derived wallet has no key to import.)
-  function makeUncapableSelf(overrides: Partial<SelfCustodyConnection>): SelfCustodyConnection {
-    return {
-      custody: "self",
-      canExport: true,
-      account: () => null,
-      status: () => false,
-      export: async () => ({ evm: "0xkey" as Hex }),
-      pairing: { holder: {}, enroller: {} },
-      ...overrides,
-    } as unknown as SelfCustodyConnection;
-  }
-
-  it("export throws when the self-custody connection cannot export", async () => {
-    const client = createAvokClient({ connection: makeUncapableSelf({ canExport: false }) });
-    await expect(client.exportEvmKey()).rejects.toThrow(/cannot export/i);
   });
 });
 
@@ -424,18 +383,16 @@ describe("createAvokClient — simulate (D3)", () => {
 
 describe("createAvokClient — isActivated (injected rpc)", () => {
   it("returns false when getCode returns 0x", async () => {
-    const passkey = makeFakePasskey();
-    const connection = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    await connection.create();
+    const connection = makeLoginConnection();
+    await connection.continue();
     const fakeRpc = makeFakeRpc({ delegated: false, nonce: 0 });
     const client = createAvokClient({ connection, deps: { rpc: fakeRpc } });
     expect(await client.isActivated(10)).toBe(false);
   });
 
   it("returns true when code matches canonical implementation", async () => {
-    const passkey = makeFakePasskey();
-    const connection = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    await connection.create();
+    const connection = makeLoginConnection();
+    await connection.continue();
     // Derive IMPL from the actual chain profile so the test stays correct when the registry is updated.
     const IMPL = CHAIN.canonicalImplementation;
     const fakeRpc = makeFakeRpc({ delegated: IMPL, nonce: 0 });
@@ -444,24 +401,22 @@ describe("createAvokClient — isActivated (injected rpc)", () => {
   });
 
   it("returns false when no account is active", async () => {
-    const connection = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
+    const connection = makeLoginConnection();
     const fakeRpc = makeFakeRpc({ delegated: false, nonce: 0 });
     const client = createAvokClient({ connection, deps: { rpc: fakeRpc } });
     expect(await client.isActivated(10)).toBe(false);
   });
 
   it("throws when chainId is omitted (no silent default)", async () => {
-    const connection = createOwnOriginConnection({ rpId: "qudi.fi", passkey: makeFakePasskey() });
-    const client = createAvokClient({ connection });
+    const client = createAvokClient({ connection: makeLoginConnection() });
     // chainId is a required param now; bypass the types to assert the runtime fail-loud guard.
     const c = client as { isActivated(id?: number): Promise<boolean> };
     await expect(c.isActivated()).rejects.toThrow(/chainId is required/i);
   });
 
   it("accepts explicit chainId override", async () => {
-    const passkey = makeFakePasskey();
-    const connection = createOwnOriginConnection({ rpId: "qudi.fi", passkey });
-    await connection.create();
+    const connection = makeLoginConnection();
+    await connection.continue();
     const fakeRpc = makeFakeRpc({ delegated: false, nonce: 0 });
     // No defaultChainId, but pass chainId 10 explicitly
     const client = createAvokClient({ connection, deps: { rpc: fakeRpc } });
@@ -483,82 +438,5 @@ describe("createAvokClient — defaultDeadlineSeconds config", () => {
     // deadline should be approximately now + 7200 (allow 5s tolerance for test timing)
     expect(sim.batch.deadline).toBeGreaterThanOrEqual(now + 7195n);
     expect(sim.batch.deadline).toBeLessThanOrEqual(now + 7205n);
-  });
-});
-
-describe("createAvokClient — enrollAccessSlot (enrol secondary + on-chain write)", () => {
-  // Ported from the deleted client-access-slot.test.ts: the on-chain ciphertext write and its idempotency
-  // now live on enrollAccessSlot, since enrolment and the write are one atomic, funded call.
-  function directClient(vaultReader: { getAccessSlot: () => Promise<Uint8Array | null> }) {
-    const passkey = makeFakePasskey("localhost");
-    const connection = createOwnOriginConnection({ rpId: "localhost", passkey, anchorChainId: "eip155:10" });
-    const client = createAvokClient({
-      connection,
-      deps: { rpc: makeFakeRpc({ delegated: false, nonce: 0 }), chain: TEST_CHAIN, vaultReader },
-    });
-    return { passkey, client };
-  }
-
-  it("enrols a secondary, submits the write, and the returned passkeyCount reflects the new count", async () => {
-    const { passkey, client } = directClient({ getAccessSlot: async () => null }); // empty vault → real submit
-    await client.create();
-
-    const r = await client.enrollAccessSlot();
-    expect(r.passkeyCount).toBe(2);
-    // The slot id is the NEW (secondary) credential's, and a real write occurred (vault was empty).
-    expect(r.slotId).toBe(deriveSlotId(client.account()!.evm.address, passkey.allCredentialIds()[1]));
-    expect(r.txId).not.toBe("noop");
-  });
-
-  it("is idempotent: when the new slot is already stored, it writes nothing (txId 'noop')", async () => {
-    // slot present: getAccessSlot returns ciphertext (non-null) → hasSlot true → no submit.
-    const { passkey, client } = directClient({ getAccessSlot: async () => new Uint8Array([1]) });
-    await client.create();
-
-    const r = await client.enrollAccessSlot();
-    expect(r.txId).toBe("noop");
-    expect(r.slotId).toBe(deriveSlotId(client.account()!.evm.address, passkey.allCredentialIds()[1]));
-    expect(r.passkeyCount).toBe(2); // enrolment still happened locally
-  });
-});
-
-describe("enrolment affordability gate", () => {
-  it("blocks an unfunded wallet BEFORE any passkey is minted, and says what to do", async () => {
-    const passkey = makeFakePasskey("localhost");
-    const connection = createOwnOriginConnection({ rpId: "localhost", passkey, anchorChainId: "eip155:10" });
-    const client = createAvokClient({
-      connection,
-      deps: {
-        rpc: makeFakeRpc({ delegated: false, nonce: 0, balance: 0n }), // an empty wallet
-        chain: TEST_CHAIN,
-        vaultReader: { getAccessSlot: async () => null }, // the chain answers; it just holds no access slot
-      },
-    });
-    await client.create();
-    const before = passkey.allCredentialIds().length;
-
-    const err = (await client.enrollAccessSlot().catch((e) => e)) as Error;
-    expect(err.name).toBe("EnrolmentUnaffordableError");
-    expect(err.message).toMatch(/not enough funds/i);
-    expect(err.message).toMatch(/top the wallet up/i);
-
-    // THE POINT: nothing was created. No mystery passkey in the picker, no orphan to repair.
-    expect(passkey.allCredentialIds()).toHaveLength(before);
-  });
-
-  it("lets a funded wallet through", async () => {
-    const passkey = makeFakePasskey("localhost");
-    const connection = createOwnOriginConnection({ rpId: "localhost", passkey, anchorChainId: "eip155:10" });
-    const client = createAvokClient({
-      connection,
-      deps: {
-        rpc: makeFakeRpc({ delegated: false, nonce: 0 }),
-        chain: TEST_CHAIN,
-        vaultReader: { getAccessSlot: async () => null },
-        fetch: makeFakeRelayFetch(),
-      },
-    });
-    await client.create();
-    await expect(client.enrollAccessSlot()).resolves.toBeDefined();
   });
 });

@@ -1,23 +1,23 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook, act, cleanup } from "@testing-library/react";
 import type { ReactNode } from "react";
-import type { UseOnlyAvokClient } from "@avokjs/core";
+import type { AvokClient } from "@avokjs/core";
 import { AvokProvider } from "../src/provider.js";
 import { useAvokConnect, operatorNameFromOrigin } from "../src/connect.js";
 
 afterEach(cleanup);
 
-function fakeClient(login: () => Promise<unknown>): UseOnlyAvokClient {
+function fakeClient(login: () => Promise<unknown>): AvokClient {
   return {
     login,
     account: () => null,
     status: () => false,
     subscribe: () => () => {},
     custody: "use-only",
-  } as unknown as UseOnlyAvokClient;
+  } as unknown as AvokClient;
 }
 
-const wrap = (client: UseOnlyAvokClient) => ({ children }: { children: ReactNode }) => (
+const wrap = (client: AvokClient) => ({ children }: { children: ReactNode }) => (
   <AvokProvider client={client}>{children}</AvokProvider>
 );
 

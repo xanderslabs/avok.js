@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import { createWallet } from "../../src/wallet/wallet.js";
-import { decodeUserHandle } from "../../src/wallet/passkey/label.js";
 import { NoPrfError } from "../../src/wallet/passkey/adapter.js";
 import type { PasskeyAdapter } from "../../src/wallet/passkey/adapter.js";
 
@@ -33,27 +32,28 @@ const fakePasskey = (prfFill: number): PasskeyAdapter & { lastHandle?: Uint8Arra
   return self as unknown as PasskeyAdapter & { lastHandle?: Uint8Array };
 };
 
-describe("createWallet (primary, PRF-derived)", () => {
-  it("stores no blob — the passkey IS the wallet", async () => {
+describe("createWallet (D8, PRF-derived)", () => {
+  it("stores no key material — the passkey IS the wallet", async () => {
     // The bug this design exists to kill: a fresh wallet held only in memory is destroyed by logout.
     // The passkey IS the wallet, so there is nothing to store and nothing to lose.
     const { state } = await createWallet({ passkey: fakePasskey(3), networkName: "Avok" });
-    expect(state.blobs).toEqual([]);
+    expect(JSON.stringify(state)).not.toMatch(/[0-9a-f]{64}/i); // no raw 32-byte key anywhere
   });
 
   it("state is coherent and carries no tx artifacts", async () => {
-    // create() touches no chain: the state's addresses match the returned account, there is exactly
-    // one slot, and nothing in the serialized state resembles an authorization/intent/signature.
+    // create() touches no chain: the state's address matches the returned account, and nothing in
+    // the serialized state resembles an authorization/intent/signature.
     const { account, state } = await createWallet({ passkey: fakePasskey(3), networkName: "Avok" });
     expect(state.evmAddress).toBe(account.evm);
-    expect(state.slots).toHaveLength(1);
+    expect(state.credentialId).toBe("Y3JlZC0x");
     expect(JSON.stringify(state)).not.toMatch(/authorization|intent|signature/i);
   });
 
-  it("registers itself as a primary in the user handle", async () => {
+  it("mints a fresh random user handle each time (no primary/secondary encoding under D8)", async () => {
     const passkey = fakePasskey(3);
     await createWallet({ passkey, networkName: "Avok" });
-    expect(decodeUserHandle(passkey.lastHandle!)).toEqual({ kind: "primary" });
+    expect(passkey.lastHandle).toBeInstanceOf(Uint8Array);
+    expect(passkey.lastHandle!.length).toBe(32);
   });
 
   it("the same PRF output always yields the same addresses", async () => {

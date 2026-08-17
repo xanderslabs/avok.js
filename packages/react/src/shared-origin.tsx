@@ -7,7 +7,7 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { createAvokClient, createSharedOriginConnection } from "@avokjs/core";
-import type { UseOnlyAvokClient, WalletInfo } from "@avokjs/core";
+import type { AvokClient, WalletInfo } from "@avokjs/core";
 import { AvokProvider } from "./provider.js";
 
 export function SharedOrigin({
@@ -33,13 +33,13 @@ export function SharedOrigin({
   onError?: (e: Error) => void;
   children: ReactNode;
 }): React.JSX.Element {
-  const [client, setClient] = useState<UseOnlyAvokClient | null>(null);
+  const [client, setClient] = useState<AvokClient | null>(null);
 
   useEffect(() => {
     let live = true;
     void (async () => {
       try {
-        const connection = await createSharedOriginConnection({ authOrigin: auth });
+        const connection = await createSharedOriginConnection({ originPoint: auth });
         const c = createAvokClient({ connection, paymasterUrl, bundlerUrl, managementUrl }, wallet);
         if (live) setClient(c);
       } catch (e) {

@@ -35,7 +35,7 @@ describe("<SharedOrigin>", () => {
 
     expect(screen.getByText("connecting…")).toBeTruthy();
     await waitFor(() => expect(screen.getByText("dapp")).toBeTruthy());
-    expect(createSharedOriginConnection).toHaveBeenCalledWith({ authOrigin: "https://auth.acme.com" });
+    expect(createSharedOriginConnection).toHaveBeenCalledWith({ originPoint: "https://auth.acme.com" });
   });
 
   it("calls onError and keeps showing the fallback if wiring fails", async () => {

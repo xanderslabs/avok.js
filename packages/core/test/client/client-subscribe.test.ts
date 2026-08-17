@@ -1,40 +1,32 @@
 import { describe, it, expect, vi } from "vitest";
 import { createAvokClient } from "../../src/client/client.js";
-import type { Connection, SelfCustodyConnection } from "../../src/types.js";
+import type { Connection } from "../../src/types.js";
 
-function fakeSelf(): SelfCustodyConnection {
+function fakeConnection(): Connection {
   let acct: unknown = null;
   let st = false;
-  const set = () => {
-    acct = { evm: { address: "0xabc" } };
-    st = true;
-    return acct;
-  };
   return {
-    custody: "self",
-    canExport: true,
-    continue: async () => set(),
-    create: async () => set(),
+    continue: async () => {
+      acct = { evm: { address: "0xabc" } };
+      st = true;
+      return acct;
+    },
     logout: () => {
       acct = null;
       st = false;
     },
     account: () => acct,
     status: () => st,
-    export: async () => "0xkey",
-    addPasskey: async () => ({ passkeyCount: 2 }),
-    pairing: { holder: {}, enroller: {} },
-    passkeyCount: () => 1,
-  } as unknown as SelfCustodyConnection;
+  } as unknown as Connection;
 }
 
 describe("client.subscribe", () => {
-  it("notifies listeners after create/continue/logout and stops after unsubscribe", async () => {
-    const client = createAvokClient({ connection: fakeSelf() });
+  it("notifies listeners after login/logout and stops after unsubscribe", async () => {
+    const client = createAvokClient({ connection: fakeConnection() });
     const cb = vi.fn();
     const unsub = client.subscribe(cb);
 
-    await client.create();
+    await client.login();
     expect(cb).toHaveBeenCalledTimes(1);
     expect(client.status()).toBe(true);
 
@@ -48,20 +40,5 @@ describe("client.subscribe", () => {
     unsub();
     await client.logout();
     expect(cb).toHaveBeenCalledTimes(3); // silent after unsubscribe
-  });
-
-  it("shared-origin (use-only) client also exposes subscribe and fires on continue", async () => {
-    const conn = {
-      custody: "use-only",
-      continue: async () => ({ evm: { address: "0x0" } }),
-      logout: () => {},
-      account: () => null,
-      status: () => false,
-    } as unknown as Connection;
-    const client = createAvokClient({ connection: conn });
-    const cb = vi.fn();
-    client.subscribe(cb);
-    await client.login();
-    expect(cb).toHaveBeenCalledTimes(1);
   });
 });

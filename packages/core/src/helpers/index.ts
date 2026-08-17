@@ -9,4 +9,3 @@ export * from "./explorers.js";
 export * from "./amount.js";
 export * from "./tx-status.js";
 export * from "./errors.js";
-export * from "./pairing.js";

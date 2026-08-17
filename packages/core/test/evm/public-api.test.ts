@@ -6,7 +6,6 @@ test("public surface exposes the pipeline verbs and adapters", () => {
     "simulateResolved",
     "getReceiptStatus",
     "createViemRpcClient",
-    "createViemVaultReader",
     "estimateNativeFee",
     "railFromContext",
     "getChainProfile",

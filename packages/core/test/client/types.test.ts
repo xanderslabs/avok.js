@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import type { Connection, SelfCustodyConnection } from "../../src/types.js";
+import type { Connection } from "../../src/types.js";
 
 describe("types", () => {
-  it("Connection is the use-only surface: Signer verbs + continue/logout/account/status/custody", () => {
+  it("Connection is the one custody posture (D3: popup-for-all): Signer verbs + continue/logout/account/status", () => {
     const keys: (keyof Connection)[] = [
       "signMessage",
       "signTypedData",
@@ -13,22 +13,16 @@ describe("types", () => {
       "logout",
       "account",
       "status",
-      "custody",
     ];
-    expect(keys.length).toBe(10);
+    expect(keys.length).toBe(9);
   });
 
-  it("custody-management verbs are NOT part of the use-only Connection surface", () => {
-    // @ts-expect-error create is a custody verb — absent from the use-only Connection surface
+  it("wallet lifecycle verbs (create/export/addPasskey) are not part of Connection — they live on the vault", () => {
+    // @ts-expect-error create is a vault-side verb — absent from Connection
     const _create: keyof Connection = "create";
-    // @ts-expect-error export is a custody verb — absent from the use-only Connection surface
+    // @ts-expect-error export is a vault-side verb — absent from Connection
     const _export: keyof Connection = "export";
     void _create;
     void _export;
-  });
-
-  it("SelfCustodyConnection carries the custody-management verbs (import + canImport gone; addPasskey writes on chain)", () => {
-    const keys: (keyof SelfCustodyConnection)[] = ["create", "export", "addPasskey", "canExport", "passkeyCount"];
-    expect(keys.length).toBe(5);
   });
 });

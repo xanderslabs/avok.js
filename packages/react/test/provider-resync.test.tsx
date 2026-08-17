@@ -1,12 +1,12 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { afterEach, describe, it, expect } from "vitest";
 import { AvokProvider, useAccount } from "../src/index.js";
-import type { FullAvokClient } from "@avokjs/core";
+import type { AvokClient } from "@avokjs/core";
 
 afterEach(cleanup);
 
 /** A minimal client seeded with a fixed address/status; no reactivity needed for this test. */
-function seededClient(address: string | null, status: boolean): FullAvokClient {
+function seededClient(address: string | null, status: boolean): AvokClient {
   return {
     custody: "self" as const,
     subscribe: () => () => {},
@@ -15,7 +15,7 @@ function seededClient(address: string | null, status: boolean): FullAvokClient {
     continue: async () => ({}),
     logout: () => {},
     read: {}, evm: {},
-  } as unknown as FullAvokClient;
+  } as unknown as AvokClient;
 }
 
 function View() {

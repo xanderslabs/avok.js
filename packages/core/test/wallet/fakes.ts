@@ -1,6 +1,4 @@
-import type { Address, Hex } from "viem";
 import type { DiscoveredPasskey, PasskeyAdapter, PasskeyRegistration } from "../../src/wallet/passkey/adapter.js";
-import type { VaultReader } from "../../src/wallet/vault.js";
 import { bytesToBase64Url } from "../../src/wallet/encoding.js";
 
 interface FakeCredential {
@@ -21,7 +19,11 @@ export class FakePasskeyAdapter implements PasskeyAdapter {
     const credentialId = bytesToBase64Url(new TextEncoder().encode(plainId));
     const prfOutput = new Uint8Array(Array.from({ length: 32 }, (_, i) => (this.seed + this.counter * 31 + i) % 256))
       .buffer;
-    this.credentials.set(credentialId, { prfOutput, userHandle });
+    // Store an INDEPENDENT copy: the PRF-output ownership contract (see PasskeyAdapter) says a
+    // returned buffer is single-use and the caller may wipe it. If the map kept this exact
+    // reference, a caller wiping its `create()` result would zero the credential's PRF for every
+    // later authenticate()/discover() too — a fake aliasing bug, not a real adapter's behavior.
+    this.credentials.set(credentialId, { prfOutput: prfOutput.slice(0), userHandle });
     return {
       credentialId,
       prfOutput,
@@ -43,22 +45,6 @@ export class FakePasskeyAdapter implements PasskeyAdapter {
     const entry = [...this.credentials.entries()].at(-1);
     if (!entry) throw new Error("No passkey to discover");
     return { credentialId: entry[0], prfOutput: entry[1].prfOutput.slice(0), userHandle: entry[1].userHandle };
-  }
-}
-
-/** In-memory access vault keyed by address → slotId → blob bytes. */
-export class FakeVaultReader implements VaultReader {
-  private readonly store = new Map<string, Map<string, Uint8Array>>();
-  set(address: Address, slotId: Hex, bytes: Uint8Array): void {
-    const key = address.toLowerCase();
-    if (!this.store.has(key)) this.store.set(key, new Map());
-    this.store.get(key)!.set(slotId.toLowerCase(), bytes);
-  }
-  async getAccessSlot(address: Address, slotId: Hex): Promise<Uint8Array | null> {
-    return this.store.get(address.toLowerCase())?.get(slotId.toLowerCase()) ?? null;
-  }
-  async listAccessSlotIds(address: Address): Promise<Hex[]> {
-    return [...(this.store.get(address.toLowerCase())?.keys() ?? [])] as Hex[];
   }
 }
 

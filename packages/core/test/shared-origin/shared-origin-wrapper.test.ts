@@ -6,7 +6,7 @@ describe("createSharedOriginConnection", () => {
   it("continue() runs the OIDC authorize flow and exposes the account", async () => {
     const channel = makeFakeChannel();
     const conn = createSharedOriginConnection({
-      authOrigin: "https://auth.qudi.fi",
+      originPoint: "https://auth.qudi.fi",
       channel,
     });
     const acct = await conn.continue();
@@ -17,7 +17,7 @@ describe("createSharedOriginConnection", () => {
   it("account() maps the shared-origin session to { evm }", async () => {
     const channel = makeFakeChannel();
     const conn = createSharedOriginConnection({
-      authOrigin: "https://auth.qudi.fi",
+      originPoint: "https://auth.qudi.fi",
       channel,
     });
     await conn.continue();
@@ -29,7 +29,7 @@ describe("createSharedOriginConnection", () => {
     const channel = makeFakeChannel();
     const openSpy = vi.spyOn(channel, "open");
     const conn = createSharedOriginConnection({
-      authOrigin: "https://auth.qudi.fi",
+      originPoint: "https://auth.qudi.fi",
       channel,
     });
     await conn.continue();
@@ -45,7 +45,7 @@ describe("createSharedOriginConnection", () => {
   it("logout() clears status and account()", async () => {
     const channel = makeFakeChannel();
     const conn = createSharedOriginConnection({
-      authOrigin: "https://auth.qudi.fi",
+      originPoint: "https://auth.qudi.fi",
       channel,
     });
     await conn.continue();
@@ -56,16 +56,15 @@ describe("createSharedOriginConnection", () => {
     expect(conn.account()).toBeNull();
   });
 
-  it("is a use-only Connection — exposes no custody-management verbs (create/export/addPasskey/canExport)", async () => {
+  it("exposes no custody-management verbs (create/export/addPasskey/canExport)", async () => {
     const channel = makeFakeChannel();
     const conn = createSharedOriginConnection({
-      authOrigin: "https://auth.qudi.fi",
+      originPoint: "https://auth.qudi.fi",
       channel,
     });
     await conn.continue();
     for (const verb of ["create", "export", "addPasskey", "canExport"]) {
       expect(verb in conn).toBe(false);
     }
-    expect(conn.custody).toBe("use-only");
   });
 });

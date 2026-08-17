@@ -1,5 +1,5 @@
 import { createAvokClient as coreCreateAvokClient } from "../engine.js";
-import type { ClientConfig, Connection, AvokClientFor } from "../engine.js";
+import type { ClientConfig, Connection, AvokClient } from "../engine.js";
 import {
   createEip1193Provider,
   announceEip6963,
@@ -16,7 +16,7 @@ export type { WalletInfo };
 // Avok mark. EIP-6963 requires a data-URI icon, so the announce must carry something.
 const BLANK_ICON = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=";
 
-export type WiredAvokClient<C extends Connection> = AvokClientFor<C> & {
+export type WiredAvokClient = AvokClient & {
   /** The EIP-1193 provider this client announced (EIP-6963), for direct (non-wagmi) use. */
   getEip1193Provider(): Eip1193Provider;
 };
@@ -32,10 +32,7 @@ export type WiredAvokClient<C extends Connection> = AvokClientFor<C> & {
  * honest — named after the real origin, never anonymous and never an Avok brand. Pass them explicitly
  * for a proper display name and a stable id.
  */
-export function createAvokClient<C extends Connection>(
-  config: ClientConfig<C>,
-  wallet?: WalletInfo,
-): WiredAvokClient<C> {
+export function createAvokClient<C extends Connection>(config: ClientConfig<C>, wallet?: WalletInfo): WiredAvokClient {
   const client = coreCreateAvokClient(config);
   const provider = createEip1193Provider(config, { subscribe: client.subscribe });
   if (typeof window !== "undefined") {

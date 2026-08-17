@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { decodeFunctionData, type Address, type Hex } from "viem";
 import { getUserOperationHash, entryPoint09Address } from "viem/account-abstraction";
 import { executeAbi, MODE_BATCH } from "@avokjs/contracts";
-import type { Call } from "../../src/wallet/index.js";
+import type { Call } from "../../src/evm/types.js";
 import { buildUserOp, getAvokUserOpHash } from "../../src/evm/userop.js";
 
 const SENDER = "0x1111111111111111111111111111111111111111" as Address;

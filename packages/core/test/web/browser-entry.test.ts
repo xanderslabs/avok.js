@@ -1,38 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createOwnOriginConnection, createSharedOriginConnection, webStorage } from "../../src/index.js";
-
-describe("createOwnOriginConnection", () => {
-  // Step 1 (TDD): failing test — own-origin entry point wires the web trio.
-  // Asserts the returned Connection has all required verbs.
-  // The WebAuthnPasskeyAdapter constructor is free (no credentials calls until
-  // create/authenticate/discover), so no navigator stubs needed here.
-  it("injects a WebAuthn passkey adapter and web storage (returns Connection verbs)", () => {
-    const conn = createOwnOriginConnection({ rpId: "qudi.fi" });
-    expect(typeof conn.create).toBe("function");
-    expect(typeof conn.continue).toBe("function");
-    expect(typeof conn.export).toBe("function");
-    expect(typeof conn.logout).toBe("function");
-    expect(typeof conn.account).toBe("function");
-    expect(typeof conn.status).toBe("function");
-    expect(typeof conn.signMessage).toBe("function");
-    expect(conn.canExport).toBe(true);
-  });
-
-  it("accepts a custom storage override", () => {
-    const mem = new Map<string, string>();
-    const storage = {
-      get: (k: string) => mem.get(k) ?? null,
-      set: (k: string, v: string) => {
-        mem.set(k, v);
-      },
-      remove: (k: string) => {
-        mem.delete(k);
-      },
-    };
-    const conn = createOwnOriginConnection({ rpId: "qudi.fi", storage });
-    expect(typeof conn.create).toBe("function");
-  });
-});
+import { createSharedOriginConnection, webStorage } from "../../src/index.js";
 
 describe("createSharedOriginConnection", () => {
   // Bundle-purity guard: createSharedOriginConnection MUST be async so

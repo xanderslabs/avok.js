@@ -31,7 +31,7 @@ function makeFakeChannel(): SigningChannel {
       if (req.kind === "authorize") {
         // Sign the caller's challenge exactly as a real wallet page would.
         const proof = await TEST_SIGNER.signMessage({
-          message: authorizeChallenge({ nonce: req.nonce, authOrigin: AUTH_ORIGIN }),
+          message: authorizeChallenge({ nonce: req.nonce, originPoint: AUTH_ORIGIN }),
         });
         return {
           kind: "authorize",
@@ -57,7 +57,7 @@ function makeFakeChannel(): SigningChannel {
 describe("createSharedOriginConnection", () => {
   it("connect(): saves the account and returns it", async () => {
     const storage = memoryStorage();
-    const conn = createSharedOriginConnection({ authOrigin: AUTH_ORIGIN, channel: makeFakeChannel(), storage });
+    const conn = createSharedOriginConnection({ originPoint: AUTH_ORIGIN, channel: makeFakeChannel(), storage });
 
     const account = await conn.connect();
 
@@ -69,7 +69,7 @@ describe("createSharedOriginConnection", () => {
 
   it("account() surfaces the address and credentialId", async () => {
     const conn = createSharedOriginConnection({
-      authOrigin: AUTH_ORIGIN,
+      originPoint: AUTH_ORIGIN,
       channel: makeFakeChannel(),
       storage: memoryStorage(),
     });
@@ -82,7 +82,7 @@ describe("createSharedOriginConnection", () => {
     // WHY: the credentialId is what reaches the popup. Without it the browser cannot constrain the
     // assertion and the user picks a passkey on EVERY signature.
     const channel = makeFakeChannel();
-    const conn = createSharedOriginConnection({ authOrigin: AUTH_ORIGIN, channel, storage: memoryStorage() });
+    const conn = createSharedOriginConnection({ originPoint: AUTH_ORIGIN, channel, storage: memoryStorage() });
     await conn.connect();
 
     const sig = await conn.signMessage({ message: "hello avok" });
@@ -96,7 +96,7 @@ describe("createSharedOriginConnection", () => {
 
   it("signMessage(): throws if called before connect", async () => {
     const conn = createSharedOriginConnection({
-      authOrigin: AUTH_ORIGIN,
+      originPoint: AUTH_ORIGIN,
       channel: makeFakeChannel(),
       storage: memoryStorage(),
     });
@@ -105,7 +105,7 @@ describe("createSharedOriginConnection", () => {
 
   it("logout(): clears the account from storage and in-memory", async () => {
     const storage = memoryStorage();
-    const conn = createSharedOriginConnection({ authOrigin: AUTH_ORIGIN, channel: makeFakeChannel(), storage });
+    const conn = createSharedOriginConnection({ originPoint: AUTH_ORIGIN, channel: makeFakeChannel(), storage });
     await conn.connect();
 
     conn.logout();
@@ -118,10 +118,10 @@ describe("createSharedOriginConnection", () => {
   it("account() re-hydrates from storage on a cold start", async () => {
     // WHY: a reload must not re-prompt for a passkey just to know who you are.
     const storage = memoryStorage();
-    const first = createSharedOriginConnection({ authOrigin: AUTH_ORIGIN, channel: makeFakeChannel(), storage });
+    const first = createSharedOriginConnection({ originPoint: AUTH_ORIGIN, channel: makeFakeChannel(), storage });
     await first.connect();
 
-    const cold = createSharedOriginConnection({ authOrigin: AUTH_ORIGIN, channel: makeFakeChannel(), storage });
+    const cold = createSharedOriginConnection({ originPoint: AUTH_ORIGIN, channel: makeFakeChannel(), storage });
     expect(cold.account()?.evmAddress).toBe(TEST_ADDRESS);
     expect(cold.status()).toBe(true);
   });

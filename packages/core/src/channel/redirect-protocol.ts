@@ -92,13 +92,13 @@ function decode<T>(encoded: string): T {
 
 /** Build the URL the in-app browser opens: the wallet page, with the request in its fragment. */
 export function encodeRequestUrl<TRequest = ChannelRequest>(args: {
-  authOrigin: string;
+  originPoint: string;
   request: TRequest;
   /** Where the wallet should send the result. The wallet echoes it; it is not trusted as authority. */
   redirectUri: string;
   limit?: number;
 }): string {
-  const url = new URL(args.authOrigin);
+  const url = new URL(args.originPoint);
   const payload = encode(
     { request: args.request, redirectUri: args.redirectUri },
     args.limit ?? MAX_REDIRECT_PAYLOAD_BYTES,

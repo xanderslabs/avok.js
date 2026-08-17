@@ -1,6 +1,6 @@
 import type { Address, Hex, SignedAuthorization } from "viem";
 import { getUserOperationHash, entryPoint09Address } from "viem/account-abstraction";
-import type { Call } from "../wallet/index.js";
+import type { Call } from "./types.js";
 import { encodeExecuteBatch } from "./sim-methods.js";
 import type { AvokUserOperation } from "./bundler.js";
 

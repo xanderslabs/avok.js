@@ -31,7 +31,7 @@ const AUTHORIZE: ChannelRequest = { kind: "authorize", nonce: "n1" };
 const session = (reply: (url: string) => { type: string; url?: string }) => vi.fn(async (url: string) => reply(url));
 
 const channelWith = (open: ReturnType<typeof session>) =>
-  createNativeChannel({ authOrigin: AUTH_ORIGIN, redirectUri: REDIRECT, openAuthSession: open });
+  createNativeChannel({ originPoint: AUTH_ORIGIN, redirectUri: REDIRECT, openAuthSession: open });
 
 const resultUrl = (result: ChannelResult) => encodeResultUrl({ redirectUri: REDIRECT, result });
 
@@ -39,7 +39,7 @@ describe("the redirect protocol", () => {
   it("round-trips a request through the URL FRAGMENT, not the query", async () => {
     // The fragment is never sent to a server. A signing request contains the transaction a user is
     // about to approve, and it must not land in an access log, a CDN log, or a Referer header.
-    const url = encodeRequestUrl({ authOrigin: AUTH_ORIGIN, request: AUTHORIZE, redirectUri: REDIRECT });
+    const url = encodeRequestUrl({ originPoint: AUTH_ORIGIN, request: AUTHORIZE, redirectUri: REDIRECT });
     const parsed = new URL(url);
 
     expect(parsed.search).toBe(""); // nothing in the query
@@ -63,7 +63,7 @@ describe("the redirect protocol", () => {
     // Chromium replaces over-long URLs with empty invalid ones — a truncation indistinguishable from
     // a user cancelling. Failing loudly turns an unreproducible bug into a clear error.
     const huge: ChannelRequest = { kind: "sign", request: { blob: "x".repeat(9000) } as never };
-    expect(() => encodeRequestUrl({ authOrigin: AUTH_ORIGIN, request: huge, redirectUri: REDIRECT })).toThrow(
+    expect(() => encodeRequestUrl({ originPoint: AUTH_ORIGIN, request: huge, redirectUri: REDIRECT })).toThrow(
       RedirectPayloadTooLargeError,
     );
   });
@@ -116,7 +116,7 @@ describe("createNativeChannel", () => {
   it("refuses a plaintext auth origin at construction, not at the first signature", async () => {
     expect(() =>
       createNativeChannel({
-        authOrigin: "http://wallet.example",
+        originPoint: "http://wallet.example",
         redirectUri: REDIRECT,
         openAuthSession: session(() => ({ type: "cancel" })),
       }),
@@ -126,7 +126,7 @@ describe("createNativeChannel", () => {
   it("allows http on localhost, for development", () => {
     expect(() =>
       createNativeChannel({
-        authOrigin: "http://localhost:3000",
+        originPoint: "http://localhost:3000",
         redirectUri: REDIRECT,
         openAuthSession: session(() => ({ type: "cancel" })),
       }),

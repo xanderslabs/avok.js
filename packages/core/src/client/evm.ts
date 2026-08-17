@@ -12,7 +12,6 @@ import {
   listFeeTokens,
   simulateResolved,
   getReceiptStatus,
-  type AvokUserOperation,
   type Bundler,
   type Call,
   type EvmChainProfile,
@@ -34,7 +33,7 @@ import {
 import { randomNonceAllocator } from "../nonce.js";
 import { UnsupportedFeeTokenError } from "./fee-token-error.js";
 import { SponsorshipUnavailableError } from "./sponsorship-error.js";
-import type { ClientConfig, ScopedSigner } from "../types.js";
+import type { ClientConfig } from "../types.js";
 
 export type TxOpts = {
   chainId?: number;
@@ -107,44 +106,7 @@ export function requireChain(config: ClientConfig, chainId: number): EvmChainPro
   return chain;
 }
 
-/**
- * An access-slot write, resolved WITHOUT the wallet key. Opaque to callers — hand it back to `signAccessSlotWrite`
- * and `broadcastAccessSlotWrite` unchanged.
- */
-export type PreparedAccessSlotWrite = {
-  rpc: RpcClient;
-  batch: ResolvedBatch;
-  txNonce: number;
-  /** The tip the CHAIN suggested (`eth_maxPriorityFeePerGas`) — what to bid. Not `eth_gasPrice`,
-   *  which is base + a suggested tip and so bids the base fee twice if used as a tip. */
-  suggestedTip: Awaited<ReturnType<RpcClient["getMaxPriorityFeePerGas"]>>;
-  /** The chain's base fee — the price it actually charges. Not derivable from gasPrice. */
-  baseFee: Awaited<ReturnType<RpcClient["getBaseFeePerGas"]>>;
-  /** SPONSORED only — the post-handshake UserOperation, attached by `sponsorWrite`. Absent on the
-   *  native-gas rail, and its presence is what tells `sign`/`broadcast` which rail they are on. */
-  sponsored?: PreparedSponsoredUserOp;
-};
-
-// An access-slot write can now take either rail. Native-gas signs a raw type-4/1559 transaction;
-// sponsored signs a 4337 UserOperation whose fee the paymaster charges in a token.
-//
-// The two are NOT symmetric in cost, and the asymmetry is inherent rather than an oversight: the
-// native-gas signature is built entirely in-process from a same-length probe, so sealing and signing
-// fit in ONE key scope. Sponsored must fetch a paymaster quote over the REAL calldata — which only
-// exists after the blob is sealed — so it is seal (key) → quote (IO) → sign (key), and K may never
-// be live across that IO. Two scopes, therefore two passkey gestures.
-export type SignedAccessSlotWrite = { rail: "native-gas"; raw: Hex } | { rail: "sponsored"; userOp: AvokUserOperation };
-
-/** The three-phase access-slot writer. See `AccessSlotWriter` on AccessCtx for why it is split this way. */
-export type AccessSlotWriter = {
-  prepare(probe: Call[], chainId: number): Promise<PreparedAccessSlotWrite>;
-  /** SPONSORED only. IO, no key: the 7677 handshake over the REAL calls. */
-  sponsor(p: PreparedAccessSlotWrite, calls: Call[], feeToken: Address): Promise<PreparedAccessSlotWrite>;
-  sign(p: PreparedAccessSlotWrite, calls: Call[], signer: ScopedSigner): Promise<SignedAccessSlotWrite>;
-  broadcast(p: PreparedAccessSlotWrite, signed: SignedAccessSlotWrite): Promise<{ id: string }>;
-};
-
-export function createEvmNamespace(config: ClientConfig): EvmNamespace & { readonly __accessSlot: AccessSlotWriter } {
+export function createEvmNamespace(config: ClientConfig): EvmNamespace {
   const { connection, paymasterUrl, bundlerUrl, deps } = config;
   const deadlineWindowSeconds = BigInt(config.defaultDeadlineSeconds ?? 3600);
 
@@ -259,122 +221,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace & { reado
     return leanResolve({ rpc, chain, address, userCalls: calls, ctx, nonce, deadline });
   }
 
-  /**
-   * THE ACCESS-SLOT WRITER — one user action, ONE passkey gesture.
-   *
-   * Enrolment needs the wallet key TWICE: to seal the access slot's blob, and to sign the transaction that
-   * carries it. Done naively that is two key scopes and two biometric prompts for one "add this
-   * device". It cannot simply be wrapped in one scope, because the sealed blob determines the
-   * calldata, the calldata determines the transaction, and building the transaction needs chain IO —
-   * and K must never be live across a network round-trip.
-   *
-   * What makes the split possible: THE ACCESS-SLOT-WRITE CALLDATA IS A FIXED LENGTH. `BLOB_BYTES` (61) and
-   * `META_BYTES` (93) are constants — the metadata plaintext is deliberately zero-padded to a constant
-   * "so the ciphertext size leaks nothing". So a probe call of the same shape resolves to the same
-   * nonce, the same delegation and the same gas as the real one, WITHOUT the key.
-   *
-   *   prepare()   → IO, no key   (resolve against the probe)
-   *   sign()      → key, no IO   (seal + sign inside the caller's single scope)
-   *   broadcast() → IO, no key
-   *
-   * Native-gas is exactly equivalent: `leanResolve`'s only IO is getCode/getTransactionCount, neither of
-   * which reads `userCalls` — they are copied verbatim into the batch. Sponsored estimates gas over the
-   * calldata, which is the same length either way; any residual drift lands inside the relayer's
-   * existing tolerance band.
-   */
-  const __accessSlot: AccessSlotWriter = {
-    async prepare(probe: Call[], chainId: number): Promise<PreparedAccessSlotWrite> {
-      const id = resolveChainId(chainId);
-      const chain = requireChain(config, id);
-      const rpc = resolveRpc(config, id);
-      const batch = await buildBatch(probe, chain, rpc, resolveSponsorship(id));
-      const txNonce = await rpc.getTransactionCount(batch.walletAddress);
-      const [suggestedTip, baseFee] = await Promise.all([rpc.getMaxPriorityFeePerGas(), rpc.getBaseFeePerGas()]);
-      return { rpc, batch, txNonce, suggestedTip, baseFee };
-    },
-
-    /** SPONSORED only. IO, NO KEY — the 7677 handshake, over the calls the blob is already sealed
-     *  into. Runs BETWEEN the two key scopes, which is the whole reason this rail costs two
-     *  gestures: the paymaster signs over the real calldata, and the real calldata needs K. */
-    async sponsor(p: PreparedAccessSlotWrite, calls: Call[], feeToken: Address): Promise<PreparedAccessSlotWrite> {
-      if (!canSponsor()) throw noRail(p.batch.chainId);
-      // Validate against the TARGET chain, exactly as a send would — a token that means nothing here
-      // must not reach the paymaster.
-      if (!feeTokens(p.batch.chainId).some((t) => t.address.toLowerCase() === feeToken.toLowerCase())) {
-        throw new UnsupportedFeeTokenError(feeToken, p.batch.chainId);
-      }
-      const batch: ResolvedBatch = { ...p.batch, rail: "sponsored", feeToken, userCalls: calls };
-      return { ...p, batch, sponsored: await prepareSponsored(p.rpc, batch) };
-    },
-
-    /** PURE — no IO. Runs inside the caller's single key scope. */
-    async sign(p: PreparedAccessSlotWrite, calls: Call[], signer: ScopedSigner): Promise<SignedAccessSlotWrite> {
-      // SPONSORED: the operation is already built and quoted; this scope only signs it. The calls are
-      // ignored here on purpose — they were baked into the UserOp the paymaster priced, and
-      // substituting anything now would invalidate the quote.
-      if (p.sponsored) {
-        const userOp = p.sponsored.op;
-        userOp.signature = await signer.signUserOp({ userOp, chainId: p.batch.chainId });
-        if (p.batch.authorization) {
-          // The 7702 authorization rides the UserOp, signed over the EOA's own nonce (not txNonce + 1:
-          // the EntryPoint submits, so the wallet is not the transaction sender here).
-          const signedAuth = await signer.signAuthorization({
-            chainId: p.batch.authorization.chainId,
-            address: p.batch.authorization.address,
-            nonce: p.txNonce,
-          });
-          (userOp as { authorization?: unknown }).authorization = signedAuth;
-        }
-        return { rail: "sponsored", userOp };
-      }
-      // Substituting userCalls is sound because the probe is the same LENGTH (see above), so every
-      // resolved field — authorization, nonce, fee — is the one the real calls would have produced.
-      // Access-slot writes are native-gas (SPEC §5), so there is only the native-gas signing path here.
-      const batch: ResolvedBatch = { ...p.batch, userCalls: calls };
-
-      const commonFields = {
-        chainId: batch.chainId,
-        to: batch.walletAddress,
-        data: buildNativeGasCalldata(batch),
-        value: 0n,
-        nonce: p.txNonce,
-        // Flat cap here, unlike send(), and deliberately: an access-slot write's gas is dominated by SSTOREs
-        // whose cost depends on the VALUE written, not the calldata length. The probe this batch was
-        // resolved against carries a placeholder blob, so its simulated gas can be an order of
-        // magnitude under the real (non-zero, cold) write — 2,200 vs ~22,100 per word. Deriving a
-        // tight limit from that estimate would produce out-of-gas transactions, and an out-of-gas
-        // transaction still costs the user the fee. Keep the generous cap.
-        gas: 1_000_000n,
-        ...nativeGasFees(p.suggestedTip, p.baseFee),
-      };
-      if (batch.authorization) {
-        // Self-sponsoring invariant: the authorization is signed over txNonce + 1 (see send()).
-        const signedAuth = await signer.signAuthorization({
-          chainId: batch.authorization.chainId,
-          address: batch.authorization.address,
-          nonce: p.txNonce + 1,
-        });
-        return {
-          rail: "native-gas",
-          raw: await signer.signTransaction({ ...commonFields, type: "eip7702", authorizationList: [signedAuth] }),
-        };
-      }
-      return { rail: "native-gas", raw: await signer.signTransaction({ ...commonFields, type: "eip1559" }) };
-    },
-
-    async broadcast(p: PreparedAccessSlotWrite, signed: SignedAccessSlotWrite): Promise<{ id: string }> {
-      // A sponsored id is the bundler's userOpHash — an INTENT id, not a transaction hash. It will
-      // never appear on an explorer, and nothing may present it as a confirmation.
-      if (signed.rail === "sponsored") {
-        return { id: await sponsoredInfra(p.rpc).bundler.sendUserOperation(signed.userOp) };
-      }
-      return { id: await p.rpc.sendRawTransaction(signed.raw) };
-    },
-  };
-
   return {
-    __accessSlot,
-
     async wait(receipt: Receipt, opts?: { timeoutMs?: number; intervalMs?: number }): Promise<Receipt> {
       const timeoutMs = opts?.timeoutMs ?? 90_000;
       const intervalMs = opts?.intervalMs ?? 1_500;

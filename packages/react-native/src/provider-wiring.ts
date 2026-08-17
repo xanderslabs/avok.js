@@ -18,13 +18,13 @@ import {
   announceEip6963,
   resolveAnnouncedIdentity,
 } from "@avokjs/core/engine";
-import type { ClientConfig, Connection, AvokClientFor, Eip1193Provider, WalletInfo } from "@avokjs/core/engine";
+import type { ClientConfig, Connection, AvokClient, Eip1193Provider, WalletInfo } from "@avokjs/core/engine";
 
 // Neutral, un-branded placeholder used ONLY when the operator supplies no icon (EIP-6963 requires a
 // data-URI icon) — an empty SVG, never an Avok mark.
 const BLANK_ICON = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=";
 
-export type WiredAvokClient<C extends Connection> = AvokClientFor<C> & {
+export type WiredAvokClient = AvokClient & {
   /** The EIP-1193 provider this client built — for direct (non-wagmi) use, or an in-app dapp browser. */
   getEip1193Provider(): Eip1193Provider;
 };
@@ -39,10 +39,7 @@ export type WiredAvokClient<C extends Connection> = AvokClientFor<C> & {
  * (`resolveAnnouncedIdentity`), so the announce stays honest — named after the real origin, never
  * anonymous and never an Avok brand. On pure native this branch never runs.
  */
-export function createAvokClient<C extends Connection>(
-  config: ClientConfig<C>,
-  wallet?: WalletInfo,
-): WiredAvokClient<C> {
+export function createAvokClient<C extends Connection>(config: ClientConfig<C>, wallet?: WalletInfo): WiredAvokClient {
   const client = coreCreateAvokClient(config);
   const provider = createEip1193Provider(config, { subscribe: client.subscribe });
   if (typeof window !== "undefined") {

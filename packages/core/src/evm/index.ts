@@ -28,9 +28,6 @@ export { estimateNativeFee } from "./pricing.js";
 // native-gas gas/price internals stay module-private (reached via pricing.ts / resolve.ts).
 export { nativeGasFees } from "./gas-model.js";
 
-// Vault reader
-export { createViemVaultReader } from "./vault-reader.js";
-
 // ERC-7677 paymaster client
 export type {
   Paymaster7677,

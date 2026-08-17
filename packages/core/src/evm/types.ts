@@ -1,7 +1,11 @@
 import type { Address, Hex } from "viem";
-import type { Call } from "../wallet/index.js";
 
-export type { Call };
+/** A single on-chain call. The Tx Engine assembles these into a batch. */
+export interface Call {
+  to: Address;
+  value: bigint;
+  data: Hex;
+}
 
 export type Rail = "native-gas" | "sponsored";
 

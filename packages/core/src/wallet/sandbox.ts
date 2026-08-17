@@ -12,86 +12,26 @@ import {
 import { hashAuthorization } from "viem/utils";
 import { toAccount, publicKeyToAddress, type PrivateKeyAccount } from "viem/accounts";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { decryptKeyBlob, type EncryptedKeyBlob } from "./crypto/blob.js";
 import { type SecretContainer, produceEvmKey } from "./crypto/container.js";
 import { deriveWalletKey } from "./crypto/derive-wallet.js";
 import { evmAddress } from "./crypto/derive.js";
-import { decodeUserHandle } from "./passkey/label.js";
-import type { PasskeyAdapter, PasskeySlot } from "./passkey/adapter.js";
-import { resolveBlob } from "./resolution.js";
-import type { VaultReader } from "./vault.js";
+import type { PasskeyAdapter, PasskeyRegistration } from "./passkey/adapter.js";
 
-/** A trimmed on-chain blob paired with the credentialId that decrypts it. The blob itself no longer
- *  carries the id (it is public), so the in-memory state keeps the association out-of-band. */
-export interface StoredBlob {
-  credentialId: string;
-  blob: EncryptedKeyBlob;
-}
-
-/** Local-only wallet state. Arrays so any enrolled device can unlock; no display name (nameless). */
+/**
+ * Local-only wallet state (D8): ONE credential, ONE derived key, ONE address, all on THIS device.
+ *
+ * There is no more multi-slot roster here — under the old PRF-blob scheme, several credentials could
+ * all decrypt their way to the SAME shared K, and this array held all of them. Under D8 every device
+ * derives its OWN independent K and address; the set of signers that can act for one wallet lives
+ * on chain (the Calibur roster), not in local state. This type is just "what this device's own
+ * passkey resolves to."
+ */
 export interface WalletState {
   evmAddress: Address;
-  slots: PasskeySlot[];
-  blobs: StoredBlob[];
+  credentialId: string;
+  rpId: string;
+  createdAt: string;
 }
-
-function pickSlot(state: WalletState, credentialId?: string): PasskeySlot {
-  const slot = credentialId ? state.slots.find((s) => s.credentialId === credentialId) : state.slots[0];
-  if (!slot) throw new Error("Passkey slot was not found");
-  return slot;
-}
-
-/** @internal Reproduce the container for a slot from its PRF output. A PRIMARY holds no blob and
- *  derives K = HKDF(PRF) directly; a SECONDARY decrypts the stored ciphertext under its own PRF.
- *  Both reach an identical K, so the same wallet unlocks either way. */
-function containerFor(state: WalletState, slot: PasskeySlot, prfOutput: ArrayBuffer): Promise<SecretContainer> {
-  const stored = state.blobs.find((b) => b.credentialId === slot.credentialId);
-  // The blob no longer self-describes: re-supply the wallet EVM address (state.evmAddress) and the
-  // slot's credentialId so decrypt reproduces the exact AES info/slot binding.
-  return stored
-    ? decryptKeyBlob(stored.blob, prfOutput, state.evmAddress, slot.credentialId)
-    : deriveWalletKey(prfOutput).then((key) => ({ key }));
-}
-
-/** @internal One passkey gesture → decrypt/derive → validated container. Everything builds on this.
- *  Derive/use/clear: the container key K and the PRF output are zeroed in `finally`, so a throwing
- *  `fn` still wipes — AND so does a FAILED decrypt/derive (wrong passkey, corrupt blob): `containerFor`
- *  runs INSIDE the try, so the PRF (K's seed) is zeroed even when no container is ever built. Every
- *  entry point funnels through here (or withDiscoveredContainer), so the wipe is guaranteed in one
- *  place rather than duplicated per entry point. */
-export async function withDecryptedContainer<T>(
-  args: { state: WalletState; passkey: PasskeyAdapter; credentialId?: string },
-  fn: (container: SecretContainer) => Promise<T>,
-): Promise<T> {
-  const slot = pickSlot(args.state, args.credentialId);
-  const prfOutput = await args.passkey.authenticate(slot.credentialId, slot.transports);
-  let container: SecretContainer | undefined;
-  try {
-    container = await containerFor(args.state, slot, prfOutput);
-    return await fn(container);
-  } finally {
-    wipeSecrets(container, prfOutput);
-  }
-}
-
-/** Zero the wallet key K and the PRF output — the two most sensitive secrets a gesture touches
- *  (K = HKDF(prfOutput), so prfOutput is the seed that reproduces the key). Any signing account
- *  built from the container captures `container.key` by reference, so this also renders that account
- *  inert once the sandbox exits — exactly the intent: no derived key survives the gesture.
- *
- *  Wiping prfOutput is safe because it is consumed EXACTLY ONCE per path (containerFor →
- *  deriveWalletKey/decryptKeyBlob; the discover and evidence variants each read it once) BEFORE this
- *  runs, and because the PasskeyAdapter contract (passkey/adapter.ts) transfers the buffer to the
- *  sandbox single-use: every adapter MUST return a fresh buffer per call and MUST NOT retain/reuse
- *  it. Production adapters (passkey/web.ts, passkey/native.ts) already do — they mint a fresh PRF
- *  output per assertion and never keep it. `container` is optional: a failed decrypt/derive wipes the
- *  PRF with no container to zero. */
-function wipeSecrets(container: SecretContainer | undefined, prfOutput: ArrayBuffer): void {
-  container?.key.fill(0);
-  new Uint8Array(prfOutput).fill(0);
-}
-
-const ADDRESS_MISMATCH = "Decrypted wallet did not match the stored wallet address";
 
 /** @internal Sign a 32-byte digest with the secp256k1 private key given as raw BYTES.
  *
@@ -115,15 +55,24 @@ function signDigest(hash: Hex, keyBytes: Uint8Array): { r: Hex; s: Hex; v: bigin
   return { r: numberToHex(sig.r, { size: 32 }), s: numberToHex(sig.s, { size: 32 }), v: yParity ? 28n : 27n, yParity };
 }
 
-// @internal The single EVM derivation + address-match check. Builds a viem custom account whose
-// sign closures call signDigest over the BYTES key (captured by reference); every EVM sandbox entry
-// point funnels through it. No Hex private key exists — only the public key/address are strings.
-// The account is inert once the funnel wipes container.key (the closures share that buffer).
-function evmAccountFrom(container: SecretContainer, expectedAddress: Address): PrivateKeyAccount {
+const ADDRESS_MISMATCH = "Derived key did not match the expected wallet address";
+
+/**
+ * @internal The single EVM derivation + optional address-match check. Builds a viem custom account
+ * whose sign closures call signDigest over the BYTES key (captured by reference); every EVM sandbox
+ * entry point funnels through it. No Hex private key exists — only the public key/address are
+ * strings. The account is inert once the funnel wipes container.key (the closures share that buffer).
+ *
+ * `expectedAddress` is omitted for a FRESH key (nothing to compare against yet — the derived address
+ * IS the identity) and supplied when re-authenticating an EXISTING device's own credential.
+ */
+function evmAccountFrom(container: SecretContainer, expectedAddress?: Address): PrivateKeyAccount {
   const keyBytes = produceEvmKey(container);
   const publicKey = bytesToHex(secp256k1.getPublicKey(keyBytes, false));
   const address = publicKeyToAddress(publicKey);
-  if (address.toLowerCase() !== expectedAddress.toLowerCase()) throw new Error(ADDRESS_MISMATCH);
+  if (expectedAddress && address.toLowerCase() !== expectedAddress.toLowerCase()) {
+    throw new Error(ADDRESS_MISMATCH);
+  }
   const account = toAccount({
     address,
     async sign({ hash }) {
@@ -156,116 +105,83 @@ function evmAccountFrom(container: SecretContainer, expectedAddress: Address): P
   return { ...account, publicKey, source: "privateKey" } as PrivateKeyAccount;
 }
 
+/** Zero the wallet key K and the PRF output — the two most sensitive secrets a gesture touches
+ *  (K = HKDF(prfOutput), so prfOutput is the seed that reproduces the key). Any signing account
+ *  built from the container captures `container.key` by reference, so this also renders that account
+ *  inert once the sandbox exits — exactly the intent: no derived key survives the gesture. */
+function wipeSecrets(container: SecretContainer | undefined, prfOutput: ArrayBuffer): void {
+  container?.key.fill(0);
+  new Uint8Array(prfOutput).fill(0);
+}
+
 /** Public signing primitive: yields a signing account only — never the raw key. One passkey gesture
- *  → reproduce PRF → decrypt/derive → run `fn(account)` → wipe K + PRF (in the funnel's `finally`).
- *  Keep `fn` to signing/re-encryption — do IO before/after, never inside, since K is zeroed on exit. */
+ *  → reproduce PRF → derive K → run `fn(account)` → wipe K + PRF (in the funnel's `finally`).
+ *  Keep `fn` to signing only — do IO before/after, never inside, since K is zeroed on exit. */
 export async function withWalletKey<T>(
-  args: { state: WalletState; passkey: PasskeyAdapter; credentialId?: string },
+  args: { state: WalletState; passkey: PasskeyAdapter },
   fn: (account: PrivateKeyAccount) => Promise<T>,
 ): Promise<T> {
-  return withDecryptedContainer(args, (container) => fn(evmAccountFrom(container, args.state.evmAddress)));
-}
-
-/**
- * ONE gesture yielding BOTH the container (to seal a blob under K) and a signing account (to sign the
- * transaction that carries it).
- *
- * Enrolment needs K twice — encrypt the access slot's blob, then sign the write — and doing those through
- * two separate primitives opened two key scopes, so ONE "add this device" asked the user for TWO
- * biometric confirmations. This exists so it asks once.
- *
- * Same contract as `withWalletKey`: `fn` does signing and re-encryption ONLY. Do the chain IO before
- * and after — K is live for the whole of `fn` and is wiped on exit, and an RPC round-trip inside would
- * extend the key's lifetime in memory for no reason. (The access-slot write's calldata is a FIXED length —
- * BLOB_BYTES + META_BYTES are constants — so the caller can resolve nonce, gas and fee from a
- * same-sized probe BEFORE opening this scope, and needs no IO inside it.)
- */
-export async function withWalletKeyAndContainer<T>(
-  args: { state: WalletState; passkey: PasskeyAdapter; credentialId?: string },
-  fn: (scope: { container: SecretContainer; account: PrivateKeyAccount }) => Promise<T>,
-): Promise<T> {
-  return withDecryptedContainer(args, (container) =>
-    fn({ container, account: evmAccountFrom(container, args.state.evmAddress) }),
-  );
-}
-
-/** @internal Single discover() gesture → (container, state), branching on the credential's handle.
- *  A PRIMARY carries no addresses and no blob: it derives K = HKDF(PRF) and reconstructs its state
- *  offline — no vault needed. A SECONDARY carries the wallet's addresses in its handle: its blob is
- *  resolved from the on-chain vault and decrypted under the discover() PRF. prfOutput stays local;
- *  container is passed to fn and never returned. Distinct from withDecryptedContainer, which uses
- *  authenticate() (a second gesture) for the local rails. */
-async function withDiscoveredContainer<T>(
-  args: { passkey: PasskeyAdapter; vaultForChain?: (chainId: number) => VaultReader; credentialId?: string },
-  fn: (container: SecretContainer, state: WalletState, meta: { credentialId: string }) => Promise<T>,
-): Promise<T> {
-  // `args.credentialId` constrains the assertion (no account picker). `credentialId` below is the one
-  // ACTUALLY used, handed to fn so a caller can record it — from the gesture it is already
-  // performing, never a second prompt.
-  const { credentialId, prfOutput, userHandle } = await args.passkey.discover(
-    args.credentialId ? { credentialId: args.credentialId } : undefined,
-  );
-  const handle = decodeUserHandle(userHandle);
-
-  // One try/finally guards the WHOLE gesture: K and the PRF output (K's seed) are wiped even if `fn`
-  // throws AND even if the decrypt/derive below throws before a container is ever built (a wrong
-  // passkey, an unresolved blob, an address mismatch — all reachable). `container` stays optional so
-  // that failure path has nothing half-built to wipe.
+  const prfOutput = await args.passkey.authenticate(args.state.credentialId);
   let container: SecretContainer | undefined;
   try {
-    let state: WalletState;
-    if (handle.kind === "primary") {
-      container = { key: await deriveWalletKey(prfOutput) };
-      const address = evmAddress(produceEvmKey(container));
-      // A primary has no expected address to compare against — the derived address IS the identity —
-      // so there is no ADDRESS_MISMATCH check here, and nothing is missing by its absence.
-      state = {
-        evmAddress: address,
-        slots: [{ credentialId, rpId: "", createdAt: new Date().toISOString() }],
-        blobs: [],
-      };
-    } else {
-      // Secondary: the handle carries the wallet's addresses AND the anchor chain its blob was written
-      // to. Resolve the vault from THAT marker chain — never a single app-configured anchor — so a
-      // reader whose own app anchor differs still reads the chain that actually holds the ciphertext.
-      if (!args.vaultForChain)
-        throw new Error("A secondary credential needs a vault resolver to reach its access-slot blob");
-      const anchorVault = args.vaultForChain(handle.anchorChain);
-      const result = await resolveBlob({ address: handle.evm, credentialId, anchorVault });
-      if (!result) throw new Error("Encrypted blob for passkey slot was not found");
-      const blob = result.blob;
-      // The blob carries no addresses now: decrypt under the handle's EVM address (bound into the AES
-      // info) + the discovered credentialId, then DERIVE both addresses from K. A wrong handle address
-      // fails the AES tag; a blob whose K disagrees with the handle is caught by the explicit check.
-      container = await decryptKeyBlob(blob, prfOutput, handle.evm, credentialId);
-      const evm = evmAddress(produceEvmKey(container));
-      if (evm.toLowerCase() !== handle.evm.toLowerCase()) throw new Error(ADDRESS_MISMATCH);
-      state = {
-        evmAddress: evm,
-        slots: [{ credentialId, rpId: "", createdAt: new Date().toISOString() }],
-        blobs: [{ credentialId, blob }],
-      };
-    }
-    return await fn(container, state, { credentialId });
+    container = { key: await deriveWalletKey(prfOutput) };
+    return await fn(evmAccountFrom(container, args.state.evmAddress));
   } finally {
     wipeSecrets(container, prfOutput);
   }
 }
 
 /**
- * Gesture-collapse primitive: a single `discover()` assertion (one biometric prompt) decrypts the
- * wallet once and yields the account it holds. It stays a `{ evm }` OBJECT rather than a bare
- * account because that is exactly `performSign`'s `SignKeys`, so the yielded value passes straight
- * through with no adapter, and a second curve would be an added member rather than a new signature.
+ * Gesture-collapse primitive: a single `discover()` assertion (one biometric prompt) derives THIS
+ * device's key and yields both the signing account and the local state describing it. Used at login,
+ * when the caller does not yet know which credential (of possibly several the platform offers) the
+ * user will pick.
  *
  * The key is a function-local inside the closure; never returned or retained.
  */
 export async function withDiscoveredKeys<T>(
-  args: { passkey: PasskeyAdapter; vaultForChain?: (chainId: number) => VaultReader; credentialId?: string },
+  args: { passkey: PasskeyAdapter; credentialId?: string },
   fn: (keys: { evm: PrivateKeyAccount }, state: WalletState, meta: { credentialId: string }) => Promise<T>,
 ): Promise<T> {
-  return withDiscoveredContainer(args, async (container, state, meta) => {
-    const evm = evmAccountFrom(container, state.evmAddress);
-    return fn({ evm }, state, meta);
-  });
+  const { credentialId, prfOutput } = await args.passkey.discover(
+    args.credentialId ? { credentialId: args.credentialId } : undefined,
+  );
+  let container: SecretContainer | undefined;
+  try {
+    container = { key: await deriveWalletKey(prfOutput) };
+    const account = evmAccountFrom(container);
+    const state: WalletState = {
+      evmAddress: account.address,
+      credentialId,
+      rpId: "",
+      createdAt: new Date().toISOString(),
+    };
+    return await fn({ evm: account }, state, { credentialId });
+  } finally {
+    wipeSecrets(container, prfOutput);
+  }
 }
+
+/**
+ * Mint a FRESH passkey credential and derive its key in the same gesture — the primitive behind both
+ * wallet creation (the first device) and device enrollment (every later device: it derives its own
+ * key, independent of every other device's). `fn` runs while K is live; do IO before/after, not
+ * inside, since K is wiped on exit.
+ */
+export async function withNewPasskeyKey<T>(
+  args: { passkey: PasskeyAdapter; label: string; userHandle: Uint8Array },
+  fn: (account: PrivateKeyAccount, registration: PasskeyRegistration) => Promise<T>,
+): Promise<T> {
+  const registration = await args.passkey.create(args.label, args.userHandle);
+  let container: SecretContainer | undefined;
+  try {
+    container = { key: await deriveWalletKey(registration.prfOutput) };
+    return await fn(evmAccountFrom(container), registration);
+  } finally {
+    wipeSecrets(container, registration.prfOutput);
+  }
+}
+
+// Re-exported so wallet.ts and device-enrollment.ts (both build on this primitive) do not need a
+// second copy of the derive/wipe funnel just to compute an address without signing anything.
+export { evmAddress, deriveWalletKey };

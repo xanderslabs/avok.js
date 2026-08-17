@@ -13,21 +13,20 @@
 import { render, screen, act, cleanup, renderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { afterEach, describe, it, expect } from "vitest";
-import type { FullAvokClient } from "@avokjs/core";
+import type { AvokClient } from "@avokjs/core";
 import { AvokProvider, useAccount, useLogin, useLogout } from "../src/index.js";
 
 afterEach(cleanup);
 
 const ADDRESS = "0x1111111111111111111111111111111111111111";
 
-function makeFakeClient(): FullAvokClient {
+function makeFakeClient(): AvokClient {
   let account: { evm: { address: string } } | null = null;
   const listeners = new Set<() => void>();
   const notify = () => {
     for (const l of listeners) l();
   };
   return {
-    custody: "self" as const,
     subscribe: (l: () => void) => {
       listeners.add(l);
       return () => {
@@ -45,10 +44,10 @@ function makeFakeClient(): FullAvokClient {
       account = null;
       notify();
     },
-  } as unknown as FullAvokClient;
+  } as unknown as AvokClient;
 }
 
-const wrapperFor = (client: FullAvokClient) => {
+const wrapperFor = (client: AvokClient) => {
   return ({ children }: { children: ReactNode }) => createElement(AvokProvider, { client, children });
 };
 
@@ -148,15 +147,14 @@ describe("useLogout (native)", () => {
 });
 
 /** Seeded, non-reactive client — resync is about the PROP changing, not about subscriptions firing. */
-function seededClient(address: string | null): FullAvokClient {
+function seededClient(address: string | null): AvokClient {
   return {
-    custody: "self" as const,
     subscribe: () => () => {},
     account: () => (address ? { evm: { address } } : null),
     status: () => address !== null,
     login: async () => ({}),
     logout: () => {},
-  } as unknown as FullAvokClient;
+  } as unknown as AvokClient;
 }
 
 function View() {

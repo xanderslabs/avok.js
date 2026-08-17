@@ -35,11 +35,11 @@ const honest = () =>
   channelReturning(async (req) => ({
     kind: "authorize",
     account: { evmAddress: WALLET.address },
-    proof: await WALLET.signMessage({ message: authorizeChallenge({ nonce: req.nonce, authOrigin: AUTH_ORIGIN }) }),
+    proof: await WALLET.signMessage({ message: authorizeChallenge({ nonce: req.nonce, originPoint: AUTH_ORIGIN }) }),
   }));
 
 const connect = (channel: SigningChannel) =>
-  createSharedOriginConnection({ authOrigin: AUTH_ORIGIN, channel, storage: memoryStorage() }).connect();
+  createSharedOriginConnection({ originPoint: AUTH_ORIGIN, channel, storage: memoryStorage() }).connect();
 
 describe("connect() verifies the account it is handed", () => {
   it("accepts a reply that proves control of the address it returns", async () => {
@@ -62,7 +62,7 @@ describe("connect() verifies the account it is handed", () => {
       kind: "authorize",
       account: { evmAddress: ATTACKER.address },
       proof: await ATTACKER.signMessage({
-        message: authorizeChallenge({ nonce: req.nonce, authOrigin: AUTH_ORIGIN }),
+        message: authorizeChallenge({ nonce: req.nonce, originPoint: AUTH_ORIGIN }),
       }),
     }));
     // It verifies — for the attacker's address — so the user connects to the attacker's wallet
@@ -80,7 +80,7 @@ describe("connect() verifies the account it is handed", () => {
       kind: "authorize",
       account: { evmAddress: WALLET.address },
       proof: await ATTACKER.signMessage({
-        message: authorizeChallenge({ nonce: req.nonce, authOrigin: AUTH_ORIGIN }),
+        message: authorizeChallenge({ nonce: req.nonce, originPoint: AUTH_ORIGIN }),
       }),
     }));
     await expect(connect(channel)).rejects.toThrow(/verification|prove/i);
@@ -91,7 +91,7 @@ describe("connect() verifies the account it is handed", () => {
       kind: "authorize",
       account: { evmAddress: WALLET.address },
       proof: await WALLET.signMessage({
-        message: authorizeChallenge({ nonce: "an-old-nonce", authOrigin: AUTH_ORIGIN }),
+        message: authorizeChallenge({ nonce: "an-old-nonce", originPoint: AUTH_ORIGIN }),
       }),
     }));
     await expect(connect(channel)).rejects.toThrow(/verification|prove/i);
@@ -104,7 +104,7 @@ describe("connect() verifies the account it is handed", () => {
       kind: "authorize",
       account: { evmAddress: WALLET.address },
       proof: await WALLET.signMessage({
-        message: authorizeChallenge({ nonce: req.nonce, authOrigin: "https://other-wallet.example" }),
+        message: authorizeChallenge({ nonce: req.nonce, originPoint: "https://other-wallet.example" }),
       }),
     }));
     await expect(connect(channel)).rejects.toThrow(/verification|prove/i);
@@ -118,7 +118,7 @@ describe("connect() verifies the account it is handed", () => {
         kind: "authorize",
         account: { evmAddress: WALLET.address },
         proof: await WALLET.signMessage({
-          message: authorizeChallenge({ nonce: req.nonce, authOrigin: AUTH_ORIGIN }),
+          message: authorizeChallenge({ nonce: req.nonce, originPoint: AUTH_ORIGIN }),
         }),
       };
     });
@@ -131,17 +131,17 @@ describe("connect() verifies the account it is handed", () => {
 
 describe("the challenge format", () => {
   it("normalises the origin, so a configured URL with a path still verifies", async () => {
-    // Two honest sides must produce byte-identical text. Without normalisation, an authOrigin
+    // Two honest sides must produce byte-identical text. Without normalisation, an originPoint
     // configured as "https://wallet.example/auth" would sign a different string than the page does.
-    expect(authorizeChallenge({ nonce: "n", authOrigin: "https://wallet.example/auth/" })).toBe(
-      authorizeChallenge({ nonce: "n", authOrigin: "https://wallet.example" }),
+    expect(authorizeChallenge({ nonce: "n", originPoint: "https://wallet.example/auth/" })).toBe(
+      authorizeChallenge({ nonce: "n", originPoint: "https://wallet.example" }),
     );
   });
 
   it("names its purpose, so this cannot be mistaken for any other signature", () => {
     // Every signing surface must be unmistakable for every other, or one becomes an oracle for
     // obtaining signatures meant for another.
-    const msg = authorizeChallenge({ nonce: "n", authOrigin: AUTH_ORIGIN });
+    const msg = authorizeChallenge({ nonce: "n", originPoint: AUTH_ORIGIN });
     expect(msg).toMatch(/Avok shared-origin authorization/);
     expect(msg).toMatch(/nonce: n/);
   });
@@ -152,7 +152,7 @@ describe("the challenge format", () => {
       verifyAuthorizeProof({
         evmAddress: WALLET.address,
         nonce: randomAuthorizeNonce(),
-        authOrigin: AUTH_ORIGIN,
+        originPoint: AUTH_ORIGIN,
         proof: "0xnotasignature" as Hex,
       }),
     ).resolves.toBe(false);

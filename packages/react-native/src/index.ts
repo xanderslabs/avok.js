@@ -3,39 +3,30 @@
  *
  * Exports:
  *   - AvokProvider + all hooks (same surface as @avokjs/react, no DOM).
- *   - createOwnOriginConnection — wires the native passkey adapter + SecureStore.
- *   - secureStoreStorage — platform-resolved StorageAdapter.
+ *   - createNativeSharedOrigin — the shared-origin rail over a native in-app browser session.
  *
- * BOTH POSTURES SHIP. Own-origin for apps that own their rpId domain; shared-origin, over a native
- * in-app browser session, for apps that do not.
- *
- * The shared-origin posture works on native because the ceremony can run in an in-app browser tab
- * that genuinely IS the operator's origin — the app cannot host .well-known files for a domain it
- * does not own — and only the result comes back. That depends on the PRF extension evaluating
- * inside the tab, which is not documented by any vendor or spec and was therefore MEASURED on real
- * hardware. VERIFICATION.md §3b is the single source of truth for that measurement, its date, and
- * how to re-run it. Do not restate the result here.
+ * D3: popup-for-all — there is no more own-origin (in-app, no-popup) custody posture. The shared-origin
+ * rail works on native because the ceremony can run in an in-app browser tab that genuinely IS the
+ * origin-point vault's origin, and only the result comes back. That depends on the PRF extension
+ * evaluating inside the tab, which is not documented by any vendor or spec and was therefore MEASURED
+ * on real hardware. VERIFICATION.md §3b is the single source of truth for that measurement, its date,
+ * and how to re-run it. Do not restate the result here.
  *
  * RFC 8252 §6 RECOMMENDS the in-app browser tab for exactly this, and §8.12 says native apps
  * "MUST NOT use embedded user-agents". ASWebAuthenticationSession is one-shot — request → redirect,
  * no postMessage — so the result returns through the callback URL, and is therefore never trusted on
- * arrival: an authorize carries a signature over the caller's nonce (see @avokjs/core/channel
+ * arrival: a connect carries a signature over the caller's nonce (see @avokjs/core/channel
  * authorize-proof).
  *
  * Peer deps: react, react-native, expo-secure-store (all injected; not static).
  * No DOM imports in this graph.
  */
-import { createOwnOriginConnection as sdkCreateOwnOrigin } from "@avokjs/core/engine";
-import type { StorageAdapter, SelfCustodyConnection, Connection } from "@avokjs/core/engine";
-import type { ChainId } from "@avokjs/contracts";
-import type { ReactNativePasskeyLike } from "@avokjs/core/wallet";
+import type { StorageAdapter, Connection } from "@avokjs/core/engine";
 import { createSharedOriginConnection as sdkCreateSharedOrigin } from "@avokjs/core/engine";
 import {
   createNativeChannel as sdkCreateNativeChannel,
   type AuthSessionOpener as AuthSessionOpenerType,
 } from "@avokjs/core/channel";
-import { buildNativePasskeyAdapter } from "./native-platform.js";
-import { secureStoreStorage } from "./native-storage.js";
 
 // ─── Re-exports ───────────────────────────────────────────────────────────────
 
@@ -54,10 +45,7 @@ export type {
   ClientConfig,
   CreateOpts,
   ContinueOpts,
-  UseOnlyAvokClient,
-  FullAvokClient,
-  AvokClientFor,
-  SelfCustodyConnection,
+  AvokClient,
   TxOpts,
   EvmFeeToken,
   WalletInfo,
@@ -70,11 +58,6 @@ export {
   SponsorshipUnavailableError,
   UserRejectedError,
   NoPrfError,
-  EnrolmentUnaffordableError,
-  VaultUnreadableError,
-  OrphanedCredentialError,
-  SlotUnreachableError,
-  EnrolmentBlockedError,
 } from "@avokjs/core/engine";
 
 export type {
@@ -88,73 +71,14 @@ export type { SecureStoreShape } from "./native-storage.js";
 
 export { AvokProvider } from "./provider.js";
 
-export {
-  useAvok,
-  useSelfCustody,
-  useAccount,
-  useCreate,
-  useLogin,
-  useLogout,
-  // Management-verb hooks (own-origin / self-custody).
-  useEnroll,
-  useExport,
-  useAccessSlots,
-} from "./hooks.js";
-
-// ─── Device pairing (QR ceremony — headless; transport injected) ──────────────
-export { usePairingCeremony } from "./pairing.js";
-export type { PairPhase, PairingCeremony } from "./pairing.js";
-export { createExpoCameraTransport } from "./pairing-transport.js";
-export type { ExpoCameraLike, ExpoCameraTransport } from "./pairing-transport.js";
-
-// ─── createOwnOriginConnection ───────────────────────────────────────────────────
-
-/**
- * Creates an own-origin passkey connection wired with the native platform trio:
- * - RN passkey adapter (`createReactNativePasskeyAdapter` from `@avokjs/core/engine`)
- * - SecureStore-backed StorageAdapter (memory/localStorage fallback for tests)
- *
- * Device-gated: real passkey create/get require a native device with platform
- * authenticator support (Face ID, Touch ID, etc.). Unit tests assert wiring
- * (Connection verbs) only — see VERIFICATION.md for device-gated checks.
- *
- * @param opts.rpId — relying-party ID (e.g. "app.avok.fi").
- * @param opts.passkey — injected `react-native-passkey`-shaped module. Pass a
- *   fake in tests to avoid needing the real native module.
- * @param opts.storage — optional StorageAdapter override. Defaults to
- *   `secureStoreStorage()` (SecureStore on native, localStorage in RN-web).
- */
-export function createOwnOriginConnection(opts: {
-  rpId: string;
-  passkey: ReactNativePasskeyLike;
-  /** Cosmetic friendly operator name: becomes the WebAuthn `rp.name` (the OS "Sign in to …" prompt)
-   *  AND the passkey wallet-label prefix ("<operatorName> Wallet · Nickname"). Defaults to the rpId
-   *  domain when unset. Display only — it never affects the rpId, the PRF scope, or key material. */
-  operatorName?: string;
-  storage?: StorageAdapter;
-  /** CAIP-2 chain where this wallet anchors its secondary-device access slots (default eip155:10). */
-  anchorChainId?: ChainId;
-}): SelfCustodyConnection {
-  if (!opts.passkey) {
-    throw new Error(
-      "createOwnOriginConnection: opts.passkey (ReactNativePasskeyLike) is required. " +
-        "Pass the react-native-passkey module or a fake for tests.",
-    );
-  }
-  return sdkCreateOwnOrigin({
-    rpId: opts.rpId,
-    operatorName: opts.operatorName,
-    passkey: buildNativePasskeyAdapter(opts.passkey, opts.rpId, opts.operatorName),
-    storage: opts.storage ?? secureStoreStorage(),
-    anchorChainId: opts.anchorChainId,
-  });
-}
+export { useAvok, useAccount, useLogin, useLogout } from "./hooks.js";
 
 // ─── Shared-origin (native) ───────────────────────────────────────────────────────────────────────
 //
-// The rail for apps that do NOT own the wallet's rpId domain — which is the whole reason shared-origin
-// exists, and it is the same constraint on native as on web: an app cannot host /.well-known files for
-// someone else's domain, so the ceremony must run somewhere that genuinely IS that origin.
+// The rail for apps that do NOT own the origin-point's rpId domain — which is the whole reason
+// shared-origin exists, and it is the same constraint on native as on web: an app cannot host
+// /.well-known files for someone else's domain, so the ceremony must run somewhere that genuinely IS
+// that origin.
 //
 // It works because PRF evaluates inside an in-app browser tab — measured on real hardware; see
 // VERIFICATION.md §3b. RFC 8252 §6 recommends this shape, and §8.12 forbids the WebView alternative.
@@ -170,7 +94,7 @@ export type { AuthSessionOpener } from "@avokjs/core/channel";
  * ```ts
  * import * as WebBrowser from "expo-web-browser";
  * const connection = createNativeSharedOrigin({
- *   authOrigin: "https://wallet.example.com",
+ *   originPoint: "https://vault.example.com",
  *   redirectUri: "myapp://avok-callback",
  *   openAuthSession: WebBrowser.openAuthSessionAsync,
  * });
@@ -182,15 +106,15 @@ export type { AuthSessionOpener } from "@avokjs/core/channel";
  * semantics are the same rather than a native compromise.
  */
 export function createNativeSharedOrigin(opts: {
-  authOrigin: string;
+  originPoint: string;
   redirectUri: string;
   openAuthSession: AuthSessionOpenerType;
   storage?: StorageAdapter;
 }): Connection {
   return sdkCreateSharedOrigin({
-    authOrigin: opts.authOrigin,
+    originPoint: opts.originPoint,
     channel: sdkCreateNativeChannel({
-      authOrigin: opts.authOrigin,
+      originPoint: opts.originPoint,
       redirectUri: opts.redirectUri,
       openAuthSession: opts.openAuthSession,
     }),

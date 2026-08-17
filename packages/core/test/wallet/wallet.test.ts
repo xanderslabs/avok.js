@@ -1,90 +1,51 @@
 import { describe, expect, test } from "vitest";
-import { hexToBytes } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { addPasskey, createWallet, exportWallet, reconstructWalletState } from "../../src/wallet/wallet.js";
-import { FakePasskeyAdapter } from "./fakes.js";
+import { verifyMessage } from "viem";
+import { createWallet } from "../../src/wallet/wallet.js";
+import { createDeviceEnrollmentRequest, verifyDeviceEnrollmentRequest } from "../../src/wallet/device-enrollment.js";
+import { FakePasskeyAdapter, makeFakePasskeyWithCounters } from "./fakes.js";
 
-describe("wallet lifecycle", () => {
-  test("addPasskey re-encrypts the EXISTING key so a secondary recovers the same wallet", async () => {
-    const a = new FakePasskeyAdapter();
-    const b = new FakePasskeyAdapter();
-    const { account, state } = await createWallet({ passkey: a, networkName: "Qudi" });
-    // The live primary hands its container (K = the EVM key) to the enrolment; a secondary wraps it.
-    const primary = await exportWallet({ state, passkey: a, confirmExport: true });
-    const { slot, blob } = await addPasskey({
-      passkey: b,
-      networkName: "Qudi",
-      container: { key: hexToBytes(primary.evm) },
-      address: account.evm,
-      anchorChainId: 10,
-    });
-    // Device B can now export the same wallet — both credentials recover identical keys.
-    const bState = {
-      evmAddress: account.evm,
-      slots: [slot],
-      blobs: [{ credentialId: slot.credentialId, blob }],
-    };
-    const exported = await exportWallet({
-      state: bState,
-      passkey: b,
-      credentialId: slot.credentialId,
-      confirmExport: true,
-    });
-    expect(exported.evm).toBe(primary.evm);
+describe("device enrollment (D8: every device derives its own key)", () => {
+  test("a new device derives an address independent of the first device's", async () => {
+    const first = new FakePasskeyAdapter();
+    const second = new FakePasskeyAdapter();
+    const founding = await createWallet({ passkey: first, networkName: "Avok" });
+    const { request } = await createDeviceEnrollmentRequest({ passkey: second, networkName: "Avok" });
+    expect(request.address.toLowerCase()).not.toBe(founding.account.evm.toLowerCase());
   });
 
-  test("export requires confirmExport:true; passkeys keep working (copy not move)", async () => {
+  test("the enrollment request's proof verifies against its own address", async () => {
     const pk = new FakePasskeyAdapter();
-    const { state } = await createWallet({ passkey: pk, networkName: "Qudi" });
-    // @ts-expect-error confirmExport must be the literal true
-    await expect(exportWallet({ state, passkey: pk, confirmExport: false })).rejects.toThrow();
-    const exported = await exportWallet({ state, passkey: pk, confirmExport: true });
-    expect(exported.evm).toMatch(/^0x[0-9a-f]{64}$/);
-    expect(privateKeyToAccount(exported.evm).address).toBe(state.evmAddress); // EVM anchor preserved
+    const { request } = await createDeviceEnrollmentRequest({ passkey: pk, networkName: "Avok" });
+    await expect(verifyDeviceEnrollmentRequest(request)).resolves.toBe(true);
   });
 
-  // The removePasskey test was DELETED with the verb. Pruning a slot was never revocation: a paired
-  // device decrypted K and keeps it forever, so removing its blob takes nothing away from it. See
-  // public-api.test.ts — nothing may imply otherwise.
+  test("a proof does not verify against a different address", async () => {
+    const pk = new FakePasskeyAdapter();
+    const { request } = await createDeviceEnrollmentRequest({ passkey: pk, networkName: "Avok" });
+    const tampered = { ...request, address: "0x000000000000000000000000000000000000dEaD" as const };
+    await expect(verifyDeviceEnrollmentRequest(tampered)).resolves.toBe(false);
+  });
 
-  test("reconstructWalletState decrypts+derives a secondary's addresses, and rejects a blob whose handle claims a different wallet", async () => {
-    // A primary stores no blob, so enrol a secondary to obtain a coherent on-chain blob. The blob no
-    // longer carries addresses — reconstruct DECRYPTS it (under this credential's PRF) and DERIVES the
-    // addresses from K, re-supplying what the blob dropped (address from the handle, credentialId).
-    const pkA = new FakePasskeyAdapter();
-    const a = await createWallet({ passkey: pkA, networkName: "Qudi" });
-    const keyA = (await exportWallet({ state: a.state, passkey: pkA, confirmExport: true })).evm;
-    const pkSecA = new FakePasskeyAdapter();
-    const secA = await addPasskey({
-      passkey: pkSecA,
-      networkName: "Qudi",
-      container: { key: hexToBytes(keyA) },
-      address: a.account.evm,
-      anchorChainId: 10,
-    });
+  test("the returned state matches the request's address and credential", async () => {
+    const pk = new FakePasskeyAdapter();
+    const { request, state } = await createDeviceEnrollmentRequest({ passkey: pk, networkName: "Avok" });
+    expect(state.evmAddress.toLowerCase()).toBe(request.address.toLowerCase());
+  });
 
-    // Correct handle (a.account.evm) + this secondary's PRF → the derived addresses match the wallet.
-    const rebuilt = await reconstructWalletState({
-      blob: secA.blob,
-      address: a.account.evm,
-      credentialId: secA.slot.credentialId,
-      rpId: "Qudi",
-      prfOutput: await pkSecA.authenticate(secA.slot.credentialId),
-    });
-    expect(rebuilt.evmAddress).toBe(a.account.evm);
-    expect(rebuilt.blobs).toEqual([{ credentialId: secA.slot.credentialId, blob: secA.blob }]);
-
-    // A handle claiming a DIFFERENT wallet address cannot even decrypt the blob (the address is bound
-    // into the AES key), so it is rejected — never silently trusted.
-    const wrong = "0x000000000000000000000000000000000000dEaD" as const;
+  test("the proof is independently verifiable with viem's own verifyMessage (no bespoke recovery logic)", async () => {
+    const pk = new FakePasskeyAdapter();
+    const { request } = await createDeviceEnrollmentRequest({ passkey: pk, networkName: "Avok" });
     await expect(
-      reconstructWalletState({
-        blob: secA.blob,
-        address: wrong,
-        credentialId: secA.slot.credentialId,
-        rpId: "Qudi",
-        prfOutput: await pkSecA.authenticate(secA.slot.credentialId),
-      }),
-    ).rejects.toThrow();
+      verifyMessage({ address: request.address, message: "Avok device enrollment v1", signature: request.proof }),
+    ).resolves.toBe(true);
+  });
+
+  test("mints one fresh passkey credential with exactly one gesture", async () => {
+    const passkey = makeFakePasskeyWithCounters();
+    await createDeviceEnrollmentRequest({ passkey, networkName: "Avok" });
+    // create() is the gesture that mints the credential; no separate authenticate/discover round
+    // is needed to sign the proof — it happens inside the same key scope create() opened.
+    expect(passkey.counts.authenticate).toBe(0);
+    expect(passkey.counts.discover).toBe(0);
   });
 });

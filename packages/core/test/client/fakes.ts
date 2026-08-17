@@ -180,13 +180,13 @@ export type FakeChannel = SigningChannel;
  * - For "authorize": returns `{ kind:"authorize", account }` — what the popup postMessages back.
  * - For "sign": returns `{ kind:"sign", result:{ signature:"0xdeadbeef..." } }`.
  */
-export function makeFakeChannel(opts: { authOrigin?: string } = {}): FakeChannel & { address: `0x${string}` } {
+export function makeFakeChannel(opts: { originPoint?: string } = {}): FakeChannel & { address: `0x${string}` } {
   // A REAL key, because connect() now VERIFIES the authorize proof by recovering the signer. A
   // placeholder address can no longer round-trip, and that is the point: the fake has to behave like
   // a wallet that actually controls what it claims.
   const signer = privateKeyToAccount("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
   const address = signer.address;
-  const authOrigin = opts.authOrigin ?? "https://auth.qudi.fi";
+  const originPoint = opts.originPoint ?? "https://auth.qudi.fi";
 
   const channel: FakeChannel & { address: `0x${string}` } = {
     address,
@@ -200,7 +200,7 @@ export function makeFakeChannel(opts: { authOrigin?: string } = {}): FakeChannel
             evmAddress: address,
             credentialId: "cred-1",
           },
-          proof: await signer.signMessage({ message: authorizeChallenge({ nonce: req.nonce, authOrigin }) }),
+          proof: await signer.signMessage({ message: authorizeChallenge({ nonce: req.nonce, originPoint }) }),
         };
       }
       if (req.kind === "sign") {

@@ -37,14 +37,14 @@ export type SharedOriginConnection = Signer & {
 // ---------------------------------------------------------------------------
 export function createSharedOriginConnection(opts: {
   /** The operator's auth origin — the popup to open, and the ONLY origin whose replies are accepted. */
-  authOrigin: string;
+  originPoint: string;
   channel: SigningChannel;
   storage?: StorageAdapter;
 }): SharedOriginConnection {
   const storage = opts.storage ?? memoryStorage();
   const channel = opts.channel;
   // The origin the authorize proof is bound to — a signature from operator A must not verify at B.
-  const authOrigin = opts.authOrigin;
+  const originPoint = opts.originPoint;
 
   // In-memory cache — set by connect(), cleared by logout().
   let current: SharedAccount | null = null;
@@ -89,7 +89,7 @@ export function createSharedOriginConnection(opts: {
       const verified = await verifyAuthorizeProof({
         evmAddress: account.evmAddress,
         nonce,
-        authOrigin,
+        originPoint,
         proof: result.proof,
       });
       if (!verified) {

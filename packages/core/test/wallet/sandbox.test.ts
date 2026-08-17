@@ -1,38 +1,11 @@
 import { describe, expect, it, test } from "vitest";
-import { hexToBytes } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { encryptKeyBlob } from "../../src/wallet/crypto/blob.js";
 import { withDiscoveredKeys, withWalletKey, type WalletState } from "../../src/wallet/sandbox.js";
 import { createWallet } from "../../src/wallet/wallet.js";
-import { encodeAccessHandle } from "../../src/wallet/passkey/label.js";
 import { FakePasskeyAdapter, makeFakePasskeyWithCounters } from "./fakes.js";
 
-async function seed(pk: FakePasskeyAdapter): Promise<{ state: WalletState; privateKey: `0x${string}` }> {
-  const privateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;
-  const address = privateKeyToAccount(privateKey).address;
-  const container = { key: hexToBytes(privateKey) };
-  const reg = await pk.create("x", encodeAccessHandle(address, 10));
-  const blob = await encryptKeyBlob({
-    container,
-    address,
-    credentialId: reg.credentialId,
-    prfOutput: reg.prfOutput,
-  });
-  return {
-    state: {
-      evmAddress: address,
-      slots: [
-        {
-          credentialId: reg.credentialId,
-          rpId: reg.rpId,
-          transports: reg.transports,
-          createdAt: "2026-01-01T00:00:00.000Z",
-        },
-      ],
-      blobs: [{ credentialId: reg.credentialId, blob }],
-    },
-    privateKey,
-  };
+async function seed(pk: FakePasskeyAdapter): Promise<{ state: WalletState }> {
+  const { state } = await createWallet({ passkey: pk, networkName: "avok.test" });
+  return { state };
 }
 
 describe("sandbox", () => {
@@ -52,27 +25,25 @@ describe("sandbox", () => {
     expect(recovered.toLowerCase()).toBe(state.evmAddress.toLowerCase());
   });
 
-  test("a state claiming the wrong address cannot decrypt the blob", async () => {
-    // The wallet EVM address is bound into the AES `info` (it moved from the blob into a decrypt
-    // parameter, supplied here as state.evmAddress). A tampered address derives a different key, so
-    // AES-GCM's tag check fails and the blob won't even decrypt — a stronger rejection than the old
-    // decrypt-then-compare, and the wrong wallet can never be signed for.
+  test("a state claiming the wrong address refuses to sign under it", async () => {
+    // The wallet address is checked against what the credential's own PRF derives — a tampered
+    // state cannot make the sandbox sign under an address it does not control.
     const pk = new FakePasskeyAdapter();
     const { state } = await seed(pk);
     const tampered: WalletState = { ...state, evmAddress: "0x0000000000000000000000000000000000000001" };
     await expect(withWalletKey({ state: tampered, passkey: pk }, async () => 1)).rejects.toThrow();
   });
 
-  it("withDiscoveredKeys signs BOTH rails with exactly one passkey assertion", async () => {
+  it("withDiscoveredKeys signs with exactly one passkey assertion", async () => {
     const passkey = makeFakePasskeyWithCounters();
-    const { account } = await createWallet({ passkey, networkName: "qudi.fi" });
+    const { account } = await createWallet({ passkey, networkName: "avok.test" });
     const out = await withDiscoveredKeys({ passkey }, async ({ evm }, state) => {
       const evmSig = await evm.signMessage({ message: "login" });
       return { evmSig, evmAddr: evm.address, state };
     });
     expect(out.evmSig).toMatch(/^0x/);
     expect(out.evmAddr.toLowerCase()).toBe(account.evm.toLowerCase());
-    // The whole point: ONE gesture unlocked both keys — no second prompt.
+    // The whole point: ONE gesture unlocked the key — no second prompt.
     expect(passkey.counts.discover).toBe(1);
     expect(passkey.counts.authenticate).toBe(0);
   });

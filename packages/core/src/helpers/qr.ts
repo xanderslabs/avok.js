@@ -1,6 +1,5 @@
 import QRCode from "qrcode";
 import jsQRImport from "jsqr";
-import type { PairingTransport } from "./pairing.js";
 
 // jsqr ships `export default jsQR` (a decode function). Some .d.ts bundlers resolve the default to
 // the module namespace (not callable), so pin the callable type explicitly. The runtime value is
@@ -11,22 +10,33 @@ const jsQR = jsQRImport as unknown as (
   height: number,
 ) => { data: string } | null;
 
-// The camera-unavailable signal lives with the platform-agnostic PairingTransport contract (pairing.ts,
-// DOM-free) so a React-Native transport can throw the SAME class the ceremony hook narrows on. Re-exported
-// here for the browser transport + web consumers that import it from `@avokjs/core/qr`.
-export { CameraUnavailableError } from "./pairing.js";
-import { CameraUnavailableError } from "./pairing.js";
+/**
+ * Platform-agnostic QR exchange contract: show a string as a QR, or scan one and get the string back.
+ * DOM-free by design so a React Native transport can implement the SAME interface against the same
+ * consumers (device enrollment's out-of-band request/response, or anything else that wants to move a
+ * short string between two devices).
+ */
+export interface QrTransport {
+  showCode(code: string): void;
+  scanCode(): Promise<string>;
+  stop(): void;
+}
+
+/** Thrown when `scanCode()` cannot get camera access (permission denied, no camera, insecure context). */
+export class CameraUnavailableError extends Error {
+  constructor() {
+    super("Camera access is unavailable — check permissions and that this page is served over HTTPS.");
+    this.name = "CameraUnavailableError";
+  }
+}
 
 /**
- * Browser `PairingTransport`: render pairing codes as QRs into `qrContainer`, and scan the other
- * device's QR from the camera into `video`. This is the ONLY browser-locked piece of
- * `@avokjs/core/helpers` — React Native ships its own transport against the same interface.
- * Requires a secure context (HTTPS or localhost) for `getUserMedia`.
+ * Browser `QrTransport`: render codes as QRs into `qrContainer`, and scan the other device's QR from
+ * the camera into `video`. This is the ONLY browser-locked piece of `@avokjs/core/helpers` — React
+ * Native ships its own transport against the same interface. Requires a secure context (HTTPS or
+ * localhost) for `getUserMedia`.
  */
-export function createBrowserQrTransport(mounts: {
-  qrContainer: HTMLElement;
-  video: HTMLVideoElement;
-}): PairingTransport {
+export function createBrowserQrTransport(mounts: { qrContainer: HTMLElement; video: HTMLVideoElement }): QrTransport {
   let stream: MediaStream | null = null;
   let raf = 0;
 

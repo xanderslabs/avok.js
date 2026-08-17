@@ -242,7 +242,7 @@ describe("runAuthRedirect (native session)", () => {
       location: {
         origin: "https://wallet.example",
         href: encodeRequestUrl({
-          authOrigin: "https://wallet.example",
+          originPoint: "https://wallet.example",
           request: request as never,
           redirectUri: REDIRECT,
         }),

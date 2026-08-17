@@ -10,13 +10,13 @@ import { useCallback, useState } from "react";
 import type { Account } from "@avokjs/core";
 import { useAvokContext } from "./provider.js";
 
-/** Derive a display name for an auth origin (its hostname). Falls back to the raw string. Exported so
+/** Derive a display name for an origin-point (its hostname). Falls back to the raw string. Exported so
  *  a dapp's "Continue with …" copy needn't re-implement it. Display only — never affects signing. */
-export function operatorNameFromOrigin(authOrigin: string): string {
+export function operatorNameFromOrigin(originPoint: string): string {
   try {
-    return new URL(authOrigin).hostname;
+    return new URL(originPoint).hostname;
   } catch {
-    return authOrigin;
+    return originPoint;
   }
 }
 

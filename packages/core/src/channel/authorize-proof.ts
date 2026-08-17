@@ -31,10 +31,10 @@ export function randomAuthorizeNonce(): string {
 }
 
 /** The exact text the wallet signs. Both sides MUST build it identically. */
-export function authorizeChallenge(args: { nonce: string; authOrigin: string }): string {
+export function authorizeChallenge(args: { nonce: string; originPoint: string }): string {
   // Normalised via URL().origin so a configured value carrying a path or trailing slash produces the
   // same challenge as the bare origin — otherwise two honest sides sign different strings.
-  const origin = new URL(args.authOrigin).origin;
+  const origin = new URL(args.originPoint).origin;
   return [
     `Avok shared-origin authorization ${AUTHORIZE_PROOF_VERSION}`,
     `origin: ${origin}`,
@@ -51,13 +51,13 @@ export function authorizeChallenge(args: { nonce: string; authOrigin: string }):
 export async function verifyAuthorizeProof(args: {
   evmAddress: Address;
   nonce: string;
-  authOrigin: string;
+  originPoint: string;
   proof: Hex;
 }): Promise<boolean> {
   try {
     return await verifyMessage({
       address: args.evmAddress,
-      message: authorizeChallenge({ nonce: args.nonce, authOrigin: args.authOrigin }),
+      message: authorizeChallenge({ nonce: args.nonce, originPoint: args.originPoint }),
       signature: args.proof,
     });
   } catch {

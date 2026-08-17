@@ -23,7 +23,7 @@ describe("redirect round-trip carries id/kind intact", () => {
     });
 
     const url = encodeRequestUrl<RequestEnvelope>({
-      authOrigin: AUTH_ORIGIN,
+      originPoint: AUTH_ORIGIN,
       request: envelope,
       redirectUri: REDIRECT_URI,
     });
@@ -55,7 +55,7 @@ describe("redirect round-trip carries id/kind intact", () => {
     });
 
     expect(() =>
-      encodeRequestUrl<RequestEnvelope>({ authOrigin: AUTH_ORIGIN, request: envelope, redirectUri: REDIRECT_URI }),
+      encodeRequestUrl<RequestEnvelope>({ originPoint: AUTH_ORIGIN, request: envelope, redirectUri: REDIRECT_URI }),
     ).toThrow(RedirectPayloadTooLargeError);
   });
 

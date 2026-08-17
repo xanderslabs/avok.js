@@ -5,22 +5,18 @@ import type { Connection, Account } from "../types.js";
 
 /**
  * createSharedOriginConnection wraps the channel's `createSharedOriginConnection` (`../channel`)
- * and adapts it to core's USE-ONLY `Connection` surface.
- *
- * Shared-origin connections are relying-party / use-only custody: they can authorize and
- * transact but MUST NOT expose custody-management verbs. `create`, `import`, `export`,
- * `addPasskey`, and access-slot writes are absent by design — management happens in the operator's
- * first-party own-origin app (see `ClientConfig.managementUrl`), never through the shared-origin app.
+ * and adapts it to core's `Connection` surface — the one custody posture every app gets (D3:
+ * popup-for-all). Wallet lifecycle beyond login (create, guardians, recovery, devices) is the vault's
+ * own surface, reached through its own protocol kinds, never through this connection.
  *
  * Mapping:
  * - `continue()`                    → `net.authorize()`, then return `net.account()!`
  * - 7 signer verbs                  → delegate to `net`
  * - `account` / `status` / `logout` → delegate to `net`
- * - `custody`                       → "use-only"
  */
 export function createSharedOriginConnection(opts: {
   /** The operator's auth origin — the popup to open, and the ONLY origin whose replies are trusted. */
-  authOrigin: string;
+  originPoint: string;
   channel: SigningChannel;
   storage?: ChannelStorage;
 }): Connection {
@@ -81,8 +77,6 @@ export function createSharedOriginConnection(opts: {
   }
 
   return {
-    custody: "use-only",
-
     /**
      * ONE POPUP, ONE GESTURE — the composite ops.
      *

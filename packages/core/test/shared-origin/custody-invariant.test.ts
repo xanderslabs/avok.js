@@ -1,79 +1,27 @@
 /**
- * Self-custody invariant across the new access-slot surface.
- *
- * HARD INVARIANT: no path writes/reads/returns/transmits the PLAINTEXT private key. Access-slot writes
- * only the PRF-encrypted ciphertext blob (which is public, on-chain-destined data). This test
- * proves it two ways:
- *  - Own-origin: the addAccessSlot call the wallet submits carries the ciphertext, and the wallet's
- *    actual plaintext key NEVER appears in that calldata or in the returned result.
- *  - Shared-origin: the channel-mediated access-slot surface exposes only { kind, slotId, chainId, call }
- *    with no key/blob/PRF/secret field.
- *
- * MUTATION: in wallet/crypto/blob.ts `sealUnder`, emit the plaintext instead of the ciphertext —
- *   const ciphertext = plaintext.slice(0);
- * — and the own-origin case must fail. Verified: it does.
- *
- * Take the `.slice(0)`. The obvious mutation, `const ciphertext = plaintext`, PASSES — not because
- * this test is weak, but because the next line wipes that buffer (`new Uint8Array(plaintext).fill(0)`)
- * and an alias gets zeroed with it, so the "leak" emits zeros and leaks nothing. A mutation that
- * defeats itself reads exactly like a test that cannot fail. Copy before the wipe, or the check of
- * the check is wrong.
+ * Self-custody invariant: the shared-origin `Connection` (the one custody posture every app gets,
+ * D3: popup-for-all) has NO verb that could return key material. There is nothing to gate at
+ * runtime beyond the type boundary — this test proves the boundary is real by checking the object
+ * that comes back from a live connect() literally carries none of those members.
  */
 import { describe, it, expect } from "vitest";
-import type { Call } from "../../src/evm/index.js";
-import { createOwnOriginConnection } from "../../src/own-origin/connection.js";
 import { createSharedOriginConnection } from "../../src/shared-origin/connection.js";
-import { makeFakePasskey, makeFakeChannel, ACCESS_SLOT_WRITER } from "../client/fakes.js";
+import { makeFakeChannel } from "../client/fakes.js";
 
-describe("self-custody invariant — access-slot surface", () => {
-  it("own-origin: the submitted addAccessSlot calldata is ciphertext — the plaintext key never appears", async () => {
-    const passkey = makeFakePasskey("localhost");
-    const conn = createOwnOriginConnection({ rpId: "localhost", passkey, anchorChainId: "eip155:10" });
-    await conn.create();
-
-    // The wallet's ACTUAL plaintext private key (custody comparison ground truth).
-    const { evm: plaintextKey } = await conn.export();
-    expect(plaintextKey).toMatch(/^0x[0-9a-fA-F]{64}$/);
-
-    const submitted: Call[] = [];
-    const ctx = {
-      submit: async (calls: Call[], _o: { chainId: number }) => {
-        submitted.push(...calls);
-        return { id: "tx-1" };
-      },
-      hasSlot: async (): Promise<boolean> => false,
-      assertCanAffordAccessSlot: async (): Promise<void> => {},
-      ...ACCESS_SLOT_WRITER,
-    };
-
-    // addPasskey enrols a secondary and writes ITS PRF-encrypted blob on chain in one call. The blob
-    // wraps the SAME K under a different PRF, so the wallet's plaintext key must still never appear.
-    const res = await conn.addPasskey(ctx);
-
-    // The written blob is ciphertext: the plaintext key must not be a substring of the calldata.
-    const data = submitted[0].data.toLowerCase();
-    const keyHex = plaintextKey.slice(2).toLowerCase();
-    expect(data.includes(keyHex)).toBe(false);
-    // …nor anywhere in the returned result.
-    expect(JSON.stringify(res).toLowerCase().includes(keyHex)).toBe(false);
-    // Sanity: calldata is non-trivial (it actually embedded the encrypted blob).
-    expect(data.length).toBeGreaterThan(200);
-  });
-
-  it("shared-origin: the use-only Connection has NO custody-management verbs — no path to key material", async () => {
+describe("self-custody invariant — shared-origin connection", () => {
+  it("has NO custody-management verbs — no path to key material", async () => {
     const channel = makeFakeChannel();
     const conn = createSharedOriginConnection({
-      authOrigin: "https://auth.qudi.fi",
+      originPoint: "https://auth.qudi.fi",
       channel,
     });
     await conn.continue();
 
-    // The custody boundary is enforced at the type level; assert it at runtime too. A shared-origin
-    // connection that literally has no export/addPasskey/create member cannot leak key material —
-    // there is no surface through which it could.
+    // The custody boundary is enforced at the type level; assert it at runtime too. A connection
+    // that literally has no export/addPasskey/create member cannot leak key material — there is no
+    // surface through which it could.
     for (const verb of ["export", "addPasskey", "create"]) {
       expect(verb in conn).toBe(false);
     }
-    expect(conn.custody).toBe("use-only");
   });
 });

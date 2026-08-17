@@ -44,7 +44,7 @@ describe("account() at provider mount", () => {
   for (const [label, raw] of UNUSABLE) {
     it(`reports signed out on ${label}, and does not throw`, () => {
       const conn = createSharedOriginConnection({
-        authOrigin: "https://auth.qudi.fi",
+        originPoint: "https://auth.qudi.fi",
         channel: makeFakeChannel(),
         storage: storageWith(raw),
       });
@@ -59,7 +59,7 @@ describe("account() at provider mount", () => {
 
   it("restores a well-formed session", () => {
     const conn = createSharedOriginConnection({
-      authOrigin: "https://auth.qudi.fi",
+      originPoint: "https://auth.qudi.fi",
       channel: makeFakeChannel(),
       storage: storageWith('{"evmAddress":"0xabc"}'),
     });
@@ -70,7 +70,7 @@ describe("account() at provider mount", () => {
   it("purges the unusable session so it is not re-read on the next mount", () => {
     const storage = storageWith("{}");
     const conn = createSharedOriginConnection({
-      authOrigin: "https://auth.qudi.fi",
+      originPoint: "https://auth.qudi.fi",
       channel: makeFakeChannel(),
       storage,
     });
@@ -81,7 +81,7 @@ describe("account() at provider mount", () => {
 
   it("still allows a fresh sign-in after a rejected stored session", async () => {
     const conn = createSharedOriginConnection({
-      authOrigin: "https://auth.qudi.fi",
+      originPoint: "https://auth.qudi.fi",
       channel: makeFakeChannel(),
       storage: storageWith("not json at all"),
     });

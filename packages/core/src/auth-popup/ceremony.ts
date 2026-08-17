@@ -213,7 +213,7 @@ function driveRequest(
     view.connecting();
     // Bound to THIS page's own origin. The wallet signs a challenge naming where it lives, so the
     // signature cannot be replayed against a different operator.
-    const challenge = authorizeChallenge({ nonce, authOrigin: win.location.origin });
+    const challenge = authorizeChallenge({ nonce, originPoint: win.location.origin });
     deps
       .readAccount(challenge)
       .then(({ account, proof }) => {

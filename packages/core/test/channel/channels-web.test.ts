@@ -4,7 +4,7 @@
  * WHAT IS TESTED HERE:
  *   - Origin validation: a message from the wrong origin is ignored.
  *   - Source validation: a message from a different window (not the popup) is ignored.
- *   - HTTPS enforcement: non-localhost HTTP authOrigin throws at construction.
+ *   - HTTPS enforcement: non-localhost HTTP originPoint throws at construction.
  *   - Reply-shape guard: a message with a missing/garbage kind is ignored.
  *   - Correct-origin+source+kind message resolves the promise with the channel result.
  *   - Listener cleanup (removeEventListener) is called after resolution.
@@ -109,7 +109,7 @@ describe("createWebChannel", () => {
   });
 
   it("resolves with the ChannelResult when a message arrives from the correct origin", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
     const expected = makeSignResult();
 
     const promise = channel.open(makeSignRequest());
@@ -123,7 +123,7 @@ describe("createWebChannel", () => {
   });
 
   it("removes the message listener after a successful reply (cleanup)", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     const promise = channel.open(makeSignRequest());
     fireMessage(makeSignResult(), AUTH_ORIGIN);
@@ -133,7 +133,7 @@ describe("createWebChannel", () => {
   });
 
   it("ignores a message from a wrong origin — promise stays pending and eventually times out", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     const promise = channel.open(makeSignRequest());
 
@@ -159,13 +159,13 @@ describe("createWebChannel", () => {
 
   it("rejects immediately when window.open returns null (popup blocked)", async () => {
     setupFakeWindow(null); // simulate blocked popup
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     await expect(channel.open(makeSignRequest())).rejects.toThrow(/blocked/i);
   });
 
   it("rejects after 5 minutes with no reply and removes the listener (timeout cleanup)", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     const promise = channel.open(makeSignRequest());
 
@@ -177,7 +177,7 @@ describe("createWebChannel", () => {
   });
 
   it("posts the request to the popup after opening it", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
     const req = makeSignRequest();
 
     const promise = channel.open(req);
@@ -195,7 +195,7 @@ describe("createWebChannel", () => {
   // listener is attached, and we re-send.
   describe("ready handshake", () => {
     it("re-sends the request when the popup announces it is listening", async () => {
-      const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+      const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
       const req = makeSignRequest();
 
       const promise = channel.open(req);
@@ -210,7 +210,7 @@ describe("createWebChannel", () => {
     });
 
     it("does not settle on ready — it is a handshake, not a result", async () => {
-      const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+      const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
       const promise = channel.open(makeSignRequest());
       let settled = false;
       void promise.then(() => (settled = true)).catch(() => (settled = true));
@@ -226,7 +226,7 @@ describe("createWebChannel", () => {
     // `ready` triggers an outbound send, so it must clear the same source/origin checks as a result —
     // otherwise any page could provoke us into re-posting the request somewhere.
     it("ignores a ready from the wrong origin", async () => {
-      const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+      const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
       const promise = channel.open(makeSignRequest());
       expect(fakePopup.postMessage).toHaveBeenCalledTimes(1);
 
@@ -238,7 +238,7 @@ describe("createWebChannel", () => {
     });
 
     it("ignores a ready from a window that is not our popup", async () => {
-      const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+      const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
       const promise = channel.open(makeSignRequest());
       expect(fakePopup.postMessage).toHaveBeenCalledTimes(1);
 
@@ -251,7 +251,7 @@ describe("createWebChannel", () => {
   });
 
   it("opens the popup to the auth origin ROOT for a sign request (one page for both kinds)", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     const promise = channel.open(makeSignRequest());
     fireMessage(makeSignResult(), AUTH_ORIGIN);
@@ -263,7 +263,7 @@ describe("createWebChannel", () => {
   });
 
   it("opens the popup to the SAME auth origin ROOT for an authorize request (no per-kind URL)", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     const promise = channel.open({ kind: "authorize", nonce: "n1" });
     // The popup replies with the account (ChannelResult authorize shape); kind is what resolves it.
@@ -280,7 +280,7 @@ describe("createWebChannel", () => {
   // -------------------------------------------------------------------------
 
   it("Fix 1 — ignores a correct-origin message from a DIFFERENT source (not our popup)", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     const promise = channel.open(makeSignRequest());
 
@@ -309,16 +309,16 @@ describe("createWebChannel", () => {
   // Fix 2: HTTPS enforcement
   // -------------------------------------------------------------------------
 
-  it("Fix 2 — throws at construction for a non-localhost HTTP authOrigin", () => {
-    expect(() => createWebChannel({ authOrigin: "http://evil.example.com" })).toThrow(/must use HTTPS/i);
+  it("Fix 2 — throws at construction for a non-localhost HTTP originPoint", () => {
+    expect(() => createWebChannel({ originPoint: "http://evil.example.com" })).toThrow(/must use HTTPS/i);
   });
 
   it("Fix 2 — does NOT throw for http://localhost (dev allowance)", () => {
-    expect(() => createWebChannel({ authOrigin: "http://localhost:3000" })).not.toThrow();
+    expect(() => createWebChannel({ originPoint: "http://localhost:3000" })).not.toThrow();
   });
 
-  it("Fix 2 — does NOT throw for an https authOrigin", () => {
-    expect(() => createWebChannel({ authOrigin: "https://auth.avok.test" })).not.toThrow();
+  it("Fix 2 — does NOT throw for an https originPoint", () => {
+    expect(() => createWebChannel({ originPoint: "https://auth.avok.test" })).not.toThrow();
   });
 
   // -------------------------------------------------------------------------
@@ -326,7 +326,7 @@ describe("createWebChannel", () => {
   // -------------------------------------------------------------------------
 
   it("Fix 3 — ignores a correct-origin+source message with a missing/garbage kind", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     const promise = channel.open(makeSignRequest());
 
@@ -350,7 +350,7 @@ describe("createWebChannel", () => {
   });
 
   it("Fix 3 — ignores a null reply (non-object message data)", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     const promise = channel.open(makeSignRequest());
 
@@ -378,7 +378,7 @@ describe("createWebChannel", () => {
   // -------------------------------------------------------------------------
 
   it("H3 — rejects with 'Signing popup was closed' when the popup is closed before reply", async () => {
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
 
     const promise = channel.open(makeSignRequest());
 
@@ -410,7 +410,7 @@ describe("createWebChannel", () => {
     // (simulating the message arriving in the task queue before the deferred reject runs).
     // When we advance timers, the interval detects the closed popup and schedules a
     // deferred setTimeout(0) reject — but by then settled=true, so it is a no-op.
-    const channel = createWebChannel({ authOrigin: AUTH_ORIGIN });
+    const channel = createWebChannel({ originPoint: AUTH_ORIGIN });
     const expected = makeSignResult();
 
     const promise = channel.open(makeSignRequest());
@@ -442,6 +442,6 @@ describe("createWebChannel", () => {
   // -------------------------------------------------------------------------
 
   it("Fix 2 — does NOT throw for http://127.0.0.1 (localhost variant)", () => {
-    expect(() => createWebChannel({ authOrigin: "http://127.0.0.1:3000" })).not.toThrow();
+    expect(() => createWebChannel({ originPoint: "http://127.0.0.1:3000" })).not.toThrow();
   });
 });

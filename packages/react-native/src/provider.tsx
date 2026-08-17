@@ -19,12 +19,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { UseOnlyAvokClient, Account } from "@avokjs/core/engine";
+import type { AvokClient, Account } from "@avokjs/core/engine";
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 interface AvokContextValue {
-  client: UseOnlyAvokClient;
+  client: AvokClient;
   account: Account | null;
   status: boolean;
 }
@@ -44,7 +44,7 @@ export function AvokProvider({
   client,
   children,
 }: {
-  client: UseOnlyAvokClient;
+  client: AvokClient;
   children?: ReactNode;
 }): React.JSX.Element {
   const [snap, setSnap] = useState<{ account: Account | null; status: boolean }>(

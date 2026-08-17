@@ -53,7 +53,7 @@ export class AuthSessionCancelledError extends Error {
 
 export function createNativeChannel(opts: {
   /** The operator's auth origin — the page to open, and the wallet that holds the keys. */
-  authOrigin: string;
+  originPoint: string;
   /** Where the session redirects when it finishes, e.g. `myapp://avok-callback`. */
   redirectUri: string;
   /** Platform binding. RN supplies expo-web-browser's openAuthSessionAsync. */
@@ -61,12 +61,12 @@ export function createNativeChannel(opts: {
 }): SigningChannel {
   // Same rule as the web channel: HTTPS or localhost, enforced at construction rather than at the
   // first signature. A wallet reached over plaintext is not a wallet.
-  const parsed = new URL(opts.authOrigin);
+  const parsed = new URL(opts.originPoint);
   if (parsed.protocol !== "https:") {
     const h = parsed.hostname;
     if (h !== "localhost" && h !== "127.0.0.1" && h !== "[::1]") {
       throw new Error(
-        `createNativeChannel: authOrigin must use HTTPS (got "${opts.authOrigin}"). ` +
+        `createNativeChannel: originPoint must use HTTPS (got "${opts.originPoint}"). ` +
           `HTTP is only allowed for localhost development.`,
       );
     }
@@ -75,7 +75,7 @@ export function createNativeChannel(opts: {
   return {
     async open(req: ChannelRequest): Promise<ChannelResult> {
       const url = encodeRequestUrl({
-        authOrigin: opts.authOrigin,
+        originPoint: opts.originPoint,
         request: req,
         redirectUri: opts.redirectUri,
       });

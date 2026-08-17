@@ -7,7 +7,7 @@
  *      The popup buffers this if it arrives before the page has set up its listener;
  *      real popup pages should handle early-arrival messages or signal readiness first.
  *   3. window "message" listener waits for a reply. SECURITY: only messages whose
- *      event.origin === new URL(authOrigin).origin AND event.source === popup (the exact
+ *      event.origin === new URL(originPoint).origin AND event.source === popup (the exact
  *      window reference we opened) are accepted; all others are ignored.
  *   4. On accepted reply: resolves the promise, removes the listener.
  *   5. On 5-minute timeout or popup blocked: rejects, removes the listener.
@@ -23,16 +23,16 @@ import type { SigningChannel, ChannelRequest, ChannelResult } from "./port.js";
 /** How long to wait for the popup to reply before giving up. */
 const POPUP_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
-export function createWebChannel({ authOrigin }: { authOrigin: string }): SigningChannel {
+export function createWebChannel({ originPoint }: { originPoint: string }): SigningChannel {
   // Fix 2: Enforce secure transport at construction time.
-  // authOrigin must be HTTPS. HTTP is only allowed for localhost development.
-  const parsed = new URL(authOrigin);
+  // originPoint must be HTTPS. HTTP is only allowed for localhost development.
+  const parsed = new URL(originPoint);
   if (parsed.protocol !== "https:") {
     const h = parsed.hostname;
     const isLocalhost = h === "localhost" || h === "127.0.0.1" || h === "[::1]";
     if (!isLocalhost) {
       throw new Error(
-        `createWebChannel: authOrigin must use HTTPS (got "${authOrigin}"). ` +
+        `createWebChannel: originPoint must use HTTPS (got "${originPoint}"). ` +
           `HTTP is only allowed for localhost development.`,
       );
     }

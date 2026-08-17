@@ -1,11 +1,8 @@
 import { describe, expect, test, vi } from "vitest";
-import { getAddress } from "viem";
 import { bytesToBase64Url } from "../../src/wallet/encoding.js";
-import { decodeUserHandle, encodeAccessHandle } from "../../src/wallet/passkey/label.js";
 import { createReactNativePasskeyAdapter, type ReactNativePasskeyLike } from "../../src/wallet/passkey/native.js";
 
-const ADDR = getAddress("0x1a2b3c4d5e6f70819293a4b5c6d7e8f90a1b9f3c");
-const HANDLE = encodeAccessHandle(ADDR, 10);
+const HANDLE = crypto.getRandomValues(new Uint8Array(32));
 const prfB64 = bytesToBase64Url(new Uint8Array(32).fill(5));
 
 describe("createReactNativePasskeyAdapter", () => {
@@ -40,7 +37,7 @@ describe("createReactNativePasskeyAdapter", () => {
     expect(bytesToBase64Url(new Uint8Array(reg.prfOutput))).toBe(fallbackPrf);
   });
 
-  test("discover returns the opaque user handle for decoding", async () => {
+  test("discover returns the opaque user handle it was created with", async () => {
     const get = vi.fn().mockResolvedValue({
       id: "cred-1",
       response: { userHandle: bytesToBase64Url(HANDLE) },
@@ -48,7 +45,7 @@ describe("createReactNativePasskeyAdapter", () => {
     });
     const pk = createReactNativePasskeyAdapter({ create: vi.fn(), get }, { rpId: "qudi.fi" });
     const discovered = await pk.discover();
-    expect(decodeUserHandle(discovered.userHandle)).toEqual({ kind: "secondary", evm: ADDR, anchorChain: 10 });
+    expect(new Uint8Array(discovered.userHandle)).toEqual(HANDLE);
   });
 
   test("rejects a cross-platform (roaming) authenticator on the get paths", async () => {
