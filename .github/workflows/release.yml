@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Upgrade npm CLI for OIDC publishing
+        run: npm install -g npm@latest
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build contracts too: @avokjs/core imports @avokjs/contracts, whose types resolve
+      # through its built dist/. Omitting it fails core's build with "Cannot find module".
+      - run: pnpm -r --filter "./packages/*" --filter "./contracts" build
+
+      - uses: changesets/action@v1
+        with:
+          publish: pnpm release
+          version: pnpm version-packages
+          commit: "chore: release"
+          title: "chore: release"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pure OIDC publishing: no long-lived npm token. `id-token: write` (above) lets recent npm
+          # mint a short-lived credential from GitHub's OIDC, and npm accepts it because each package
+          # has a Trusted Publisher configured for repo xanderslabs/avok.js + workflow release.yml.
+          # Configure that per package on npmjs.com (Settings -> Trusted Publisher) before the next
+          # release, or this step fails with an auth error. Provenance rides on the same OIDC.
+          NPM_CONFIG_PROVENANCE: "true"

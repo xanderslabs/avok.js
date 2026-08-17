@@ -1,0 +1,78 @@
+# @avokjs/vault
+
+Build and serve the hardened Avok Vault page.
+
+The Vault is one self-contained HTML file you deploy at an origin you choose. Every Avok signing
+operation opens it in a popup. Your app never calls WebAuthn, never sees PRF output, and never holds
+a key.
+
+This package is build tooling. It is not installed by apps that use the SDK, which is why it is
+separate from `@avokjs/core`.
+
+## Quick start
+
+```bash
+npx @avokjs/vault init     # write avok-origin.config.json
+npx @avokjs/vault build    # emit vault-dist/
+npx @avokjs/vault dev      # serve vault-dist/ locally with the production headers
+```
+
+Deploy `vault-dist/` as a static site, then:
+
+```bash
+npx @avokjs/vault check https://vault.example1.com
+```
+
+## The headers are not optional
+
+`build` writes `vault-dist/_headers` for Netlify and Cloudflare Pages, and
+`vault-dist/csp-headers.txt` for every other host. **If your host does not send these, the page still
+works and none of its hardening applies, and nothing will tell you.** That is what `check` is for.
+Run it after every deploy.
+
+This is not a theoretical risk. An earlier version of this build emitted its header rule for the path
+`/index` while the page was served at `/`, so the rule matched no request and the policy was never
+applied to anything. The page worked perfectly the whole time.
+
+One header must stay absent: `Cross-Origin-Opener-Policy`. It severs `window.opener`, and the popup's
+only route back to your app is through that relationship, so signing fails after the user has already
+read the screen and approved. `check` flags it if a host or a proxy adds one.
+
+## Choosing your RP-ID
+
+`init` defaults the RP-ID to your Vault's own host, which is the tightest scope WebAuthn allows.
+
+**This choice is the wallet.** The signing key is derived from the passkey's PRF, and the passkey is
+scoped to the RP-ID, so changing it later gives every user a different account with a different
+address. Decide once.
+
+If you already have passkeys created under a broader RP-ID, pin that historical value instead, or
+your existing users land in an empty wallet. `build` refuses an RP-ID that is neither your Vault's
+host nor a registrable domain suffix of it, because WebAuthn would refuse it at runtime and the
+symptom there is a wallet that cannot be found.
+
+## What is in `vault-dist/`
+
+| File | Purpose |
+|---|---|
+| `index.html` | The whole Vault. All JavaScript and CSS inlined, your config baked in |
+| `_headers` | Netlify and Cloudflare Pages header config |
+| `csp-headers.txt` | The same policy for hosts that read headers from elsewhere |
+
+The page fetches nothing at runtime. No CDN, no fonts, no analytics, no image host. That is what lets
+its CSP set `default-src 'none'` and `connect-src 'none'` honestly, and `build` fails rather than
+emitting a page that would break either claim.
+
+## Configuration
+
+`avok-origin.config.json`, written by `init` and read by `build`:
+
+| Key | Required | Meaning |
+|---|---|---|
+| `rpId` | yes | Your pinned WebAuthn RP-ID. See above |
+| `vaultOrigin` | yes | Where the Vault is deployed, https except on localhost |
+| `branding.operatorName` | no | Shown to users. Defaults to your `rpId`, never to "Avok" |
+| `managementUrl` | no | Your management app, surfaced to apps that borrow the wallet |
+
+There is no chain setting. Avok is multichain and the chain arrives per transaction, so the Vault
+has no use for one.

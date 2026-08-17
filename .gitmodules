@@ -1,0 +1,3 @@
+[submodule "contracts/lib/calibur"]
+	path = contracts/lib/calibur
+	url = https://github.com/Uniswap/calibur

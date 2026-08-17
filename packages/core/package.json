@@ -1,0 +1,107 @@
+{
+  "name": "@avokjs/core",
+  "version": "0.1.0",
+  "description": "Avok core: passkey/access-vault smart-EOA wallet engine. Wallet primitives, EVM (7702) tx, client, provider, shared-origin channel. Framework-agnostic.",
+  "keywords": [
+    "passkey",
+    "eip-7702",
+    "smart-eoa",
+    "wallet",
+    "avok"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "author": "kamsich02",
+  "homepage": "https://github.com/xanderslabs/avok.js#readme",
+  "bugs": {
+    "url": "https://github.com/xanderslabs/avok.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xanderslabs/avok.js.git",
+    "directory": "packages/core"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "SPONSORED.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./engine": {
+      "types": "./dist/engine.d.ts",
+      "import": "./dist/engine.js"
+    },
+    "./internal": {
+      "types": "./dist/internal/index.d.ts",
+      "import": "./dist/internal/index.js"
+    },
+    "./wallet": {
+      "types": "./dist/wallet/index.d.ts",
+      "import": "./dist/wallet/index.js"
+    },
+    "./evm": {
+      "types": "./dist/evm/index.d.ts",
+      "import": "./dist/evm/index.js"
+    },
+    "./channel": {
+      "types": "./dist/channel/index.d.ts",
+      "import": "./dist/channel/index.js"
+    },
+    "./provider": {
+      "types": "./dist/provider/index.d.ts",
+      "import": "./dist/provider/index.js"
+    },
+    "./helpers": {
+      "types": "./dist/helpers/index.d.ts",
+      "import": "./dist/helpers/index.js"
+    },
+    "./qr": {
+      "types": "./dist/helpers/qr.d.ts",
+      "import": "./dist/helpers/qr.js"
+    },
+    "./pairing-window": {
+      "types": "./dist/helpers/pairing-window.d.ts",
+      "import": "./dist/helpers/pairing-window.js"
+    },
+    "./auth-popup": {
+      "types": "./dist/auth-popup/index.d.ts",
+      "import": "./dist/auth-popup/index.js"
+    }
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json --emitDeclarationOnly && tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "@avokjs/contracts": "workspace:*",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "@scure/base": "^2.2.0",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
+    "viem": "^2.55.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/qrcode": "^1.5.0",
+    "@wallet-standard/app": "^1.1.0",
+    "jsdom": "^29.1.1",
+    "tsup": "^8.5.1",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  }
+}

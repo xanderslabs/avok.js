@@ -1,0 +1,110 @@
+export type SendErrorKind = "rejected" | "insufficient-funds" | "wrong-chain" | "sponsored-unavailable" | "unknown";
+
+function messageOf(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err && "name" in err) return String((err as { name: unknown }).name);
+  return String(err);
+}
+
+// Classification text includes the error's `name` too — a cancelled WebAuthn passkey is a
+// DOMException whose `name` is "NotAllowedError" but whose `message` is the prose "The operation
+// either timed out or was not allowed…" (no "notallowed" token). Inspecting the name catches it.
+function classifyText(err: unknown): string {
+  if (typeof err === "object" && err !== null) {
+    const e = err as { name?: unknown; message?: unknown };
+    return `${String(e.name ?? "")} ${String(e.message ?? "")}`.toLowerCase();
+  }
+  return String(err).toLowerCase();
+}
+
+const FRIENDLY: Record<SendErrorKind, string> = {
+  rejected: "Passkey prompt cancelled or timed out.",
+  "insufficient-funds": "Not enough balance to cover the amount plus fees.",
+  "wrong-chain": "This chain isn't configured for the wallet.",
+  "sponsored-unavailable": "Sponsored gas is unavailable — check the paymaster + fee-token config.",
+  unknown: "Something went wrong.",
+};
+
+/**
+ * What the fee-payer service said, in words a person can act on.
+ *
+ * The service refuses an intent with a machine reason, and it used to be thrown away twice over: the
+ * client discarded the 400's JSON body, and this classifier then replaced whatever detail survived
+ * with a generic "unavailable — check the config". Every sponsorship failure looked identical and
+ * undiagnosable. It is the service TELLING US what is wrong; say it.
+ *
+ * These KEYS are the reason codes this map recognises. The only one confirmed against a real service is
+ * `fee_too_low`, which a paymaster returns when gas prices have moved past the quote. The
+ * rest are best-effort labels; an unrecognised code is shown VERBATIM anyway (see below), so the map
+ * never has to be exhaustive and a wrong guess here costs nothing. Codes are lower_snake and stay
+ * spelled however the service sends them — they are matched, not authored.
+ *
+ * (Two codes, `fronter_unavailable` and `not_fronted`, were removed on 2026-07-24: they were relics of
+ * the deleted bespoke "fronter" relayer, no live service sends them, and "fronted" is retired
+ * vocabulary. An unknown code from any service still surfaces verbatim, so nothing was lost.)
+ */
+const PAYMASTER_REASON: Record<string, string> = {
+  fee_too_low: "The fee you signed is below what the paymaster now requires — gas prices moved. Try again.",
+  no_fee: "The transaction carried no fee payment, so the paymaster has nothing to be repaid with.",
+  wrong_fee_recipient: "The fee was paid to the wrong address — the app and the paymaster disagree on who collects it.",
+  unsupported_token: "The paymaster does not accept that fee token on this chain.",
+  unsupported_chain: "The paymaster is not configured for this chain.",
+  bad_signature: "The paymaster could not verify your signature over this transaction.",
+  expired: "The transaction's deadline passed before the paymaster got it. Try again.",
+  sim_reverted: "The transaction would fail on chain, so the paymaster refused to pay for it.",
+  rate_limited: "The paymaster is rate-limiting this app. Wait and retry.",
+  bad_request: "The paymaster rejected the shape of the request.",
+};
+
+/** `PaymasterRejectedError` formats as "Paymaster refused the transaction: <reason> (HTTP 400)". */
+function paymasterReason(detail: string): string | undefined {
+  const m = /paymaster refused the transaction:\s*([a-z_]+)/i.exec(detail);
+  return m?.[1];
+}
+
+/**
+ * Map a thrown send/sign error into one of the four explicit UI states plus a friendly message.
+ * Order matters: rejection is checked before funds so a "user rejected — insufficient" style
+ * message still reads as a rejection.
+ */
+export function classifySendError(err: unknown): { kind: SendErrorKind; message: string } {
+  const raw = classifyText(err);
+  let kind: SendErrorKind = "unknown";
+
+  if (
+    raw.includes("notallowed") ||
+    raw.includes("not allowed") ||
+    raw.includes("timed out") ||
+    raw.includes("rejected") ||
+    raw.includes("denied") ||
+    raw.includes("cancel")
+  ) {
+    kind = "rejected";
+  } else if (raw.includes("insufficient")) {
+    kind = "insufficient-funds";
+  } else if (raw.includes("unsupported chain") || raw.includes("not configured") || raw.includes("wrong chain")) {
+    kind = "wrong-chain";
+  } else if (
+    raw.includes("paymaster") ||
+    raw.includes("relayer") ||
+    raw.includes("sponsored") ||
+    raw.includes("fee token")
+  ) {
+    kind = "sponsored-unavailable";
+  }
+
+  const detail = messageOf(err);
+
+  // If the paymaster told us WHY, say that — never bury it under the generic line. A reason we do not
+  // recognise is still shown verbatim: an unknown reason is far more useful than no reason.
+  const reason = paymasterReason(detail);
+  if (reason) {
+    return {
+      kind: "sponsored-unavailable",
+      message: PAYMASTER_REASON[reason] ?? `The paymaster refused this transaction: ${reason}.`,
+    };
+  }
+
+  const message = kind === "unknown" ? `${FRIENDLY.unknown} (${detail})` : FRIENDLY[kind];
+  return { kind, message };
+}

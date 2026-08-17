@@ -1,0 +1,10 @@
+{
+  "$comment": "THE OPERATOR'S CONFIG. Clone-and-own: edit this, run `avok-vault build`, host the emitted directory on any static host, and apply its _headers file. There is no server to configure: no issuer, no signing key, no client registration, no store.",
+  "rpId": "vault.avok.test",
+  "vaultOrigin": "https://vault.avok.test",
+  "$comment_rpId": "PIN IT. K = HKDF(PRF(credential, rpId)), so the passkey PRF scoped to this rpId IS the wallet key. Never infer it from a hostname: an origin on vault.example.com with rpId example.com would derive a DIFFERENT WALLET. The build refuses to proceed without it, and refuses an rpId that is not the Vault host or a registrable suffix of it.",
+  "branding": {
+    "operatorName": "Avok"
+  },
+  "$comment_optional": "branding and managementUrl are optional. anchorChainId is NOT a key here: the Vault popup only authorizes and signs, never enrols, so it has no anchor chain. That value lives on the client config in your app."
+}

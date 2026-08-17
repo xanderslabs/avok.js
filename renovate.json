@@ -1,0 +1,43 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "schedule": ["before 6am on monday"],
+  "minimumReleaseAge": "3 days",
+  "postUpdateOptions": ["pnpmDedupe"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "vulnerabilityAlerts": {
+    "description": "Security fixes jump the queue and auto-merge as soon as CI is green.",
+    "labels": ["security"],
+    "schedule": ["at any time"],
+    "minimumReleaseAge": "0 days",
+    "automerge": true
+  },
+  "packageRules": [
+    {
+      "description": "Patch + minor auto-merge once the full CI gate is green (build + test + forge + demos:verify). The gate is the safety net.",
+      "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "description": "Majors are NEVER auto-merged — manual review. This is where a kit@7-style ecosystem break lands in isolation (CI red) instead of shipping.",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "addLabels": ["major-review"]
+    },
+    {
+      "description": "HOLD @babel/core < 8 — metro / babel-preset-expo require babel 7.",
+      "matchPackageNames": ["@babel/core"],
+      "allowedVersions": "<8"
+    }
+  ]
+}

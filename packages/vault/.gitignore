@@ -1,0 +1,3 @@
+# `avok-vault build` output, and the staging directory it cleans up itself.
+vault-dist/
+.vault-staging/

@@ -1,0 +1,14 @@
+{
+  "lib/calibur": {
+    "tag": {
+      "name": "v1.1.0",
+      "rev": "249cac5e880831d7b2de4111a5920dbf0d242846"
+    }
+  },
+  "lib/email-recovery": {
+    "tag": {
+      "name": "release-v1.0.0",
+      "rev": "0a8ac051b667a6985b948399ecf1196f6eb9a48d"
+    }
+  }
+}

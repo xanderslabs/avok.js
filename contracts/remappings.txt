@@ -1,0 +1,9 @@
+@openzeppelin/=node_modules/@openzeppelin/
+forge-std/=lib/forge-std/src/
+@account-abstraction/contracts/=vendor/account-abstraction/
+calibur/=lib/calibur/src/
+solady/=lib/calibur/lib/solady/src/
+lib/calibur/:@openzeppelin/=lib/calibur/lib/openzeppelin-contracts/
+lib/calibur/:solady/=lib/calibur/lib/solady/src/
+lib/calibur/:webauthn-sol/=lib/calibur/lib/webauthn-sol/
+lib/calibur/:account-abstraction/=lib/calibur/lib/account-abstraction/contracts/

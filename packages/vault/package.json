@@ -1,0 +1,57 @@
+{
+  "name": "@avokjs/vault",
+  "version": "0.1.0",
+  "description": "Build and serve the hardened Avok Vault page.",
+  "keywords": [
+    "avok",
+    "wallet",
+    "passkey",
+    "webauthn",
+    "csp",
+    "cli"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "author": "kamsich02",
+  "homepage": "https://github.com/xanderslabs/avok.js#readme",
+  "bugs": {
+    "url": "https://github.com/xanderslabs/avok.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xanderslabs/avok.js.git",
+    "directory": "packages/vault"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "avok-vault": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "page",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "@avokjs/core": "workspace:*",
+    "vite": "^8.1.5"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}

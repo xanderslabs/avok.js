@@ -1,0 +1,116 @@
+import {
+  createOwnOriginConnection as sdkCreateOwnOrigin,
+  createSharedOriginConnection as sdkSharedOrigin,
+} from "./engine.js";
+import type { StorageAdapter, Connection, SelfCustodyConnection } from "./engine.js";
+import type { ChainId } from "@avokjs/contracts";
+import { buildWebPasskeyAdapter } from "./web/web-platform.js";
+import { webStorage } from "./web/web-storage.js";
+
+// The client factory, wrapped to announce the EIP-1193 provider on construction
+// (VISION §6 Surface 1). See provider-wiring.ts.
+export { createAvokClient } from "./web/provider-wiring.js";
+export type { WiredAvokClient, WalletInfo } from "./web/provider-wiring.js";
+// Compute the EIP-6963 reverse-DNS wallet id from an origin, e.g. "wallet.example.com" ->
+// "com.example.wallet". The wiring applies this automatically when `wallet.rdns` is omitted; exported
+// so an operator can set it explicitly too.
+export { rdnsFromOrigin } from "./provider/index.js";
+export type {
+  StorageAdapter,
+  Connection,
+  SelfCustodyConnection,
+  Account,
+  ClientConfig,
+  FullAvokClient,
+  UseOnlyAvokClient,
+  AvokClientFor,
+  CreateOpts,
+  ContinueOpts,
+  TxOpts,
+  EvmFeeToken,
+} from "./engine.js";
+// The catchable runtime error types, exported as values so apps can `instanceof`-narrow them:
+// UnsupportedFeeTokenError (fee token not supported on the target chain), SponsorshipUnavailableError
+// (a send asked for sponsorship and the rail is not reachable), UserRejectedError (the user
+// pressed Reject in the signing popup), NoPrfError (the passkey provider lacks PRF),
+// EnrolmentUnaffordableError (the wallet can't pay for the access-slot
+// write), VaultUnreadableError (the chain did not answer — retryable). MissingRpIdError is intentionally
+// not here: it is a fail-fast config error, not a condition to catch.
+export {
+  UnsupportedFeeTokenError,
+  SponsorshipUnavailableError,
+  UserRejectedError,
+  NoPrfError,
+  EnrolmentUnaffordableError,
+  VaultUnreadableError,
+  // Own-origin lifecycle errors an app catches to pick UI: repair (orphan), retry (unreachable /
+  // enrolment blocked), top-up (unaffordable).
+  OrphanedCredentialError,
+  SlotUnreachableError,
+  EnrolmentBlockedError,
+} from "./engine.js";
+
+// Re-export webStorage so callers can supply the same adapter to other seams.
+export { webStorage } from "./web/web-storage.js";
+
+/**
+ * Creates an own-origin passkey connection wired with the web platform trio:
+ * - WebAuthnPasskeyAdapter (platform credential, PRF — no largeBlob; iCloud Keychain lacks it)
+ * - localStorage-backed StorageAdapter (memory fallback for SSR)
+ *
+ * Device-gated: real WebAuthn create/get require a browser with platform
+ * authenticator support. Unit tests assert wiring (Connection verbs) only.
+ */
+export function createOwnOriginConnection(opts: {
+  rpId: string;
+  /** Cosmetic friendly operator name: becomes the WebAuthn `rp.name` (the OS "Sign in to …" prompt)
+   *  AND the passkey wallet-label prefix ("<operatorName> Wallet · Nickname"). Defaults to the rpId
+   *  domain when unset. Display only — it never affects the rpId, the PRF scope, or key material. */
+  operatorName?: string;
+  storage?: StorageAdapter;
+  /** CAIP-2 chain where this wallet anchors its secondary-device access slots (default eip155:10). */
+  anchorChainId?: ChainId;
+}): SelfCustodyConnection {
+  return sdkCreateOwnOrigin({
+    rpId: opts.rpId,
+    operatorName: opts.operatorName,
+    passkey: buildWebPasskeyAdapter(opts.rpId, opts.operatorName),
+    storage: opts.storage ?? webStorage(),
+    anchorChainId: opts.anchorChainId,
+  });
+}
+
+/**
+ * Lazily creates a shared-origin connection backed by a web popup channel.
+ *
+ * Bundle-purity: @avokjs/core/channel (createWebChannel) is imported DYNAMICALLY
+ * inside this function body. An own-origin-only app that never calls
+ * createSharedOriginConnection will never pull the channel chunk — the function must
+ * remain async and the channel import may not be hoisted to a static import without
+ * breaking this contract. The shared-origin wrapper itself is already statically
+ * loaded (top of this file) and does not import the channel (it is injected), so only
+ * the channel needs to be dynamic.
+ */
+export async function createSharedOriginConnection(opts: {
+  /** The operator's auth origin — the popup to open, and the ONLY origin whose replies are trusted. */
+  authOrigin: string;
+  storage?: StorageAdapter;
+}): Promise<Connection> {
+  const { createWebChannel } = await import("./channel/index.js");
+  const channel = createWebChannel({ authOrigin: opts.authOrigin });
+  // The shared-origin wrapper passes storage straight to @avokjs/core/channel, which
+  // expects a synchronous get() → string|null. Core's own StorageAdapter allows async,
+  // but all real webStorage() / memoryStorage() implementations are synchronous —
+  // narrow the type precisely.
+  const storage = (opts.storage ?? webStorage()) as import("./channel/index.js").StorageAdapter;
+  // No redirectUri, clientId or scopes. There is no redirect (the popup postMessages back to its
+  // opener), no client registration (open/MetaMask-style — anybody can implement the connection),
+  // and no scopes. The config is just the origin to open.
+  return sdkSharedOrigin({ authOrigin: opts.authOrigin, channel, storage });
+
+  // NO COLD-START VALIDATION, and nothing to replace it with. It existed because a restored session
+  // was a bearer TOKEN the operator might refuse — so an app could render as signed-in against a
+  // dead session and only find out at signing time, the worst possible moment. What is restored now
+  // is a public address: it authorises nothing, the operator holds no session to forget, and there
+  // is no server to ask. It cannot go stale, so there is no question worth asking.
+}
