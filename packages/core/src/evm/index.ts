@@ -18,7 +18,17 @@ export type {
 export { railFromContext } from "./types.js";
 
 // RPC
-export type { RpcClient, ViemLike, SimCall, StateOverride, SimulateArgs, SimCallResult, ReadArgs } from "./rpc.js";
+export type {
+  RpcClient,
+  ViemLike,
+  SimCall,
+  StateOverride,
+  SimulateArgs,
+  SimCallResult,
+  SimLog,
+  AccessListEntry,
+  ReadArgs,
+} from "./rpc.js";
 export { createViemRpcClient } from "./rpc.js";
 
 // Pricing (native-gas native-cost estimate)

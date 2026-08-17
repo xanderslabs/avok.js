@@ -1,6 +1,8 @@
-import { formatEther } from "viem";
+import { formatEther, formatUnits } from "viem";
+import { getTokenProfile } from "@avokjs/contracts";
 import type { SignConsent, ConsentView, ConsentLine } from "./consent.js";
 import { dangerousPrimaryType, isUnlimitedAmount, type Severity } from "./danger.js";
+import type { AssetDelta, ApprovalGrant, SimulationResult } from "../../vault/simulate/index.js";
 
 /**
  * One line of the approval screen, with how alarming it is.
@@ -221,4 +223,67 @@ export function formatConsentDisplay(consent: SignConsent): ConsentDisplayLine[]
       throw new Error(`Unknown consent op: ${(_exhaustive as { op: string }).op}`);
     }
   }
+}
+
+// ── Simulation rows (TDD §5 step 2) ─────────────────────────────────────────────
+//
+// Purely a rendering layer over `vault/simulate`'s output — it does no RPC work itself. Callers
+// append these lines to whatever `formatConsentDisplay` already produced for the same request; the
+// decode-only lines above are UNCHANGED by simulation being available or not, per TDD §5's "decode
+// step unchanged" rule. Wiring an actual `simulateRequest` call into the live signing ceremony needs
+// an RPC client the Vault does not have yet (its CSP is still `connect-src 'none'` — a later task
+// pins it to the operator's configured RPC set); until then this is tested against `SimulationResult`
+// fixtures rather than a live popup.
+
+function assetDeltaLine(chainId: number, delta: AssetDelta): ConsentDisplayLine {
+  const verb = delta.direction === "out" ? "You send" : "You receive";
+  if (delta.kind === "native") {
+    return info(`${verb} ${formatEther(delta.amount)} ${nativeSymbol(chainId)}`);
+  }
+  if (delta.kind === "erc721") {
+    return info(`${verb} NFT #${delta.tokenId} of collection ${delta.token}`);
+  }
+  if (delta.kind === "erc1155") {
+    return info(`${verb} ${delta.amount} of token #${delta.tokenId} in collection ${delta.token}`);
+  }
+  // erc20
+  const profile = delta.token ? getTokenProfile(chainId, delta.token) : undefined;
+  if (profile) {
+    return info(`${verb} ${formatUnits(delta.amount, profile.decimals)} ${profile.symbol}`);
+  }
+  return caution(`${verb} ${delta.amount} base units of token ${delta.token} (unknown token)`);
+}
+
+function approvalGrantLine(chainId: number, grant: ApprovalGrant): ConsentDisplayLine {
+  if (grant.kind === "erc721-all") {
+    return grant.approved
+      ? danger(`Approval granted: ${grant.spender} may transfer ALL of your tokens in collection ${grant.token}`)
+      : info(`Approval revoked: ${grant.spender} can no longer transfer tokens in collection ${grant.token}`);
+  }
+  const profile = getTokenProfile(chainId, grant.token);
+  const amount = profile
+    ? `${formatUnits(grant.amount, profile.decimals)} ${profile.symbol}`
+    : `${grant.amount} base units of token ${grant.token}`;
+  const base = `Approval granted: ${grant.spender} may spend ${amount}`;
+  return grant.unlimited ? danger(`${base} — UNLIMITED`) : info(base);
+}
+
+/**
+ * Turn a `SimulationResult` into consent lines: send/receive rows for every asset delta, a line per
+ * approval grant, and the "unsimulated" / revert badges TDD §5 calls for. Returns `[]` for
+ * `"unsimulated"` deliberately — callers fall back to the decode-only lines `formatConsentDisplay`
+ * already produced, they do not lose the row, so there is nothing additional to render here beyond
+ * the caution badge.
+ */
+export function simulationDisplayLines(result: SimulationResult, chainId: number): ConsentDisplayLine[] {
+  if (result.status === "unsimulated") {
+    return [caution("Not simulated — the details above are decoded from the request, not verified on chain")];
+  }
+  if (result.status === "reverted") {
+    return [danger(`This transaction would fail on chain: ${result.revert?.reason ?? "no reason given"}`)];
+  }
+  return [
+    ...result.deltas.map((d) => assetDeltaLine(chainId, d)),
+    ...result.approvals.map((a) => approvalGrantLine(chainId, a)),
+  ];
 }

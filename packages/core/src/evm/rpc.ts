@@ -16,17 +16,30 @@ export interface SimulateArgs {
   calls: SimCall[];
   stateOverrides?: StateOverride[];
 }
+export interface SimLog {
+  address: Address;
+  topics: Hex[];
+  data: Hex;
+}
 export interface SimCallResult {
   status: "success" | "failure";
   gasUsed: bigint;
   returnData: Hex;
   error?: string;
+  /** Logs this call emitted during simulation — vault/simulate reads these for asset-delta and
+   *  approval detection (Transfer/Approval and friends). Absent/empty on a client that does not
+   *  surface them; that degrades delta detection, not the simulation itself. */
+  logs?: SimLog[];
 }
 export interface ReadArgs {
   address: Address;
   abi: readonly unknown[];
   functionName: string;
   args?: readonly unknown[];
+}
+export interface AccessListEntry {
+  address: Address;
+  storageKeys: Hex[];
 }
 
 /** The chain boundary. Engine logic is written against this port; tests use a fake. */
@@ -70,6 +83,12 @@ export interface RpcClient {
   ): Promise<{ status: "success" | "reverted"; transactionHash: Hex; blockNumber?: bigint } | null>;
   /** Current chain head. Optional — used for confirmation-depth gating when configured. */
   getBlockNumber?(): Promise<bigint>;
+  /**
+   * `eth_createAccessList` for a call — vault/simulate/slots.ts's balance-slot discovery technique
+   * (find which storage slot a `balanceOf(user)` read touches). Optional: not every RPC ships it, and
+   * its absence only narrows delta detection to the log-based cases, it does not break simulation.
+   */
+  createAccessList?(args: SimCall): Promise<{ accessList: AccessListEntry[] }>;
 }
 
 /** Minimal subset of a viem client the adapter relies on (kept structural for testability). */
@@ -81,7 +100,17 @@ export interface ViemLike {
     account?: Address;
     calls: { to: Address; value?: bigint; data?: Hex }[];
     stateOverrides?: { address: Address; code?: Hex; balance?: bigint }[];
-  }): Promise<{ results: { status: "success" | "failure"; gasUsed: bigint; data: Hex }[] }>;
+  }): Promise<{
+    results: { status: "success" | "failure"; gasUsed: bigint; data: Hex; logs?: SimLog[] }[];
+  }>;
+  /** eth_createAccessList. Optional on the underlying client too — viem's public client always has
+   *  it, but a test double may not. */
+  createAccessList?(args: {
+    account?: Address;
+    to: Address;
+    data?: Hex;
+    value?: bigint;
+  }): Promise<{ accessList: AccessListEntry[] }>;
   call(args: { to: Address; data?: Hex; value?: bigint; stateOverride?: unknown }): Promise<{ data?: Hex }>;
   estimateGas(args: {
     to: Address;
@@ -119,8 +148,11 @@ export function createViemRpcClient(client: ViemLike): RpcClient {
         calls: args.calls.map((c) => ({ to: c.to, value: c.value, data: c.data })),
         stateOverrides: args.stateOverrides,
       });
-      return res.results.map((r) => ({ status: r.status, gasUsed: r.gasUsed, returnData: r.data }));
+      return res.results.map((r) => ({ status: r.status, gasUsed: r.gasUsed, returnData: r.data, logs: r.logs }));
     },
+    createAccessList: client.createAccessList
+      ? (args) => client.createAccessList!({ account: args.from, to: args.to, data: args.data, value: args.value })
+      : undefined,
     async call(args) {
       const r = await client.call({
         to: args.to,

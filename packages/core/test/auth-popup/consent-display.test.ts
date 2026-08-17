@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { getAddress, maxUint256, parseUnits, encodeFunctionData, parseAbi } from "viem";
 import { decodeSignConsent } from "../../src/auth-popup/sign/consent.js";
-import { formatConsentDisplay, displayText, highestSeverity } from "../../src/auth-popup/sign/consent-display.js";
+import {
+  formatConsentDisplay,
+  displayText,
+  highestSeverity,
+  simulationDisplayLines,
+} from "../../src/auth-popup/sign/consent-display.js";
 import type { ConsentLine } from "../../src/auth-popup/sign/consent.js";
+import type { SimulationResult } from "../../src/vault/simulate/index.js";
 
 const ADDR = getAddress("0x9999999999999999999999999999999999999999");
 const TOKEN = getAddress("0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85");
@@ -375,5 +381,100 @@ describe("the display rule: only what the bytes say", () => {
       ),
     ).join("\n");
     expect(lines).not.toContain("0.00 ETH");
+  });
+});
+
+describe("simulationDisplayLines", () => {
+  const TOKEN2 = getAddress("0x2222222222222222222222222222222222222222");
+  const SPENDER = getAddress("0x4444444444444444444444444444444444444444");
+
+  it("unsimulated: one caution line, no send/receive rows", () => {
+    const result: SimulationResult = { status: "unsimulated", deltas: [], approvals: [] };
+    const lines = simulationDisplayLines(result, 1);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].severity).toBe("caution");
+    expect(lines[0].text).toMatch(/not simulated/i);
+  });
+
+  it("reverted: one danger line naming the reason, blocks nothing here (that's the ceremony's job) but is unmissable", () => {
+    const result: SimulationResult = {
+      status: "reverted",
+      deltas: [],
+      approvals: [],
+      revert: { reason: "insufficient balance" },
+    };
+    const lines = simulationDisplayLines(result, 1);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].severity).toBe("danger");
+    expect(lines[0].text).toContain("insufficient balance");
+  });
+
+  it("simulated: native send renders as a 'You send' row in ETH", () => {
+    const result: SimulationResult = {
+      status: "simulated",
+      deltas: [{ kind: "native", amount: 1_000_000_000_000_000_000n, direction: "out" }],
+      approvals: [],
+    };
+    const lines = simulationDisplayLines(result, 1);
+    expect(lines[0].text).toBe("You send 1 ETH");
+    expect(lines[0].severity).toBe("info");
+  });
+
+  it("simulated: an unregistered erc20 receive shows base units and flags caution", () => {
+    const result: SimulationResult = {
+      status: "simulated",
+      deltas: [{ kind: "erc20", token: TOKEN2, amount: 100n, direction: "in" }],
+      approvals: [],
+    };
+    const lines = simulationDisplayLines(result, 999999);
+    expect(lines[0].severity).toBe("caution");
+    expect(lines[0].text).toContain("You receive 100 base units");
+  });
+
+  it("simulated: an unlimited approval grant is flagged danger", () => {
+    const result: SimulationResult = {
+      status: "simulated",
+      deltas: [],
+      approvals: [
+        { token: TOKEN2, spender: SPENDER, amount: maxUint256, unlimited: true, kind: "erc20", approved: true },
+      ],
+    };
+    const lines = simulationDisplayLines(result, 1);
+    expect(lines[0].severity).toBe("danger");
+    expect(lines[0].text).toContain("UNLIMITED");
+  });
+
+  it("simulated: a bounded approval grant is info", () => {
+    const result: SimulationResult = {
+      status: "simulated",
+      deltas: [],
+      approvals: [{ token: TOKEN2, spender: SPENDER, amount: 500n, unlimited: false, kind: "erc20", approved: true }],
+    };
+    const lines = simulationDisplayLines(result, 1);
+    expect(lines[0].severity).toBe("info");
+  });
+
+  it("simulated: an ApprovalForAll revoke reads as reassurance (info), not a warning", () => {
+    const result: SimulationResult = {
+      status: "simulated",
+      deltas: [],
+      approvals: [
+        { token: TOKEN2, spender: SPENDER, amount: 0n, unlimited: false, kind: "erc721-all", approved: false },
+      ],
+    };
+    const lines = simulationDisplayLines(result, 1);
+    expect(lines[0].severity).toBe("info");
+    expect(lines[0].text).toMatch(/revoked/i);
+  });
+
+  it("simulated: an ERC-721 receive names the collection and tokenId", () => {
+    const result: SimulationResult = {
+      status: "simulated",
+      deltas: [{ kind: "erc721", token: TOKEN2, amount: 1n, tokenId: 42n, direction: "in" }],
+      approvals: [],
+    };
+    const lines = simulationDisplayLines(result, 1);
+    expect(lines[0].text).toContain("#42");
+    expect(lines[0].text).toContain(TOKEN2);
   });
 });
