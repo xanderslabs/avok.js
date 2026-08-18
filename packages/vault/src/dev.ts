@@ -1,7 +1,7 @@
 import { createServer, type Server } from "node:http";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { securityHeaders } from "./headers.js";
+import { securityHeaders, recoverySecurityHeaders } from "./headers.js";
 
 /**
  * Serve the built Vault locally WITH the real headers, so development exercises the same policy
@@ -27,15 +27,19 @@ export async function startDevServer(out: string, port: number): Promise<{ serve
   // nothing on refresh, silently: the browser shows the old bytes with no indication they are stale,
   // and you debug a page that no longer exists. Costing two file reads per request in a local dev
   // server to remove that is not a trade worth thinking about.
-  const server = createServer((_req, res) => {
+  const server = createServer((req, res) => {
     void (async () => {
       try {
         const html = await readFile(join(out, "index.html"), "utf8");
         const csp = (await readFile(join(out, "csp-headers.txt"), "utf8")).trim();
+        // SAME PAGE, PER-PATH HEADERS — mirrors the `/recover/*` block `_headers` gets in production
+        // (headers.ts). Diverging here would mean local dev looks fine on the recovery route and only
+        // `avok-vault check` catches the missing COOP/COEP after a real deploy.
+        const isRecoveryRoute = (req.url ?? "/").startsWith("/recover");
         res.writeHead(200, {
           "Content-Type": "text/html; charset=utf-8",
           "Content-Security-Policy": csp,
-          ...securityHeaders(),
+          ...(isRecoveryRoute ? recoverySecurityHeaders() : securityHeaders()),
         });
         res.end(html);
       } catch {

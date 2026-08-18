@@ -12,7 +12,11 @@ import { securityHeaders } from "./headers.js";
  * the path `/index` while serving `index.html` at `/`, so the rule matched no request and the policy
  * was never applied. Nothing revealed it, because the page worked. This command is what reveals it.
  */
-export function evaluateDeployedHeaders(headers: Headers): { ok: boolean; problems: string[] } {
+export function evaluateDeployedHeaders(
+  headers: Headers,
+  opts?: { route: "signing" | "recovery" },
+): { ok: boolean; problems: string[] } {
+  const route = opts?.route ?? "signing";
   const problems: string[] = [];
 
   const csp = headers.get("content-security-policy");
@@ -46,12 +50,34 @@ export function evaluateDeployedHeaders(headers: Headers): { ok: boolean; proble
     }
   }
 
-  if (headers.has("cross-origin-opener-policy")) {
+  // ONE PAGE, TWO ROUTES, TWO HEADER SETS (D7 gate decision, 2026-08-18). The signing route's COOP
+  // invariant is unchanged: COOP severs window.opener, and the popup's only way to return a signature
+  // is through that relationship, so signing would fail after the user has already approved. The
+  // recovery route is the opposite requirement: identity recovery's threaded-WASM proving needs a
+  // cross-origin-isolated context, so COOP+COEP must be PRESENT there, not absent.
+  if (route === "signing" && headers.has("cross-origin-opener-policy")) {
     problems.push(
       "Cross-Origin-Opener-Policy is set. It severs window.opener, and the popup's only way to return " +
         "a signature is through that relationship, so signing will fail after the user has already " +
         "approved. Remove it.",
     );
+  }
+  if (route === "recovery") {
+    const coop = headers.get("cross-origin-opener-policy");
+    if (!coop) {
+      problems.push(
+        "Cross-Origin-Opener-Policy is missing on the recovery route. Identity recovery's threaded-WASM " +
+          "proving needs a cross-origin-isolated context; set it to same-origin.",
+      );
+    } else if (coop !== "same-origin") {
+      problems.push(`Cross-Origin-Opener-Policy on the recovery route is "${coop}", not "same-origin".`);
+    }
+    if (!headers.has("cross-origin-embedder-policy")) {
+      problems.push(
+        "Cross-Origin-Embedder-Policy is missing on the recovery route. Identity recovery's threaded-WASM " +
+          "proving needs a cross-origin-isolated context; set it to require-corp.",
+      );
+    }
   }
 
   for (const name of Object.keys(securityHeaders())) {
@@ -61,7 +87,15 @@ export function evaluateDeployedHeaders(headers: Headers): { ok: boolean; proble
   return { ok: problems.length === 0, problems };
 }
 
-export async function runCheck(url: string, log: (s: string) => void): Promise<number> {
+/** The recovery route's URL for a deployed Vault — ORIGIN-RELATIVE, never appended to whatever path
+ *  the caller passed. `avok-vault check <url>` is documented and already deployed as "pass the
+ *  Vault's origin," so this derives the second URL from that same origin rather than requiring a
+ *  second CLI argument nobody has typed before. */
+export function deriveRecoveryUrl(url: string): string {
+  return new URL("/recover", url).toString();
+}
+
+async function checkOneRoute(url: string, route: "signing" | "recovery", log: (s: string) => void): Promise<boolean> {
   let response: Response;
   try {
     response = await fetch(url, { redirect: "follow" });
@@ -69,19 +103,31 @@ export async function runCheck(url: string, log: (s: string) => void): Promise<n
     // An unreachable host is an ordinary outcome for this command (wrong URL, not deployed yet, DNS
     // still propagating). Report it as one rather than stack-tracing at the operator.
     log(`avok-vault: could not reach ${url}: ${e instanceof Error ? e.message : String(e)}`);
-    return 1;
+    return false;
   }
 
   if (!response.ok) {
     log(`avok-vault: ${url} answered ${response.status} ${response.statusText}. Checking headers anyway.`);
   }
 
-  const result = evaluateDeployedHeaders(response.headers);
+  const result = evaluateDeployedHeaders(response.headers, { route });
   if (result.ok) {
     log(`avok-vault: ${url} is serving every required header.`);
-    return 0;
+    return true;
   }
   log(`avok-vault: ${url} has ${result.problems.length} problem(s):`);
   for (const p of result.problems) log(`  - ${p}`);
-  return 1;
+  return false;
+}
+
+/**
+ * Checks BOTH routes of a deployed Vault: the signing route at `url` itself, and the recovery route
+ * derived from it (see `deriveRecoveryUrl`). One page, two header sets — a deploy that only wires one
+ * of them is exactly the silent-failure shape this whole command exists to catch, so passing on one
+ * route while failing the other is still a failing check.
+ */
+export async function runCheck(url: string, log: (s: string) => void): Promise<number> {
+  const signingOk = await checkOneRoute(url, "signing", log);
+  const recoveryOk = await checkOneRoute(deriveRecoveryUrl(url), "recovery", log);
+  return signingOk && recoveryOk ? 0 : 1;
 }

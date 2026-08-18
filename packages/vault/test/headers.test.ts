@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildCsp, securityHeaders, headersFileContent } from "../src/headers.js";
+import {
+  buildCsp,
+  securityHeaders,
+  recoverySecurityHeaders,
+  headersFileContent,
+  RECOVERY_PATH_GLOB,
+} from "../src/headers.js";
 
 const RPC_URLS = ["https://mainnet.base.org", "https://ethereum-rpc.publicnode.com"];
 
@@ -81,10 +87,27 @@ describe("securityHeaders", () => {
   });
 });
 
+describe("recoverySecurityHeaders", () => {
+  const h = recoverySecurityHeaders();
+
+  // Identity recovery's threaded-WASM proving (D7) needs a cross-origin-isolated context. The page
+  // has zero external resources (assertVaultInvariants forbids any), so COEP costs it nothing to
+  // embed and blocks nothing it was ever going to load.
+  it("sets Cross-Origin-Opener-Policy: same-origin and Cross-Origin-Embedder-Policy: require-corp", () => {
+    expect(h["Cross-Origin-Opener-Policy"]).toBe("same-origin");
+    expect(h["Cross-Origin-Embedder-Policy"]).toBe("require-corp");
+  });
+
+  it("still carries every header the signing route gets", () => {
+    const base = securityHeaders();
+    for (const [name, value] of Object.entries(base)) expect(h[name]).toBe(value);
+  });
+});
+
 describe("headersFileContent", () => {
   const out = headersFileContent(buildCsp(["abc123"], RPC_URLS));
 
-  it("emits one static-host block carrying the CSP and every other header", () => {
+  it("emits a static-host block for the signing route carrying the CSP and every other header", () => {
     expect(out).toContain("Content-Security-Policy:");
     expect(out).toContain("Origin-Agent-Cluster: ?1");
   });
@@ -99,16 +122,42 @@ describe("headersFileContent", () => {
    *
    * A wrong path fails in exactly the way a security control must never fail. It is invisible,
    * because the page works perfectly, and only a response-header check would ever notice. `/*`
-   * matches every path the Vault can be reached at, and there is only one page to cover.
+   * matches every path the Vault can be reached at except the recovery route, which gets its own
+   * block below with its own header set.
    */
-  it("applies to every path the single page can be served at, not just one spelling of it", () => {
+  it("applies the base block to every path, not just one spelling of it", () => {
     expect(out.split("\n")[0]).toBe("/*");
     expect(out).not.toMatch(/^\/index$/m);
   });
 
-  it("indents each header under its path, which is the format's rule", () => {
-    for (const line of out.split("\n").slice(1).filter(Boolean)) {
-      expect(line.startsWith("  ")).toBe(true);
+  it("indents each header under its own path block", () => {
+    for (const line of out.split("\n").filter(Boolean)) {
+      const isPathLine = line === "/*" || line === RECOVERY_PATH_GLOB;
+      if (!isPathLine) expect(line.startsWith("  ")).toBe(true);
     }
+  });
+
+  /**
+   * ONE PAGE, TWO ROUTES, TWO HEADER SETS (D7 gate decision, 2026-08-18). Identity recovery will run
+   * threaded-WASM proving on the recovery route, which needs COOP+COEP — but the signing popup route
+   * has a hard NO-COOP invariant (COOP severs window.opener, the popup's only way home). The recovery
+   * block is declared AFTER the base `/*` block: Netlify and Cloudflare Pages apply every matching
+   * rule and let a later rule's header win over an earlier rule's for the same name, so a request to
+   * `/recover/*` picks up the base set from `/*` PLUS the recovery block's COOP/COEP, while a request
+   * to `/` (which does not match `/recover/*`) gets only the base set — COOP stays absent there.
+   */
+  it("adds a second block for the recovery route, declared after the base block", () => {
+    const recoverIdx = out.indexOf(RECOVERY_PATH_GLOB);
+    expect(recoverIdx).toBeGreaterThan(out.indexOf("/*"));
+    const recoverBlock = out.slice(recoverIdx);
+    expect(recoverBlock).toContain("Cross-Origin-Opener-Policy: same-origin");
+    expect(recoverBlock).toContain("Cross-Origin-Embedder-Policy: require-corp");
+    expect(recoverBlock).toContain("Content-Security-Policy:");
+  });
+
+  it("keeps the base block free of COOP/COEP — only the recovery block carries them", () => {
+    const baseBlock = out.slice(0, out.indexOf(RECOVERY_PATH_GLOB));
+    expect(baseBlock).not.toContain("Cross-Origin-Opener-Policy");
+    expect(baseBlock).not.toContain("Cross-Origin-Embedder-Policy");
   });
 });

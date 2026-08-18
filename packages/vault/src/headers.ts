@@ -78,9 +78,37 @@ export function securityHeaders(): Record<string, string> {
   };
 }
 
+/** The `_headers` path glob for the recovery route. Same page, same bytes, as `/*` — `mount.ts`
+ *  decides client-side whether a direct navigation shows the signing popup's dead-end or the
+ *  recovery screen (there is no opener either way). This glob exists ONLY so a static host's
+ *  `_headers` rules can give that route a different response header set. */
+export const RECOVERY_PATH_GLOB = "/recover/*";
+
+/**
+ * The recovery route's headers (D7 gate decision, 2026-08-18): everything `securityHeaders()` sets,
+ * PLUS `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` —
+ * a cross-origin-isolated context, which identity recovery's threaded-WASM JWT proving needs.
+ *
+ * Safe specifically BECAUSE the Vault is what it is: `assertVaultInvariants` already forbids any
+ * external script, stylesheet, or URL, so the page has nothing cross-origin to embed and COEP blocks
+ * nothing it was ever going to load. This is not true of pages in general — COEP breaks any
+ * cross-origin resource that isn't CORP/CORS-cleared — it is true of THIS page because it has none.
+ *
+ * COOP is fine here for the reason it is forbidden on the signing route: this route is not a popup
+ * with an opener to preserve. A direct navigation to the recovery screen has no `window.opener` to
+ * sever in the first place.
+ */
+export function recoverySecurityHeaders(): Record<string, string> {
+  return {
+    ...securityHeaders(),
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Embedder-Policy": "require-corp",
+  };
+}
+
 /**
  * The `_headers` format understood by Netlify and Cloudflare Pages. Other hosts read the same values
- * out of csp-headers.txt.
+ * out of csp-headers.txt and this module's header-building functions.
  *
  * THE PATH IS `/*`, AND THAT IS A FIX. The build this replaces emitted `/index`, while the file it
  * emitted was `index.html`, served at `/` and `/index.html`. These hosts match a `_headers` path
@@ -88,13 +116,18 @@ export function securityHeaders(): Record<string, string> {
  * page worked perfectly and shipped with no CSP, which is the failure mode a security control must
  * never have: invisible unless someone reads the response headers.
  *
- * `/*` matches every path the Vault can be reached at. There is one page, so there is nothing else
- * the wildcard could over-apply to.
+ * `/*` matches every path the Vault can be reached at, INCLUDING the recovery route — there is one
+ * page. The recovery block below is declared SECOND and relies on both hosts' documented behavior of
+ * applying every matching rule and letting a later rule's header win over an earlier rule's for the
+ * same name: a request to `/recover/*` picks up the base set from `/*` plus the recovery block's
+ * COOP/COEP; a request that does not match `/recover/*` gets only the base set, with COOP staying
+ * hard-absent exactly as it always has.
  */
 export function headersFileContent(csp: string): string {
-  const lines = ["/*", `  Content-Security-Policy: ${csp}`];
-  for (const [name, value] of Object.entries(securityHeaders())) {
-    lines.push(`  ${name}: ${value}`);
-  }
-  return `${lines.join("\n")}\n`;
+  const block = (path: string, headers: Record<string, string>): string => {
+    const lines = [path, `  Content-Security-Policy: ${csp}`];
+    for (const [name, value] of Object.entries(headers)) lines.push(`  ${name}: ${value}`);
+    return lines.join("\n");
+  };
+  return `${block("/*", securityHeaders())}\n${block(RECOVERY_PATH_GLOB, recoverySecurityHeaders())}\n`;
 }

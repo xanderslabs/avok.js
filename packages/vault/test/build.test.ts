@@ -192,6 +192,48 @@ describe("the page enforces Trusted Types", () => {
  * `default-src 'none'` then blocks the fetch that would have repaired it, so the failure is a blank
  * Vault at runtime rather than a red build.
  */
+/**
+ * PER-PATH HEADERS (D7 gate decision, 2026-08-18). `headersFileContent` (headers.ts) now emits TWO
+ * blocks — the base `/*` block (no COOP, ever) and the `/recover/*` block (COOP+COEP, for identity
+ * recovery's threaded-WASM proving). This asserts that split on the BUILD's own output, mirroring how
+ * `check.ts` asserts it on a DEPLOYED page — a build that regressed the split should fail here, not
+ * only be caught later by someone remembering to run `avok-vault check`.
+ */
+describe("the built headers keep COOP off the signing route and require it on the recovery route", () => {
+  const built = inlinePage({ html, assets, config });
+
+  it("passes on the real build output", () => {
+    expect(() => assertVaultInvariants(built)).not.toThrow();
+  });
+
+  it("rejects a headers file with COOP on the base (signing) block", () => {
+    const tampered = {
+      ...built,
+      headers: built.headers.replace("/*\n", "/*\n  Cross-Origin-Opener-Policy: same-origin\n"),
+    };
+    expect(() => assertVaultInvariants(tampered)).toThrow(/Cross-Origin-Opener-Policy/);
+  });
+
+  it("rejects a headers file missing the recovery route's COOP", () => {
+    const tampered = { ...built, headers: built.headers.replace(/  Cross-Origin-Opener-Policy: same-origin\n/, "") };
+    expect(() => assertVaultInvariants(tampered)).toThrow(
+      /recovery route.*Cross-Origin-Opener-Policy|Cross-Origin-Opener-Policy.*recovery/i,
+    );
+  });
+
+  it("rejects a headers file missing the recovery route's COEP", () => {
+    const tampered = { ...built, headers: built.headers.replace(/  Cross-Origin-Embedder-Policy: require-corp\n/, "") };
+    expect(() => assertVaultInvariants(tampered)).toThrow(
+      /recovery route.*Cross-Origin-Embedder-Policy|Cross-Origin-Embedder-Policy.*recovery/i,
+    );
+  });
+
+  it("rejects a headers file with no recovery block at all", () => {
+    const tampered = { ...built, headers: built.headers.split("/recover/*")[0] };
+    expect(() => assertVaultInvariants(tampered)).toThrow(/recovery/i);
+  });
+});
+
 describe("un-inlined assets", () => {
   const built = inlinePage({ html, assets, config });
 

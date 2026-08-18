@@ -38,6 +38,17 @@ One header must stay absent: `Cross-Origin-Opener-Policy`. It severs `window.ope
 only route back to your app is through that relationship, so signing fails after the user has already
 read the screen and approved. `check` flags it if a host or a proxy adds one.
 
+## Two routes, two header sets
+
+The Vault serves one page, but `build` writes header rules for two paths. The root path (the signing
+popup) keeps the set above, with COOP absent for the reason just given. The `/recover` path (the same
+page, reached by direct navigation) additionally gets `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` — a cross-origin-isolated context, which identity
+recovery's threaded-WASM proving needs. This is safe on the recovery route specifically because it has
+no `window.opener` to sever (it was never opened as a popup) and no external resource for COEP to
+block (the page loads nothing but itself). `check` fetches both paths and fails if either is wrong:
+COOP present on the root path, or COOP/COEP missing on `/recover`.
+
 ## The RPC set is pinned into the CSP
 
 `connect-src` is set to exactly the RPC endpoints your configured `chains` resolve to — nothing else

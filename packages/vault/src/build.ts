@@ -3,7 +3,7 @@ import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { build as viteBuild } from "vite";
 import { bakedAppConfig, parseVaultConfig, resolveVaultRpcs, type VaultConfig } from "./config.js";
-import { buildCsp, headersFileContent } from "./headers.js";
+import { buildCsp, headersFileContent, RECOVERY_PATH_GLOB } from "./headers.js";
 
 /** What a Vault build produces: the page, the policy that describes it, and the file a host reads. */
 export interface BuiltVault {
@@ -81,7 +81,7 @@ export function inlinePage({ html, assets, config }: InlineArgs): BuiltVault {
  * that were `verify-inlined.mjs`, a build step whose mirror suite skipped whenever the build had not
  * run. Asserting them on a pure value removes the condition under which they do not run.
  */
-export function assertVaultInvariants({ html, csp }: BuiltVault): void {
+export function assertVaultInvariants({ html, csp, headers }: BuiltVault): void {
   const fail = (m: string) => {
     throw new Error(`VAULT INVARIANT VIOLATED: ${m}`);
   };
@@ -130,6 +130,29 @@ export function assertVaultInvariants({ html, csp }: BuiltVault): void {
       if (parsed.protocol !== "https:" && !isLocalHttp) {
         fail(`the CSP's connect-src contains a non-https origin: ${src}`);
       }
+    }
+  }
+
+  // ONE PAGE, TWO ROUTES, TWO HEADER SETS (D7 gate decision, 2026-08-18). Mirrors the same assertion
+  // `check.ts` makes at DEPLOY time, but here on the build's own output — a regression is caught at
+  // build time rather than only by whoever remembers to run `avok-vault check` afterward.
+  const recoverIdx = headers.indexOf(RECOVERY_PATH_GLOB);
+  if (recoverIdx === -1) {
+    fail(`the headers file has no ${RECOVERY_PATH_GLOB} block; the recovery route has no header rule at all`);
+  } else {
+    const baseBlock = headers.slice(0, recoverIdx);
+    const recoveryBlock = headers.slice(recoverIdx);
+    if (/Cross-Origin-Opener-Policy/.test(baseBlock)) {
+      fail(
+        "the signing route's headers carry Cross-Origin-Opener-Policy. It severs window.opener, and " +
+          "the popup's only way to return a signature is through that relationship.",
+      );
+    }
+    if (!/Cross-Origin-Opener-Policy: same-origin/.test(recoveryBlock)) {
+      fail("the recovery route's headers are missing Cross-Origin-Opener-Policy: same-origin");
+    }
+    if (!/Cross-Origin-Embedder-Policy: require-corp/.test(recoveryBlock)) {
+      fail("the recovery route's headers are missing Cross-Origin-Embedder-Policy: require-corp");
     }
   }
 }
