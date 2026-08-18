@@ -10,6 +10,7 @@
  * with its own renderer — the money path has one implementation, not two.
  */
 import type { Hex } from "viem";
+import { createPublicClient, http } from "viem";
 import { WebAuthnPasskeyAdapter, withDiscoveredKeys } from "../wallet/index.js";
 import { performSign } from "./sign/perform-sign.js";
 import type { SignConsentRequest } from "./sign/consent.js";
@@ -22,6 +23,8 @@ import {
 } from "./ceremony.js";
 import { decodeRequestUrl } from "../channel/redirect-protocol.js";
 import { createDomView } from "./view-dom.js";
+import { createViemRpcClient, type ViemLike } from "../evm/rpc.js";
+import { simulateRequest, type SignTxPayload, type SimulationResult } from "../vault/simulate/index.js";
 
 /** The gesture wiring (everything except the view). Used by mountAuthPopup with the DOM view, and by
  *  the React `<AuthPopup>` with a React view. */
@@ -64,6 +67,21 @@ export function authPopupDeps(config: AuthPopupConfig): Omit<AuthPopupCeremonyDe
       } catch {
         return run();
       }
+    },
+
+    // The real RPC client, built ONLY for the chain the payload actually names — the Vault's CSP
+    // `connect-src` is pinned to exactly `config.rpcUrlsByChainId`'s values (TDD §5/§8), so this can
+    // never reach anywhere the page's own policy would not already admit. A chain with no configured
+    // URL rejects rather than guessing at a public default the operator never opted into and the CSP
+    // would block anyway.
+    async simulate(payload: SignTxPayload): Promise<SimulationResult> {
+      const url = config.rpcUrlsByChainId?.[payload.chainId];
+      if (!url) {
+        throw new Error(`No RPC configured for chain ${payload.chainId} — cannot simulate this request`);
+      }
+      const client = createPublicClient({ transport: http(url) });
+      const rpc = createViemRpcClient(client as unknown as ViemLike);
+      return simulateRequest(rpc, payload);
     },
   };
 }

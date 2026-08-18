@@ -25,8 +25,10 @@ import { authorizeChallenge } from "../channel/authorize-proof.js";
 import type { ChannelResult } from "../channel/channels/port.js";
 import { decodeRequestUrl, encodeResultUrl } from "../channel/redirect-protocol.js";
 import { decodeSignConsent, type SignConsentRequest } from "./sign/consent.js";
-import { formatConsentDisplay } from "./sign/consent-display.js";
+import { formatConsentDisplay, simulationDisplayLines } from "./sign/consent-display.js";
 import type { ConsentDisplayLine } from "./sign/consent-display.js";
+import { simulationPayloadFor } from "./sign/simulate-payload.js";
+import type { SignTxPayload, SimulationResult } from "../vault/simulate/index.js";
 
 /** The operator config baked into the page, mirrors app/branding.ts's AppConfig. */
 export interface AuthPopupConfig {
@@ -40,6 +42,15 @@ export interface AuthPopupConfig {
   managementUrl?: string;
   paymasterUrl?: string;
   feeToken?: string;
+  /** The RPC URL to simulate a `sign-tx` request against, keyed by numeric chain id — TDD §5 step 2.
+   *  These are exactly the URLs the Vault's CSP `connect-src` is pinned to (see
+   *  `packages/vault/src/config.ts`'s `resolveVaultRpcsByChainId`), so `simulate` can never reach
+   *  anywhere the page's own policy would not already admit. A chain with no entry here simply cannot
+   *  be simulated — `deps.simulate` rejects, and the ceremony falls back to decode-only display.
+   *  Optional: the own-origin popup config (`app/branding.ts`'s `OriginConfig`) carries no RPC info at
+   *  all, and that is a valid config, not an error — it simply means every request there degrades to
+   *  decode-only, the same as an RPC that lacks `eth_simulateV1`. */
+  rpcUrlsByChainId?: Record<number, string>;
 }
 
 /** The account the authorize flow hands back to the opener. `credentialId` lets later sign popups
@@ -97,6 +108,15 @@ export interface AuthPopupCeremonyDeps {
    *  result. `credentialId` (from the sign message) constrains the assertion, with a fallback to an
    *  unconstrained discover() handled inside the implementation. */
   signWith(request: SignConsentRequest, credentialId?: string): Promise<unknown>;
+  /**
+   * Simulate a request's on-chain effect, PRE-GESTURE — TDD §5 step 2. Called only when
+   * `simulationPayloadFor` can extract calls from the request (a bare signature has nothing to
+   * simulate). Must never throw for an ordinary simulation failure (see `runSign`, which treats a
+   * thrown/rejected `simulate` the same as an "unsimulated" result) — but the injected implementation
+   * is free to reject rather than swallow errors itself, since the ceremony is the one place that
+   * needs to degrade gracefully either way.
+   */
+  simulate(payload: SignTxPayload): Promise<SimulationResult>;
   win: WindowLike;
 }
 
@@ -163,8 +183,10 @@ function driveRequest(
     // stays terminal (reject-only), because blind signing is exactly what a consent screen prevents.
     let lines: ConsentDisplayLine[];
     let rejectOnly = false;
+    let request: SignConsentRequest | undefined;
     try {
-      lines = formatConsentDisplay(decodeSignConsent(msg.request as SignConsentRequest));
+      request = msg.request as SignConsentRequest;
+      lines = formatConsentDisplay(decodeSignConsent(request));
       if (!Array.isArray(lines) || lines.length === 0) {
         throw new Error("No summary could be produced for this request.");
       }
@@ -174,6 +196,31 @@ function driveRequest(
         { text: (err as Error).message, severity: "danger" },
       ];
       rejectOnly = true;
+      request = undefined;
+    }
+
+    // SIMULATE, ON TOP OF THE DECODE — never in place of it (TDD §5's "decode step unchanged" rule).
+    // Only requests `simulationPayloadFor` recognises as carrying calls go through this at all; a bare
+    // signature has nothing to simulate. Runs BEFORE the user has done anything (no gesture yet), which
+    // is why it needs the wallet address straight out of the request bytes rather than from a gesture.
+    if (request) {
+      const payload = simulationPayloadFor(request);
+      if (payload) {
+        let result: SimulationResult;
+        try {
+          result = await deps.simulate(payload);
+        } catch {
+          // The RPC being unreachable (or lacking eth_simulateV1) is the SAME outcome as
+          // `simulateRequest`'s own "unsimulated" status — never a crash, never silently "nothing to
+          // show". The decode-only lines above are exactly what a `deps.simulate` implementation that
+          // itself never throws would leave them as.
+          result = { status: "unsimulated", deltas: [], approvals: [] };
+        }
+        lines = [...lines, ...simulationDisplayLines(result, payload.chainId)];
+        // A revert BLOCKS the happy path (TDD §5 step 3): same mechanism an undecodable request uses
+        // above — no Approve button reaches the screen, only Close/Reject.
+        if (result.status === "reverted") rejectOnly = true;
+      }
     }
 
     let error: string | undefined;

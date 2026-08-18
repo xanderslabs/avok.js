@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { parseVaultConfig, bakedAppConfig, resolveVaultRpcs, VaultConfigError } from "../src/config.js";
+import {
+  parseVaultConfig,
+  bakedAppConfig,
+  resolveVaultRpcs,
+  resolveVaultRpcsByChainId,
+  VaultConfigError,
+} from "../src/config.js";
 
 const valid = { rpId: "vault.example1.com", vaultOrigin: "https://vault.example1.com", chains: ["base"] };
 
@@ -99,6 +105,29 @@ describe("bakedAppConfig", () => {
   it("an rpcOverride wins over the registry default", () => {
     const cfg = parseVaultConfig({ ...valid, rpcOverrides: { base: "https://custom.example.com" } });
     expect(bakedAppConfig(cfg).rpcUrls).toEqual({ base: "https://custom.example.com" });
+  });
+
+  // The Vault popup's own runtime (vault/simulate) sees a numeric `chainId` on every sign-tx request,
+  // never the registry's friendly name — TDD §5 step 2 needs a chainId-keyed map to build an RpcClient
+  // with, not the name-keyed one `connect-src` is pinned from.
+  it("also carries the RPC map keyed by numeric chain id, for the runtime's simulate step", () => {
+    const baked = bakedAppConfig(parseVaultConfig(valid));
+    expect(baked.rpcUrlsByChainId).toEqual({ 8453: "https://mainnet.base.org" });
+  });
+
+  it("an rpcOverride is reflected in the chainId-keyed map too", () => {
+    const cfg = parseVaultConfig({ ...valid, rpcOverrides: { base: "https://custom.example.com" } });
+    expect(bakedAppConfig(cfg).rpcUrlsByChainId).toEqual({ 8453: "https://custom.example.com" });
+  });
+});
+
+describe("resolveVaultRpcsByChainId", () => {
+  it("resolves every configured chain's numeric chainId to its RPC URL", () => {
+    const cfg = parseVaultConfig({ ...valid, chains: ["base", "ethereum"] });
+    expect(resolveVaultRpcsByChainId(cfg)).toEqual({
+      8453: "https://mainnet.base.org",
+      1: "https://ethereum-rpc.publicnode.com",
+    });
   });
 });
 

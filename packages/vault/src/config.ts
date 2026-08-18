@@ -1,4 +1,4 @@
-import { resolveChainByName, getChainProfileById } from "@avokjs/contracts";
+import { resolveChainByName, getChainProfileById, chainIdNumberByName } from "@avokjs/contracts";
 
 /**
  * The operator's Vault configuration, validated at BUILD time.
@@ -45,6 +45,16 @@ export function resolveVaultRpcs(config: VaultConfig): ResolvedVaultRpcs {
     }
     out[name] = profile.rpcDefault;
   }
+  return out;
+}
+
+/** Chain id -> the RPC URL pinned into `connect-src`. Same resolution as `resolveVaultRpcs`, keyed by
+ *  numeric chainId instead of the registry name — what the page's own runtime (`vault/simulate`) needs,
+ *  since a sign-tx request carries a numeric `chainId`, never the friendly name. */
+export function resolveVaultRpcsByChainId(config: VaultConfig): Record<number, string> {
+  const byName = resolveVaultRpcs(config);
+  const out: Record<number, string> = {};
+  for (const name of config.chains) out[chainIdNumberByName(name)] = byName[name]!;
   return out;
 }
 
@@ -182,6 +192,8 @@ export interface BakedAppConfig {
   rpId: string;
   managementUrl?: string;
   rpcUrls: ResolvedVaultRpcs;
+  /** Same RPC set as `rpcUrls`, keyed by numeric chainId — see `resolveVaultRpcsByChainId`. */
+  rpcUrlsByChainId: Record<number, string>;
 }
 
 export function bakedAppConfig(config: VaultConfig): BakedAppConfig {
@@ -190,6 +202,7 @@ export function bakedAppConfig(config: VaultConfig): BakedAppConfig {
     vaultOrigin: config.vaultOrigin,
     rpId: config.rpId,
     rpcUrls: resolveVaultRpcs(config),
+    rpcUrlsByChainId: resolveVaultRpcsByChainId(config),
   };
   if (config.managementUrl) out.managementUrl = config.managementUrl;
   return out;

@@ -9,6 +9,7 @@ import {
   type AuthPopupAccount,
 } from "../../src/auth-popup/ceremony.js";
 import type { SignConsentRequest } from "../../src/auth-popup/sign/consent.js";
+import type { SimulationResult } from "../../src/vault/simulate/index.js";
 
 // A fake opener + window. `emit` delivers a message as if from the opener (event.source === opener).
 function harness() {
@@ -58,11 +59,14 @@ const account: AuthPopupAccount = { evmAddress: "0xevm", credentialId: "cred-1" 
 // A real, decodable request: decodeSignConsent → formatConsentDisplay yields ["Sign message:", "hi"].
 const request: SignConsentRequest = { op: "signMessage", message: "hi" };
 
+const UNSIMULATED: SimulationResult = { status: "unsimulated", deltas: [], approvals: [] };
+
 function deps(over: Partial<AuthPopupCeremonyDeps>): AuthPopupCeremonyDeps {
   return {
     view: fakeView(),
     readAccount: vi.fn().mockResolvedValue({ account, proof: "0xproof" }),
     signWith: vi.fn().mockResolvedValue({ signature: "0xsig" }),
+    simulate: vi.fn().mockResolvedValue(UNSIMULATED),
     win: harness().win,
     ...over,
   };
@@ -296,6 +300,134 @@ describe("runAuthRedirect (native session)", () => {
     };
     runAuthRedirect(deps({ win: win as never, view }) as never);
     expect(view.failure).toHaveBeenCalledWith(expect.stringMatching(/without a signing request/i));
+  });
+});
+
+/**
+ * TDD §5: the consent screen decodes, THEN simulates. The asset-delta rows go on top of the decoded
+ * lines (never replacing them), an unreachable RPC or an RPC without eth_simulateV1 degrades to the
+ * decode-only screen with a visible "unsimulated" badge, and a revert blocks Approve outright.
+ */
+describe("runAuthPopup — simulation wired into the consent screen (TDD §5)", () => {
+  const WALLET = "0xcB994f2B438e19C9e444A77c95A8D649F047A180";
+  // signTransaction with `to` = the wallet's own address is simulatable (simulationPayloadFor); a bare
+  // signMessage (the shared `request` const above) is not — see the "not simulatable" test below.
+  const txRequest: SignConsentRequest = {
+    op: "signTransaction",
+    tx: { to: WALLET, value: 0n, data: "0x", chainId: 8453 },
+  } as unknown as SignConsentRequest;
+
+  it("calls simulate with the payload extracted from the request, and appends its lines to the decoded ones", async () => {
+    const h = harness();
+    const simulated: SimulationResult = {
+      status: "simulated",
+      deltas: [{ kind: "native", amount: 5n, direction: "out" }],
+      approvals: [],
+    };
+    const simulate = vi.fn().mockResolvedValue(simulated);
+    const seenLines: string[][] = [];
+    const view = fakeView({
+      showConsent: vi.fn().mockImplementation((lines: { text: string }[]) => {
+        seenLines.push(lines.map((l) => l.text));
+        return Promise.resolve(false); // reject — we only care what was shown
+      }),
+    });
+    runAuthPopup(deps({ win: h.win, simulate, view }));
+    h.emit({ kind: "sign", request: txRequest }, "https://dapp.example");
+
+    await vi.waitFor(() => expect(simulate).toHaveBeenCalled());
+    expect(simulate).toHaveBeenCalledWith({
+      chainId: 8453,
+      account: WALLET,
+      calls: [{ to: WALLET, value: 0n, data: "0x" }],
+    });
+    await vi.waitFor(() => expect(seenLines.length).toBeGreaterThan(0));
+    // The decode-only line for a native-valued call is still there (decode step unchanged)...
+    expect(seenLines[0]?.some((t) => t.includes("Chain"))).toBe(true);
+    // ...and the simulated delta row is appended on top of it.
+    expect(seenLines[0]?.some((t) => t.includes("You send"))).toBe(true);
+  });
+
+  it("does not call simulate for a request simulationPayloadFor cannot extract a payload from", async () => {
+    const h = harness();
+    const simulate = vi.fn().mockResolvedValue(UNSIMULATED);
+    runAuthPopup(deps({ win: h.win, simulate, view: fakeView({ showConsent: vi.fn().mockResolvedValue(false) }) }));
+    h.emit({ kind: "sign", request }, "https://dapp.example"); // `request` = signMessage, from the top of the file
+    await vi.waitFor(() =>
+      expect(h.posted).toContainEqual({
+        data: { kind: "sign", result: { error: "user_rejected" } },
+        origin: "https://dapp.example",
+      }),
+    );
+    expect(simulate).not.toHaveBeenCalled();
+  });
+
+  it('falls back to decode-only display with an "unsimulated" badge, Approve still reachable', async () => {
+    const h = harness();
+    const simulate = vi.fn().mockResolvedValue(UNSIMULATED);
+    const seen: Array<{ error?: string; rejectOnly?: boolean } | undefined> = [];
+    const view = fakeView({
+      showConsent: vi.fn().mockImplementation((_lines: { text: string }[], opts) => {
+        seen.push(opts);
+        return Promise.resolve(true);
+      }),
+    });
+    runAuthPopup(deps({ win: h.win, simulate, view }));
+    h.emit({ kind: "sign", request: txRequest }, "https://dapp.example");
+
+    await vi.waitFor(() => expect(h.posted.length).toBeGreaterThan(0));
+    expect(seen[0]?.rejectOnly).toBeFalsy(); // Approve was reachable
+    const shownCall = (view.showConsent as ReturnType<typeof vi.fn>).mock.calls[0];
+    const lines: { text: string }[] = shownCall[0];
+    expect(lines.some((l) => l.text.toLowerCase().includes("not simulated"))).toBe(true);
+  });
+
+  it("an RPC that throws (unreachable / no eth_simulateV1) degrades to the same unsimulated fallback, not a crash", async () => {
+    const h = harness();
+    const simulate = vi.fn().mockRejectedValue(new Error("connect ECONNREFUSED"));
+    const view = fakeView({ showConsent: vi.fn().mockResolvedValue(false) });
+    runAuthPopup(deps({ win: h.win, simulate, view }));
+    h.emit({ kind: "sign", request: txRequest }, "https://dapp.example");
+
+    await vi.waitFor(() => expect(view.showConsent).toHaveBeenCalled());
+    const shownCall = (view.showConsent as ReturnType<typeof vi.fn>).mock.calls[0];
+    const lines: { text: string }[] = shownCall[0];
+    expect(lines.some((l) => l.text.toLowerCase().includes("not simulated"))).toBe(true);
+  });
+
+  it("a revert BLOCKS the happy path — rejectOnly, and the revert reason is on screen", async () => {
+    const h = harness();
+    const reverted: SimulationResult = {
+      status: "reverted",
+      deltas: [],
+      approvals: [],
+      revert: { reason: "insufficient balance" },
+    };
+    const simulate = vi.fn().mockResolvedValue(reverted);
+    const signWith = vi.fn();
+    const seen: Array<{ rejectOnly?: boolean } | undefined> = [];
+    // Mirrors the real DOM view: when rejectOnly is set there is no Approve button, so the only
+    // resolution is Close/Reject (false) — same contract the undecodable-request path relies on.
+    const view = fakeView({
+      showConsent: vi.fn().mockImplementation((_lines: { text: string }[], opts) => {
+        seen.push(opts);
+        return Promise.resolve(!opts?.rejectOnly);
+      }),
+    });
+    runAuthPopup(deps({ win: h.win, simulate, signWith, view }));
+    h.emit({ kind: "sign", request: txRequest }, "https://dapp.example");
+
+    await vi.waitFor(() =>
+      expect(h.posted).toContainEqual({
+        data: { kind: "sign", result: { error: "user_rejected" } },
+        origin: "https://dapp.example",
+      }),
+    );
+    expect(seen[0]?.rejectOnly).toBe(true);
+    expect(signWith).not.toHaveBeenCalled();
+    const shownCall = (view.showConsent as ReturnType<typeof vi.fn>).mock.calls[0];
+    const lines: { text: string }[] = shownCall[0];
+    expect(lines.some((l) => l.text.includes("insufficient balance"))).toBe(true);
   });
 });
 

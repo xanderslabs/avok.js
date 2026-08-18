@@ -19,6 +19,9 @@ export interface AppConfig {
   managementUrl?: string;
   paymasterUrl?: string;
   feeToken?: string;
+  /** Mirrors `BakedAppConfig.rpcUrlsByChainId` (`packages/vault/src/config.ts`) — what `mountAuthPopup`
+   *  needs to simulate a sign-tx request pre-gesture (TDD §5 step 2). */
+  rpcUrlsByChainId: Record<number, string>;
 }
 
 declare global {
