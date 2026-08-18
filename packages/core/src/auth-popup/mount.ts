@@ -25,6 +25,7 @@ import { decodeRequestUrl } from "../channel/redirect-protocol.js";
 import { createDomView } from "./view-dom.js";
 import { createViemRpcClient, type ViemLike } from "../evm/rpc.js";
 import { simulateRequest, type SignTxPayload, type SimulationResult } from "../vault/simulate/index.js";
+import { mountRecoverPage } from "./recover/mount.js";
 
 /** The gesture wiring (everything except the view). Used by mountAuthPopup with the DOM view, and by
  *  the React `<AuthPopup>` with a React view. */
@@ -89,26 +90,41 @@ export function authPopupDeps(config: AuthPopupConfig): Omit<AuthPopupCeremonyDe
 /**
  * Mount the wallet sandbox into `root` (defaults to #root). Returns a disposer.
  *
- * ONE PAGE SERVES BOTH CLIENTS, and it decides which by looking at how it was opened rather than by
+ * ONE PAGE SERVES THREE CLIENTS, and it decides which by looking at how it was opened rather than by
  * being configured. A browser popup arrives with an opener to talk to and an empty fragment; a native
- * in-app browser session arrives with the request IN the fragment and nobody to talk to. The operator
- * hosts one page and it works for both, because asking them to deploy two — or to guess a flag — is
- * how one of the two ends up untested and broken.
+ * in-app browser session arrives with the request IN the fragment and nobody to talk to; a DIRECT
+ * navigation arrives with neither — nobody opened it and there is no request to decode, because nobody
+ * sent one. That last case used to fall through to the popup branch anyway, which posted `ready` into
+ * a `window.opener` that does not exist and then waited forever for a message nothing would ever send.
+ * It is also exactly TDD §7's "Recovery UX entry lives on the origin-point page ('Recover a wallet')":
+ * someone visiting the Vault URL on its own, not through the SDK at all. The operator hosts one page
+ * and it works for all three, because asking them to deploy several — or to guess a flag — is how one
+ * of them ends up untested and broken.
  *
  * Detection is on the REQUEST, not on the user agent. Sniffing for "am I in a WebView" is guesswork
- * that breaks on every new browser; the presence of a request in the fragment is a fact about this
- * navigation and cannot be wrong.
+ * that breaks on every new browser; the presence of a request in the fragment, or of an opener, is a
+ * fact about this navigation and cannot be wrong.
  */
 export function mountAuthPopup(config: AuthPopupConfig, root?: HTMLElement): () => void {
   const el = root ?? document.getElementById("root");
   if (!el) throw new Error('mountAuthPopup: no root element (pass one, or add <div id="root"> to the page)');
-  const view = createDomView(el);
-  const deps = { ...authPopupDeps(config), view };
 
   // A request in the fragment means a redirect-driven session: there is no opener, and the answer
   // has to leave by navigation.
   if (decodeRequestUrl(window.location.href)) {
+    const view = createDomView(el);
+    const deps = { ...authPopupDeps(config), view };
     return runAuthRedirect(deps as Parameters<typeof runAuthRedirect>[0]);
   }
+
+  // No request, and nobody opened this window: nothing is asking the popup ceremony for anything.
+  // This is a direct visit — the recovery screen's home.
+  if (!window.opener) {
+    mountRecoverPage(config, el);
+    return () => {};
+  }
+
+  const view = createDomView(el);
+  const deps = { ...authPopupDeps(config), view };
   return runAuthPopup(deps);
 }

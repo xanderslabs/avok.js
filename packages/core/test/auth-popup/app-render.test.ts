@@ -54,7 +54,15 @@ describe("the popup enforces Trusted Types", () => {
     // view-dom.ts builds nodes with createElement + textContent only; nothing here may reach for an
     // HTML-string sink. The page bootstrap scanned alongside these now lives in @avokjs/vault and is
     // scanned by that package's suite.
-    const files = [join(POPUP_SRC, "ceremony.ts"), join(POPUP_SRC, "view-dom.ts"), join(POPUP_SRC, "mount.ts")];
+    const files = [
+      join(POPUP_SRC, "ceremony.ts"),
+      join(POPUP_SRC, "view-dom.ts"),
+      join(POPUP_SRC, "mount.ts"),
+      join(POPUP_SRC, "recover", "ceremony.ts"),
+      join(POPUP_SRC, "recover", "view-dom.ts"),
+      join(POPUP_SRC, "recover", "mount.ts"),
+      join(POPUP_SRC, "recover", "discover-guardian-provider.ts"),
+    ];
     for (const path of files) {
       const src = readFileSync(path, "utf8");
       expect(src, `${path} must not use a script-injection sink`).not.toMatch(

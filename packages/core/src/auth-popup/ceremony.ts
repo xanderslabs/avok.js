@@ -51,6 +51,16 @@ export interface AuthPopupConfig {
    *  all, and that is a valid config, not an error — it simply means every request there degrades to
    *  decode-only, the same as an RPC that lacks `eth_simulateV1`. */
   rpcUrlsByChainId?: Record<number, string>;
+  /** The single anchor chain (TDD §7: "V1 is anchor-chain-only") guardian/recovery state is read from
+   *  — the "Recover a wallet" screen's `readGuardianState`/`approve*` calls all target this chain. Its
+   *  RPC URL is looked up in `rpcUrlsByChainId`, same as simulation. Optional: a Vault config with no
+   *  configured chains at all (nothing to recover against) simply cannot mount the recover screen —
+   *  `recover/mount.ts` fails loud rather than guessing which of possibly several configured chains
+   *  the operator meant. Set to the FIRST of `VaultConfig.chains` by `bakedAppConfig` — there is no
+   *  separate `anchorChainId` config key today (see `packages/vault/src/config.ts`'s explicit
+   *  rejection of that key for a DIFFERENT, unrelated concept); this default is a v1 decision, not a
+   *  spec requirement, and worth an explicit config key if an operator ever needs a non-first anchor. */
+  recoveryChainId?: number;
 }
 
 /** The account the authorize flow hands back to the opener. `credentialId` lets later sign popups

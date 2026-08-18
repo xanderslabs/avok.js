@@ -194,6 +194,13 @@ export interface BakedAppConfig {
   rpcUrls: ResolvedVaultRpcs;
   /** Same RPC set as `rpcUrls`, keyed by numeric chainId — see `resolveVaultRpcsByChainId`. */
   rpcUrlsByChainId: Record<number, string>;
+  /** The anchor chain the "Recover a wallet" screen reads guardian state from and targets its
+   *  approvals at (TDD §7: "V1 is anchor-chain-only"). The FIRST entry of `VaultConfig.chains` — there
+   *  is no separate `anchorChainId` config key (see the deliberate rejection of that key above, for a
+   *  different, unrelated concept). This is a v1 default, not a spec requirement: an operator serving
+   *  several chains who wants recovery anchored somewhere other than their first-listed chain needs an
+   *  explicit config key added later, not silent behavior guessed here. */
+  recoveryChainId: number;
 }
 
 export function bakedAppConfig(config: VaultConfig): BakedAppConfig {
@@ -203,6 +210,7 @@ export function bakedAppConfig(config: VaultConfig): BakedAppConfig {
     rpId: config.rpId,
     rpcUrls: resolveVaultRpcs(config),
     rpcUrlsByChainId: resolveVaultRpcsByChainId(config),
+    recoveryChainId: chainIdNumberByName(config.chains[0]!),
   };
   if (config.managementUrl) out.managementUrl = config.managementUrl;
   return out;

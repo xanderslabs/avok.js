@@ -22,6 +22,9 @@ export interface AppConfig {
   /** Mirrors `BakedAppConfig.rpcUrlsByChainId` (`packages/vault/src/config.ts`) — what `mountAuthPopup`
    *  needs to simulate a sign-tx request pre-gesture (TDD §5 step 2). */
   rpcUrlsByChainId: Record<number, string>;
+  /** Mirrors `BakedAppConfig.recoveryChainId` — the anchor chain the "Recover a wallet" screen reads
+   *  guardian state from (TDD §7). */
+  recoveryChainId: number;
 }
 
 declare global {

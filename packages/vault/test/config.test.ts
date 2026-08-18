@@ -102,6 +102,14 @@ describe("bakedAppConfig", () => {
     expect(baked.rpcUrls).toEqual({ base: "https://mainnet.base.org" });
   });
 
+  // TDD §7: "V1 is anchor-chain-only." There is no separate `anchorChainId` config key (that name is
+  // rejected above for a different, unrelated concept — device enrolment's anchor). The FIRST
+  // configured chain is used, a v1 default rather than a spec requirement — see recover/mount.ts.
+  it("recoveryChainId is the FIRST configured chain's numeric id", () => {
+    const cfg = parseVaultConfig({ ...valid, chains: ["base", "ethereum"] });
+    expect(bakedAppConfig(cfg).recoveryChainId).toBe(8453);
+  });
+
   it("an rpcOverride wins over the registry default", () => {
     const cfg = parseVaultConfig({ ...valid, rpcOverrides: { base: "https://custom.example.com" } });
     expect(bakedAppConfig(cfg).rpcUrls).toEqual({ base: "https://custom.example.com" });
