@@ -2,9 +2,9 @@
 
 Build and serve the hardened Avok Vault page.
 
-The Vault is one self-contained HTML file you deploy at an origin you choose. Every Avok signing
-operation opens it in a popup. Your app never calls WebAuthn, never sees PRF output, and never holds
-a key.
+The Vault is one self-contained HTML file you deploy at an origin you choose — the `originPoint` an
+app configures. Every Avok signing operation, plus device and guardian management, opens it in a
+popup. Your app never calls WebAuthn, never sees PRF output, and never holds a key.
 
 This package is build tooling. It is not installed by apps that use the SDK, which is why it is
 separate from `@avokjs/core`.
@@ -38,6 +38,14 @@ One header must stay absent: `Cross-Origin-Opener-Policy`. It severs `window.ope
 only route back to your app is through that relationship, so signing fails after the user has already
 read the screen and approved. `check` flags it if a host or a proxy adds one.
 
+## The RPC set is pinned into the CSP
+
+`connect-src` is set to exactly the RPC endpoints your configured `chains` resolve to — nothing else
+this page could ever fetch. The Vault reads chain state itself (batch simulation for the consent
+screen, guardian/recovery state) against these endpoints and no others; `build` refuses to emit a
+policy with no chains configured, and `check` flags a deployed policy that still says `connect-src
+'none'` as stale.
+
 ## Choosing your RP-ID
 
 `init` defaults the RP-ID to your Vault's own host, which is the tightest scope WebAuthn allows.
@@ -59,9 +67,9 @@ symptom there is a wallet that cannot be found.
 | `_headers` | Netlify and Cloudflare Pages header config |
 | `csp-headers.txt` | The same policy for hosts that read headers from elsewhere |
 
-The page fetches nothing at runtime. No CDN, no fonts, no analytics, no image host. That is what lets
-its CSP set `default-src 'none'` and `connect-src 'none'` honestly, and `build` fails rather than
-emitting a page that would break either claim.
+The page fetches nothing except its own pinned RPC set at runtime. No CDN, no fonts, no analytics, no
+image host, no third-party call of any kind. That is what lets its CSP set `default-src 'none'`
+honestly, and `build` fails rather than emitting a page that would break that claim.
 
 ## Configuration
 
@@ -71,8 +79,7 @@ emitting a page that would break either claim.
 |---|---|---|
 | `rpId` | yes | Your pinned WebAuthn RP-ID. See above |
 | `vaultOrigin` | yes | Where the Vault is deployed, https except on localhost |
+| `chains` | yes | Registry chain names (e.g. `["base", "ethereum"]`) this Vault serves. Pins `connect-src` |
+| `rpcOverrides` | no | Per-chain RPC URL, keyed by the same names as `chains`. Unset chains use the registry default |
 | `branding.operatorName` | no | Shown to users. Defaults to your `rpId`, never to "Avok" |
 | `managementUrl` | no | Your management app, surfaced to apps that borrow the wallet |
-
-There is no chain setting. Avok is multichain and the chain arrives per transaction, so the Vault
-has no use for one.

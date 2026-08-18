@@ -1,7 +1,7 @@
 # @avokjs/react
 
-React bindings for Avok. **The passkey *is* the wallet**: `K = HKDF(PRF(credential, rpId))`, derived
-on every use and stored nowhere.
+React bindings for Avok. **The passkey *is* the wallet**: `K = HKDF(PRF(credential))`, derived inside
+the origin-point Vault on every gesture and stored nowhere.
 
 ```bash
 npm i @avokjs/react react
@@ -11,27 +11,22 @@ Peer dependency: `react >=19.2.7`.
 
 ## Quickstart
 
-Build an own-origin wallet, where your app owns the passkey's `rpId` and signs in code:
-
 ```tsx
-import {
-  AvokProvider, createAvokClient, createOwnOriginConnection, useAccount, useCreate,
-} from "@avokjs/react";
+import { AvokProvider, createAvok, useAccount, useLogin } from "@avokjs/react";
 
-const client = createAvokClient(
-  { connection: createOwnOriginConnection({ rpId: "example.com" }) },
-  // The operator's identity, shown in wallet pickers. `name` and `rdns` are required and are never
-  // defaulted to an Avok brand.
-  { name: "Example Wallet", rdns: "com.example.wallet" },
-);
+const client = await createAvok({
+  originPoint: "https://vault.example.com", // yours, or someone else's — permissionless
+  chains: ["base"],
+  wallet: { name: "Example Wallet", rdns: "com.example.wallet" }, // shown in wallet pickers
+});
 
 function Wallet() {
   const { account } = useAccount();
-  const { create, pending, error } = useCreate();
+  const { login, pending, error } = useLogin();
   if (!account) {
     return (
-      <button disabled={pending} onClick={() => create()}>
-        Create wallet
+      <button disabled={pending} onClick={() => login()}>
+        Connect
       </button>
     );
   }
@@ -47,80 +42,49 @@ export default function App() {
 }
 ```
 
+There is no passkey domain or auth-server URL to set on the SDK side. Every app configures a single
+`originPoint` — the URL of the operator's Vault page — and the SDK opens a popup there for every
+wallet action.
+
 ## Hooks
 
-The hooks cover the wallet lifecycle. Each mutation hook returns `pending` and `error` next to its
-action, so a failed passkey gesture or a rejected signature surfaces where you render it.
+Each mutation hook returns `pending` and `error` next to its action, so a failed passkey gesture or a
+rejected signature surfaces where you render it.
 
 | Hook | What it does |
 | --- | --- |
-| `useAvok` | Returns the use-only client. Works on any connection. |
-| `useSelfCustody` | Returns the full client. Throws on a shared-origin (use-only) connection. |
+| `useAvok` | Returns the client. |
 | `useAccount` | Reactive `{ account, status }` snapshot. |
-| `useCreate` | Create a wallet with a passkey. Self-custody only. |
-| `useLogin` | Start a session. |
-| `useLogout` | End a session. |
-| `useEnroll` | Add an access key. Self-custody only. |
-| `useExport` | Export the raw EVM key. Self-custody only. |
-| `useAccessSlots` | List, refresh, and remove access keys. Self-custody only. |
-| `useAvokConnect` | Shared-origin connect trigger. Returns `isPending` and `isConnected`. |
-| `usePairingCeremony` | Drive the device-pairing phase machine. |
+| `useLogin` | Open the origin-point popup and connect. |
+| `useLogout` | End the session. |
+| `useAvokConnect` | The WalletConnect-style connect trigger: `{ connect, isPending, isConnected, account, error }`. |
+| `useDevices` | Read the device roster; build (not send) register/revoke calls. |
+| `useGuardians` | Read the guardian set and any pending recovery; build (not send) setup/propose/execute/veto calls. |
 
-Components: `AvokProvider`, `AuthPopup`, `SharedOrigin`, and `PairDevice`. The [React
-reference](../../docs/reference/react.mdx) has the exact return shapes and props.
+Components: `AvokProvider`, `AuthPopup` (mount the Vault ceremony as a React tree instead of the
+plain-DOM entry, for an operator building their own Vault page in React), `SharedOrigin` (the async
+wiring for a popup-backed connection). Exact return shapes are in the hooks' own TSDoc.
 
 ## Sending and signing are not hooks
 
-`createAvokClient` announces an EIP-1193 provider over EIP-6963. You send and sign with the stock
-ecosystem tools, wagmi, viem, ethers or RainbowKit, which discover Avok like any other wallet.
+`createAvok` announces an EIP-1193 provider over EIP-6963. You send and sign with the stock ecosystem
+tools, wagmi, viem, ethers or RainbowKit, which discover Avok like any other wallet.
 `client.getEip1193Provider()` returns the provider directly if you are not using a connector library.
 
-Earlier versions of this package shipped `useSend`, `useSimulate`, `useSign`, and `useFeeTokens`.
-They are gone.
+`useDevices`/`useGuardians` follow the same rule: they build a `{ to, value, data }` self-call — device
+registration and guardian-set changes are ordinary wallet transactions — and you send it through the
+provider, exactly like any other action. Neither hook signs or submits anything itself.
 
-## Shared-origin
+## Devices and guardians
 
-Own-origin (above) is self-custody with no server. Shared-origin points your app at an operator that
-hosts the wallet. Your app receives signatures through a popup and cannot derive key material,
-because WebAuthn will not let an origin request an `rpId` it does not own.
-
-`<SharedOrigin>` does the async wiring. It builds the popup-backed connection, constructs the client,
-and renders the provider beneath it.
-
-```tsx
-import { SharedOrigin } from "@avokjs/react";
-
-<SharedOrigin
-  auth="https://wallet.example.com"
-  wallet={{ name: "Example Wallet", rdns: "com.example.wallet" }}
-  fallback={<Spinner />}
-  onError={(e) => console.error(e)}
->
-  <App />
-</SharedOrigin>;
-```
-
-`createSharedOriginConnection` is also exported for hand-wiring. It takes an injected `channel:
-SigningChannel`. `<SharedOrigin>` builds the popup channel for you and imports it dynamically, so an
-own-origin-only app never pulls that chunk.
-
-## rpId and RPC
-
-`rpId` is an input to the wallet key. Change it and every user gets a different wallet, so set it
-explicitly. The SDK refuses to start without it.
-
-Avok ships no third-party RPC as a default, because an RPC decides what address a name resolves to,
-and therefore where money goes. Pass `rpcUrls` to `createAvokClient`.
-
-## Removing a device's access
-
-`removeAccessSlot(slotId, { confirm: true })` destroys the access key's ciphertext on chain, so a
-removed passkey has nothing left to decrypt on a fresh session. Removal is real revocation, and it is
-bounded: it cannot un-copy a key a compromised device already took. Read [Remove
-access](../../docs/guides/remove-access.mdx) for the exact guarantees and the guidance to give users
-before they pair a device.
+Enrolling a new device (`@avokjs/core/wallet`'s `createDeviceEnrollmentRequest`, run on the NEW
+device) and registering it on chain (`useDevices().buildRegisterCall`, sent from an EXISTING device)
+are two separate steps a UI composes; there is no bundled pairing ceremony in this package. A
+guardian's own *approval* of a recovery is a different action again (their key, not the wallet's), and
+runs on the origin-point's own recovery screen — not through this SDK. `useGuardians` is for the
+wallet OWNER managing who their guardians are, not for a guardian to act.
 
 ## Documentation
 
-This package is a thin React layer over [`@avokjs/core`](../core). Full documentation lives in the
-repo's [`docs/`](../../docs) site.
+This package is a thin React layer over [`@avokjs/core`](../core) — see that package's README for the
+underlying config, subpaths, and the sponsorship contract.
