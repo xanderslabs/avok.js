@@ -6,7 +6,11 @@ export { AuthPopup } from "./auth-popup.js";
 export type { AuthPopupConfig } from "@avokjs/core/auth-popup";
 
 // ─── Hooks ───────────────────────────────────────────────────────────────────
-export { useAvok, useAccount, useLogin, useLogout } from "./hooks.js";
+export { useAvok, useAccount, useLogin, useLogout, useDevices, useGuardians } from "./hooks.js";
+
+// ─── Roster/guardian building blocks (re-exported for single-import DX with the two hooks above) ──
+export type { Call, RpcClient, RosterEntry, GuardianOp, GuardianOpKind } from "@avokjs/core/evm";
+export { createViemRpcClient } from "@avokjs/core/evm";
 
 // ─── Shared-origin connect (the WalletConnect-style trigger) ──────────────────
 export { SharedOrigin } from "./shared-origin.js";

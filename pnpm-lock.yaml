@@ -75,12 +75,6 @@ importers:
       '@noble/curves':
         specifier: ^2.2.0
         version: 2.2.0
-      '@noble/hashes':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@scure/base':
-        specifier: ^2.2.0
-        version: 2.2.0
       jsqr:
         specifier: ^1.4.0
         version: 1.4.0
@@ -150,12 +144,6 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@noble/curves':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@noble/hashes':
-        specifier: ^2.2.0
-        version: 2.2.0
-      '@scure/base':
         specifier: ^2.2.0
         version: 2.2.0
       expo-secure-store:
@@ -1511,9 +1499,6 @@ packages:
 
   '@scure/base@1.2.6':
     resolution: {integrity: sha512-g/nm5FgUa//MCj1gV09zTJTaM6KBAHqLN907YVQqf7zC49+DcO4B1so4ZX07Ef10Twr6nuqYEH9GEggFXA4Fmg==}
-
-  '@scure/base@2.2.0':
-    resolution: {integrity: sha512-b8XEupJibegiXV+tDUseI8oLQc8ei3d/4Jkb2RpbHh3MfE054ov3uIz2dhFkB3FI8iwYkEh0gGCApkrYggkPNg==}
 
   '@scure/bip32@1.7.0':
     resolution: {integrity: sha512-E4FFX/N3f4B80AKWp5dP6ow+flD1LQZo/w8UnLGYZO674jS6YnYeepycOOksv+vLPSpgN35wgKgy+ybfTb2SMw==}
@@ -5418,8 +5403,6 @@ snapshots:
     optional: true
 
   '@scure/base@1.2.6': {}
-
-  '@scure/base@2.2.0': {}
 
   '@scure/bip32@1.7.0':
     dependencies:

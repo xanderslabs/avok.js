@@ -3,15 +3,40 @@
  * re-implemented here to avoid pulling the web-React/DOM graph.
  *
  * Thin state wrappers only; no key handling here. Sending and signing are NOT hooks — on native they
- * go through the wallet's provider surfaces, not a bespoke hook (VISION §6).
+ * go through the wallet's provider surfaces, not a bespoke hook (VISION §6). `useDevices`/
+ * `useGuardians` follow the same rule: `register`/`revoke`/`setupGuardians`/`proposeGuardianOp`/
+ * `executeGuardianOp`/`vetoGuardianOp` are all `onlyThis`/`onlySelf` on the wallet contract, satisfied
+ * by an ORDINARY self-call batch — no new signing primitive, no vault protocol kind. These hooks
+ * build the `Call` and read the current roster/guardian state; SENDING the call is the app's own
+ * transaction submission through the announced provider, exactly like any other action.
  *
- * Wallet lifecycle beyond login (create, guardians, recovery, devices) is the vault's own surface —
- * there is no more own-origin custody posture to gate a "self-custody" hook family behind (D3:
+ * There is no more own-origin custody posture to gate a "self-custody" hook family behind (D3:
  * popup-for-all).
+ *
+ * Recovery is deliberately absent here: a guardian's APPROVAL of a recovery is a different actor's
+ * action (the guardian's own key, not the wallet's), and TDD §7 puts that UX on the origin-point page
+ * itself, not the app. There is no `useRecovery` because there is no app-side entry point to wrap.
  */
 import { useCallback, useState } from "react";
 import type { AvokClient, Account, ContinueOpts } from "@avokjs/core/engine";
+import type { Call, RpcClient, RosterEntry, GuardianOp } from "@avokjs/core/evm";
+import {
+  buildRegisterDeviceCall,
+  buildRevokeDeviceCall,
+  readDeviceRoster,
+  buildSetupGuardiansCall,
+  buildProposeGuardianOpCall,
+  buildExecuteGuardianOpCall,
+  buildVetoGuardianOpCall,
+  readGuardianState,
+} from "@avokjs/core/evm";
 import { useAvokContext } from "./provider.js";
+
+// Avoids a direct `viem` dependency in this file for two bare hex-string parameter types (this
+// package DOES declare viem already, for Metro's transitive-resolution rule — see
+// runtime-deps.test.ts — but nothing else in this file needs its full type surface).
+type Address = `0x${string}`;
+type Hex = `0x${string}`;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -81,4 +106,93 @@ export function useLogout(): {
     await (client.logout() as Promise<void> | void);
   }, [client]);
   return { logout: call, pending, error };
+}
+
+/** Read `error` for "no active account" before calling anything that assumes one. */
+function requireWalletAddress(account: Account | null): Address {
+  const address = account?.evm.address;
+  if (!address) throw new Error("No account is active — log in first");
+  return address as Address;
+}
+
+/**
+ * The device roster: who can sign for this wallet. `devices` is `null` until the first `refresh()`.
+ * `buildRegisterCall`/`buildRevokeCall` produce a `{to, value, data}` the app sends through its own
+ * transaction submission — this hook never signs or submits anything itself.
+ */
+export function useDevices(rpc: RpcClient): {
+  devices: RosterEntry[] | null;
+  refresh: () => Promise<void>;
+  buildRegisterCall: (deviceAddress: Address) => Call;
+  buildRevokeCall: (keyHash: Hex) => Call;
+  pending: boolean;
+  error: Error | null;
+} {
+  const { account } = useAvokContext();
+  const [devices, setDevices] = useState<RosterEntry[] | null>(null);
+
+  const doRefresh = useCallback(async () => {
+    const wallet = requireWalletAddress(account);
+    setDevices(await readDeviceRoster(rpc, wallet));
+  }, [account, rpc]);
+
+  const { call: refresh, pending, error } = useMutation(doRefresh, [doRefresh]);
+
+  return {
+    devices,
+    refresh,
+    buildRegisterCall: (deviceAddress: Address) =>
+      buildRegisterDeviceCall(requireWalletAddress(account), deviceAddress),
+    buildRevokeCall: (keyHash: Hex) => buildRevokeDeviceCall(requireWalletAddress(account), keyHash),
+    pending,
+    error,
+  };
+}
+
+/**
+ * Guardian-SET management: who the guardians are, and building the setup/propose/execute/veto calls
+ * that change them. `guardians`/`pendingOp` are `null` until the first `refresh()`. This is the
+ * wallet OWNER managing their own guardians — a guardian's own approval of a recovery is a different
+ * action entirely, on the vault's own recovery page (see this file's module header).
+ */
+export function useGuardians(rpc: RpcClient): {
+  guardians: { addresses: Address[]; threshold: number } | null;
+  pendingOp: { promoteKey: Address; readyAt: number } | null;
+  refresh: () => Promise<void>;
+  buildSetupCall: (args: {
+    guardians: Address[];
+    threshold: number;
+    recoveryDelaySeconds: number;
+    guardianOpDelaySeconds: number;
+  }) => Call;
+  buildProposeCall: (op: GuardianOp) => Call;
+  buildExecuteCall: (op: GuardianOp) => Call;
+  buildVetoCall: (opHash: Hex) => Call;
+  pending: boolean;
+  error: Error | null;
+} {
+  const { account } = useAvokContext();
+  const [guardians, setGuardians] = useState<{ addresses: Address[]; threshold: number } | null>(null);
+  const [pendingOp, setPendingOp] = useState<{ promoteKey: Address; readyAt: number } | null>(null);
+
+  const doRefresh = useCallback(async () => {
+    const wallet = requireWalletAddress(account);
+    const { config, pending } = await readGuardianState(rpc, wallet);
+    setGuardians({ addresses: config.guardians, threshold: config.threshold });
+    setPendingOp(pending ? { promoteKey: pending.promoteKey, readyAt: pending.readyAt } : null);
+  }, [account, rpc]);
+
+  const { call: refresh, pending, error } = useMutation(doRefresh, [doRefresh]);
+
+  return {
+    guardians,
+    pendingOp,
+    refresh,
+    buildSetupCall: (args) => buildSetupGuardiansCall({ wallet: requireWalletAddress(account), ...args }),
+    buildProposeCall: (op) => buildProposeGuardianOpCall(requireWalletAddress(account), op),
+    buildExecuteCall: (op) => buildExecuteGuardianOpCall(requireWalletAddress(account), op),
+    buildVetoCall: (opHash) => buildVetoGuardianOpCall(requireWalletAddress(account), opHash),
+    pending,
+    error,
+  };
 }

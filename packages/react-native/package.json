@@ -52,8 +52,6 @@
     "@avokjs/contracts": "workspace:*",
     "@avokjs/core": "workspace:*",
     "@noble/curves": "^2.2.0",
-    "@noble/hashes": "^2.2.0",
-    "@scure/base": "^2.2.0",
     "viem": "^2.55.4"
   },
   "peerDependencies": {

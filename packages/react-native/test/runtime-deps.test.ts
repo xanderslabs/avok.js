@@ -6,16 +6,17 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 /**
- * WHY THIS PACKAGE DECLARES DEPENDENCIES IT NEVER IMPORTS.
+ * WHY THIS PACKAGE DECLARES A DEPENDENCY IT NEVER IMPORTS.
  *
- * `@avokjs/react-native` has no `import` of `@noble/curves`, `@noble/hashes` or `@scure/base`
- * anywhere in its own sources. Grep says they are dead. Grep is wrong, and this guard exists because
- * that wrong conclusion has been reached more than once.
+ * `@avokjs/react-native` has no `import` of `@noble/curves` anywhere in its own sources. Grep says it
+ * is dead. Grep is wrong here, and this guard exists because that wrong conclusion has been reached
+ * more than once.
  *
- * `@avokjs/core`'s built output imports them AT RUNTIME (they are not bundled), and this package's
- * tsup config lists them as `external`, so they are not bundled here either. On the web that is fine:
- * `@avokjs/react` declares only `@avokjs/core`, because a web bundler resolves a transitive
- * dependency through the dependency's own tree.
+ * `@avokjs/core`'s built output imports it AT RUNTIME (it is not bundled — `@noble/curves` is not in
+ * core's tsup `external` list, but tsup externalizes package.json dependencies by default regardless),
+ * and this package's own tsup config leaves it unbundled too. On the web that is fine: `@avokjs/react`
+ * declares only `@avokjs/core`, because a web bundler resolves a transitive dependency through the
+ * dependency's own tree.
  *
  * React Native does not. Metro resolves from the app's perspective and does not hoist a transitive
  * dependency the way node and web bundlers do, so a package left undeclared here can fail to resolve
@@ -27,6 +28,11 @@ import { join, resolve } from "node:path";
  *
  * It does NOT say every declared dependency is needed. `@scure/bip39` and `micro-key-producer` were
  * declared here, imported by nothing, and absent from core's dist; they were removed, correctly.
+ * `@noble/hashes` and `@scure/base` were declared for the same reason `@noble/curves` still is —
+ * core's PRF-blob/HKDF machinery imported them at runtime — but the D8 key-model migration deleted
+ * that machinery outright (wallet/crypto/blob.ts, slot-meta.ts, and friends are gone), and core's own
+ * dist no longer imports either. Re-verified against the actual built dist (not grep) before cutting
+ * them: this task's own "re-verify then cut" instruction, applied.
  */
 const RN_PKG = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8"));
 const CORE_DIST = resolve(process.cwd(), "..", "core", "dist");
@@ -68,10 +74,18 @@ describe("the React Native facade's runtime dependency graph", () => {
     ).toEqual([]);
   });
 
-  it("keeps the three that look dead but are not", () => {
-    // Named explicitly so a future tidy-up reads the reason before deleting them.
-    for (const p of ["@noble/curves", "@noble/hashes", "@scure/base"]) {
-      expect(declared.has(p), `${p} is imported by @avokjs/core's dist and must stay declared here`).toBe(true);
+  it("keeps @noble/curves, which looks dead but is not", () => {
+    // Named explicitly so a future tidy-up reads the reason before deleting it.
+    expect(
+      declared.has("@noble/curves"),
+      "@noble/curves is imported by @avokjs/core's dist and must stay declared here",
+    ).toBe(true);
+  });
+
+  it("does NOT declare @noble/hashes or @scure/base — the D8 migration deleted the code that used them", () => {
+    for (const p of ["@noble/hashes", "@scure/base"]) {
+      expect(coreRuntimeImports(), `${p} should no longer appear in core's dist`).not.toContain(p);
+      expect(declared.has(p), `${p} is dead — core's dist no longer imports it`).toBe(false);
     }
   });
 });

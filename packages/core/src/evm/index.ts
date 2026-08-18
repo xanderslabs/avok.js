@@ -59,6 +59,23 @@ export { buildUserOp, getAvokUserOpHash } from "./userop.js";
 // signing paths need this and which deliberately do not yet).
 export { computeSecp256k1KeyHash, wrapRosterSignature } from "./roster-signature.js";
 
+// Device roster management (register/revoke a signer) — self-calls, submitted like any other batch.
+export { buildRegisterDeviceCall, buildRevokeDeviceCall, deviceKeyHash } from "./roster-calls.js";
+export { readDeviceRoster } from "./roster-reads.js";
+export type { RosterEntry } from "./roster-reads.js";
+
+// Guardian-set management (setup/propose/execute/veto) — also self-calls. Guardian APPROVAL of a
+// recovery is a different actor's action; see vault/recover/ instead.
+export {
+  buildSetupGuardiansCall,
+  buildProposeGuardianOpCall,
+  buildExecuteGuardianOpCall,
+  buildVetoGuardianOpCall,
+} from "./guardian-calls.js";
+export type { GuardianOp, GuardianOpKind } from "./guardian-calls.js";
+export { readGuardianState } from "./guardian-reads.js";
+export type { GuardianConfig, PendingRecovery } from "./guardian-reads.js";
+
 // Pipeline
 export { isDelegatedTo } from "./resolve.js";
 export type { SimulateDeps } from "./simulate.js";
