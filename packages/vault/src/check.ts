@@ -25,10 +25,21 @@ export function evaluateDeployedHeaders(headers: Headers): { ok: boolean; proble
     if (csp.includes("unsafe-inline")) problems.push("Content-Security-Policy admits 'unsafe-inline'");
     if (!csp.includes("frame-ancestors")) problems.push("Content-Security-Policy has no frame-ancestors");
     if (!csp.includes("default-src 'none'")) problems.push("Content-Security-Policy has no default-src 'none'");
-    // A host can serve a STALE policy, which fails as silently as a missing one. These two are what
-    // the current build guarantees, so their absence means the deployed page is not the built page.
-    if (!csp.includes("connect-src 'none'")) {
-      problems.push("Content-Security-Policy has no connect-src 'none'; the deployed policy may be stale");
+    // connect-src is now the operator's pinned RPC set (TDD §8), not 'none' — a deployed policy that
+    // still says 'none' is STALE (built before this change) just as surely as a missing directive.
+    const connectSrcMatch = csp.match(/connect-src ([^;]+)/);
+    if (!connectSrcMatch) {
+      problems.push("Content-Security-Policy has no connect-src; the deployed policy may be stale");
+    } else {
+      const sources = connectSrcMatch[1].trim().split(/\s+/);
+      if (sources.length === 0 || sources[0] === "'none'") {
+        problems.push(
+          "Content-Security-Policy's connect-src is 'none'; the deployed policy is stale (the Vault " +
+            "now needs RPC access for simulation and recovery — see avok-origin.config.json's chains)",
+        );
+      } else if (sources.some((s) => s === "*" || s === "'unsafe-inline'")) {
+        problems.push("Content-Security-Policy's connect-src is wider than a pinned RPC set");
+      }
     }
     if (!csp.includes("require-trusted-types-for")) {
       problems.push("Content-Security-Policy does not enforce trusted-types; the deployed policy may be stale");

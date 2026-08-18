@@ -7,6 +7,9 @@ export interface InitAnswers {
   /** Optional. Defaults to the Vault origin's host, which is the tightest scope WebAuthn allows. */
   rpId?: string;
   operatorName?: string;
+  /** Registry chain names this Vault will pin connect-src to (TDD §8). Defaults to ["base"], the
+   *  hero chain (PRD §7) — an operator serving more chains passes the full list explicitly. */
+  chains?: string[];
 }
 
 /**
@@ -33,6 +36,7 @@ export function buildInitConfig(answers: InitAnswers): VaultConfig {
   const draft: Record<string, unknown> = {
     rpId: answers.rpId ?? host,
     vaultOrigin: answers.vaultOrigin,
+    chains: answers.chains && answers.chains.length > 0 ? answers.chains : ["base"],
   };
   if (answers.operatorName) draft.branding = { operatorName: answers.operatorName };
   return parseVaultConfig(draft);
@@ -67,11 +71,19 @@ export async function runInit(cwd: string, log: (s: string) => void): Promise<nu
     }
     const rpIdAnswer = await rl.question(`RP-ID [${defaultRpId}]: (enter to accept, or pin a historical value) `);
     const operatorName = await rl.question("Operator name (shown to users): ");
+    const chainsAnswer = await rl.question(
+      "Chains, comma-separated (e.g. base,ethereum) [base]: (pins connect-src to these RPCs) ",
+    );
+    const chains = chainsAnswer
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
 
     const config = buildInitConfig({
       vaultOrigin,
       ...(rpIdAnswer.trim() ? { rpId: rpIdAnswer.trim() } : {}),
       ...(operatorName.trim() ? { operatorName: operatorName.trim() } : {}),
+      ...(chains.length > 0 ? { chains } : {}),
     });
     await writeFile(target, `${JSON.stringify(config, null, 2)}\n`);
     log("avok-vault: wrote avok-origin.config.json. Next: avok-vault build");

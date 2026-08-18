@@ -3,7 +3,7 @@ import { evaluateDeployedHeaders } from "../src/check.js";
 
 const good = new Headers({
   "content-security-policy":
-    "default-src 'none'; script-src 'sha256-x'; connect-src 'none'; frame-ancestors 'none'; " +
+    "default-src 'none'; script-src 'sha256-x'; connect-src https://mainnet.base.org; frame-ancestors 'none'; " +
     "require-trusted-types-for 'script'",
   "origin-agent-cluster": "?1",
   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
@@ -65,9 +65,29 @@ describe("evaluateDeployedHeaders", () => {
     const h = new Headers(good);
     h.set(
       "content-security-policy",
-      "default-src 'none'; script-src 'sha256-x'; connect-src 'none'; frame-ancestors 'none'",
+      "default-src 'none'; script-src 'sha256-x'; connect-src https://mainnet.base.org; frame-ancestors 'none'",
     );
     expect(evaluateDeployedHeaders(h).problems.join(" ")).toContain("trusted-types");
+  });
+
+  it("fails when connect-src is 'none' — the deployed policy is stale (built before RPC pinning)", () => {
+    const h = new Headers(good);
+    h.set(
+      "content-security-policy",
+      "default-src 'none'; script-src 'sha256-x'; connect-src 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'",
+    );
+    const result = evaluateDeployedHeaders(h);
+    expect(result.ok).toBe(false);
+    expect(result.problems.join(" ")).toMatch(/connect-src.*stale/i);
+  });
+
+  it("fails when connect-src is wider than a pinned set (wildcard)", () => {
+    const h = new Headers(good);
+    h.set(
+      "content-security-policy",
+      "default-src 'none'; script-src 'sha256-x'; connect-src *; frame-ancestors 'none'; require-trusted-types-for 'script'",
+    );
+    expect(evaluateDeployedHeaders(h).problems.join(" ")).toContain("wider than a pinned RPC set");
   });
 
   it("collects every problem rather than stopping at the first", () => {

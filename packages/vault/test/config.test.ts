@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { parseVaultConfig, bakedAppConfig, VaultConfigError } from "../src/config.js";
+import { parseVaultConfig, bakedAppConfig, resolveVaultRpcs, VaultConfigError } from "../src/config.js";
 
-const valid = { rpId: "vault.example1.com", vaultOrigin: "https://vault.example1.com" };
+const valid = { rpId: "vault.example1.com", vaultOrigin: "https://vault.example1.com", chains: ["base"] };
 
 describe("parseVaultConfig", () => {
   it("accepts an rpId equal to the Vault origin host", () => {
@@ -39,8 +39,25 @@ describe("parseVaultConfig", () => {
   });
 
   it("allows http on localhost for development", () => {
-    const cfg = parseVaultConfig({ rpId: "localhost", vaultOrigin: "http://localhost:5173" });
+    const cfg = parseVaultConfig({ rpId: "localhost", vaultOrigin: "http://localhost:5173", chains: ["base"] });
     expect(cfg.vaultOrigin).toBe("http://localhost:5173");
+  });
+
+  it("rejects a missing chains array", () => {
+    expect(() => parseVaultConfig({ rpId: valid.rpId, vaultOrigin: valid.vaultOrigin })).toThrow(/chains is required/);
+  });
+
+  it("rejects an empty chains array", () => {
+    expect(() => parseVaultConfig({ ...valid, chains: [] })).toThrow(/chains is required/);
+  });
+
+  it("rejects an unknown chain name, naming the valid ones", () => {
+    expect(() => parseVaultConfig({ ...valid, chains: ["not-a-real-chain"] })).toThrow(/unknown chain name/i);
+  });
+
+  it("accepts an rpcOverrides map and carries it through", () => {
+    const cfg = parseVaultConfig({ ...valid, rpcOverrides: { base: "https://my-own-base-rpc.example.com" } });
+    expect(cfg.rpcOverrides).toEqual({ base: "https://my-own-base-rpc.example.com" });
   });
 
   // The Vault popup only reads `operatorName` and `rpId`: it authorizes and it signs, and it never
@@ -72,5 +89,25 @@ describe("bakedAppConfig", () => {
 
   it("omits managementUrl entirely when unset, rather than baking undefined", () => {
     expect(bakedAppConfig(parseVaultConfig(valid))).not.toHaveProperty("managementUrl");
+  });
+
+  it("carries the resolved RPC map — what the page's own runtime needs to build an RpcClient", () => {
+    const baked = bakedAppConfig(parseVaultConfig(valid));
+    expect(baked.rpcUrls).toEqual({ base: "https://mainnet.base.org" });
+  });
+
+  it("an rpcOverride wins over the registry default", () => {
+    const cfg = parseVaultConfig({ ...valid, rpcOverrides: { base: "https://custom.example.com" } });
+    expect(bakedAppConfig(cfg).rpcUrls).toEqual({ base: "https://custom.example.com" });
+  });
+});
+
+describe("resolveVaultRpcs", () => {
+  it("resolves every configured chain to its registry default RPC", () => {
+    const cfg = parseVaultConfig({ ...valid, chains: ["base", "ethereum"] });
+    expect(resolveVaultRpcs(cfg)).toEqual({
+      base: "https://mainnet.base.org",
+      ethereum: "https://ethereum-rpc.publicnode.com",
+    });
   });
 });

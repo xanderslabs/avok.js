@@ -1,13 +1,26 @@
 import { describe, it, expect } from "vitest";
 import { buildCsp, securityHeaders, headersFileContent } from "../src/headers.js";
 
-describe("buildCsp", () => {
-  const csp = buildCsp(["abc123", "def456"]);
+const RPC_URLS = ["https://mainnet.base.org", "https://ethereum-rpc.publicnode.com"];
 
-  it("locks every default to none, which is only honest because nothing is fetched", () => {
+describe("buildCsp", () => {
+  const csp = buildCsp(["abc123", "def456"], RPC_URLS);
+
+  it("locks default/img to none, which is only honest because the page fetches nothing else", () => {
     expect(csp).toContain("default-src 'none'");
-    expect(csp).toContain("connect-src 'none'");
     expect(csp).toContain("img-src 'none'");
+  });
+
+  it("pins connect-src to exactly the configured RPC origins — not 'none', not wildcard", () => {
+    expect(csp).toContain("connect-src https://mainnet.base.org https://ethereum-rpc.publicnode.com");
+    expect(csp).not.toContain("connect-src 'none'");
+    expect(csp).not.toMatch(/connect-src[^;]*\*/);
+  });
+
+  it("dedupes connect-src by ORIGIN — an RPC URL's path is irrelevant to CSP matching", () => {
+    const withPath = buildCsp(["abc123"], ["https://mainnet.base.org/", "https://mainnet.base.org/v2/key"]);
+    expect(withPath).toContain("connect-src https://mainnet.base.org");
+    expect(withPath.match(/mainnet\.base\.org/g)).toHaveLength(1);
   });
 
   it("admits scripts and styles by hash and never by nonce or unsafe-inline", () => {
@@ -28,7 +41,13 @@ describe("buildCsp", () => {
   // A CSP with an empty script-src admits NOTHING, so the page is blank and the failure looks like a
   // broken build rather than a broken policy. Refuse to emit one.
   it("refuses to build a policy with no hashes", () => {
-    expect(() => buildCsp([])).toThrow(/hash/i);
+    expect(() => buildCsp([], RPC_URLS)).toThrow(/hash/i);
+  });
+
+  // Same reasoning, the other direction: no chains configured must fail loud, not silently ship a
+  // Vault that can never simulate or read guardian state.
+  it("refuses to build a policy with no connect-src origins", () => {
+    expect(() => buildCsp(["abc123"], [])).toThrow(/connect-src/i);
   });
 });
 
@@ -63,7 +82,7 @@ describe("securityHeaders", () => {
 });
 
 describe("headersFileContent", () => {
-  const out = headersFileContent(buildCsp(["abc123"]));
+  const out = headersFileContent(buildCsp(["abc123"], RPC_URLS));
 
   it("emits one static-host block carrying the CSP and every other header", () => {
     expect(out).toContain("Content-Security-Policy:");

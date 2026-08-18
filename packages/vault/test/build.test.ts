@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { inlinePage, assertVaultInvariants } from "../src/build.js";
 import { parseVaultConfig } from "../src/config.js";
 
-const config = parseVaultConfig({ rpId: "vault.example1.com", vaultOrigin: "https://vault.example1.com" });
+const config = parseVaultConfig({
+  rpId: "vault.example1.com",
+  vaultOrigin: "https://vault.example1.com",
+  chains: ["base"],
+});
 
 const html =
   `<!doctype html><html><head>` +
@@ -36,6 +40,7 @@ describe("inlinePage", () => {
     const evil = parseVaultConfig({
       rpId: "vault.example1.com",
       vaultOrigin: "https://vault.example1.com",
+      chains: ["base"],
       branding: { operatorName: "</script><script>alert(1)</script>" },
     });
     const { html: out } = inlinePage({ html, assets, config: evil });
@@ -122,10 +127,20 @@ describe("the Vault invariants, which cannot skip", () => {
     );
   });
 
-  it("rejects a CSP that lets the page talk to the network", () => {
+  it("rejects a CSP with a wildcard connect-src, wider than the pinned RPC set", () => {
     expect(() =>
-      assertVaultInvariants({ ...built, csp: built.csp.replace("connect-src 'none'", "connect-src *") }),
+      assertVaultInvariants({ ...built, csp: built.csp.replace(/connect-src [^;]+/, "connect-src *") }),
     ).toThrow(/connect-src/);
+  });
+
+  it("rejects a CSP whose connect-src reverted to 'none'", () => {
+    expect(() =>
+      assertVaultInvariants({ ...built, csp: built.csp.replace(/connect-src [^;]+/, "connect-src 'none'") }),
+    ).toThrow(/connect-src/);
+  });
+
+  it("pins connect-src to the configured chain's RPC, not 'none'", () => {
+    expect(built.csp).toContain("connect-src https://mainnet.base.org");
   });
 
   it("bakes the operator's pinned rpId, since an inferred one derives a different wallet", () => {

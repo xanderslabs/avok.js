@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { build as viteBuild } from "vite";
-import { bakedAppConfig, parseVaultConfig, type VaultConfig } from "./config.js";
+import { bakedAppConfig, parseVaultConfig, resolveVaultRpcs, type VaultConfig } from "./config.js";
 import { buildCsp, headersFileContent } from "./headers.js";
 
 /** What a Vault build produces: the page, the policy that describes it, and the file a host reads. */
@@ -69,7 +69,7 @@ export function inlinePage({ html, assets, config }: InlineArgs): BuiltVault {
   ];
   const hashes = [...new Set(inline.map(sha256))];
 
-  const csp = buildCsp(hashes);
+  const csp = buildCsp(hashes, Object.values(resolveVaultRpcs(config)));
   return { html: out, csp, headers: headersFileContent(csp) };
 }
 
@@ -106,8 +106,32 @@ export function assertVaultInvariants({ html, csp }: BuiltVault): void {
   if (!/default-src 'none'/.test(csp)) fail("the CSP is missing default-src 'none'");
   if (!/script-src [^;]*'sha256-/.test(csp)) fail("the CSP's script-src is not sha256-pinned");
   if (/'unsafe-inline'/.test(csp)) fail("the CSP contains 'unsafe-inline'");
-  if (!/connect-src 'none'/.test(csp))
-    fail("the CSP is missing connect-src 'none'; the page must make no network call");
+
+  // connect-src is now the operator's pinned RPC set (TDD §8), not 'none' — assert THAT invariant:
+  // present, non-empty, and every source is an https: origin (or localhost http, for local dev).
+  // Anything else (a bare '*', 'unsafe-inline', a non-https origin) would open the Vault's network
+  // access wider than the configured RPCs it was built to talk to.
+  const connectSrcMatch = csp.match(/connect-src ([^;]+)/);
+  if (!connectSrcMatch) fail("the CSP is missing connect-src");
+  else {
+    const sources = connectSrcMatch[1].trim().split(/\s+/);
+    if (sources.length === 0 || sources[0] === "'none'") {
+      fail("the CSP's connect-src is 'none' or empty; the Vault's own RPC reads would be blocked");
+    }
+    for (const src of sources) {
+      let parsed: URL;
+      try {
+        parsed = new URL(src);
+      } catch {
+        fail(`the CSP's connect-src contains a non-URL source: ${src}`);
+        continue;
+      }
+      const isLocalHttp = parsed.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
+      if (parsed.protocol !== "https:" && !isLocalHttp) {
+        fail(`the CSP's connect-src contains a non-https origin: ${src}`);
+      }
+    }
+  }
 }
 
 /** Every emitted file under `dir`, keyed by its path relative to `dir` with POSIX separators, which

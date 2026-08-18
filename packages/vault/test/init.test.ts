@@ -43,4 +43,14 @@ describe("buildInitConfig", () => {
     const cfg = buildInitConfig({ vaultOrigin: "http://localhost:5173" });
     expect(cfg.rpId).toBe("localhost");
   });
+
+  it('defaults chains to ["base"], the hero chain, when none is given', () => {
+    const cfg = buildInitConfig({ vaultOrigin: "https://vault.example1.com" });
+    expect(cfg.chains).toEqual(["base"]);
+  });
+
+  it("keeps an explicit chains list", () => {
+    const cfg = buildInitConfig({ vaultOrigin: "https://vault.example1.com", chains: ["base", "ethereum"] });
+    expect(cfg.chains).toEqual(["base", "ethereum"]);
+  });
 });

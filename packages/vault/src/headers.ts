@@ -6,15 +6,20 @@
  * baked the script bytes are fixed, so their sha256 is stable and unforgeable: an attacker cannot
  * produce the hash of a script they did not write.
  *
- * EVERYTHING ELSE IS 'none', and that is only honest because the page fetches nothing. All JS and CSS
- * is inlined at build. There is no CDN, no font, no analytics, no image host. A directive set to
- * 'none' that something actually needs gets relaxed within a week; these hold because nothing wants
- * them.
+ * `connect-src` IS PINNED TO EXACTLY THE OPERATOR'S CONFIGURED RPC SET (TDD §8) — no longer `'none'`.
+ * The Vault now reads chain state itself (vault/simulate's `eth_simulateV1`, vault/recover's guardian
+ * reads), which needs somewhere to connect to. Pinning to the EXACT set the operator named at build
+ * time, rather than opening the directive generally, keeps the same "nothing this page wants is
+ * absent, nothing it doesn't want is present" property `'none'` had: the Vault can reach precisely
+ * the RPCs it was built with and nothing else — not a third-party analytics endpoint, not an
+ * attacker's exfiltration host.
  *
- * Every directive here is carried over unchanged from the build this replaces. Only the emission
- * around it is new.
+ * EVERYTHING ELSE IS 'none', and that is only honest because the page fetches nothing else. All JS
+ * and CSS is inlined at build. There is no CDN, no font, no analytics, no image host. A directive set
+ * to 'none' that something actually needs gets relaxed within a week; these hold because nothing
+ * wants them.
  */
-export function buildCsp(hashes: string[]): string {
+export function buildCsp(hashes: string[], connectSrcUrls: string[]): string {
   if (hashes.length === 0) {
     // An empty script-src admits nothing, so the page renders blank. That reads as a broken build
     // rather than a broken policy, and the temptation is then to relax the CSP to "fix" it.
@@ -24,12 +29,22 @@ export function buildCsp(hashes: string[]): string {
         "first, after the config is baked.",
     );
   }
+  if (connectSrcUrls.length === 0) {
+    // Same reasoning as the script-src guard above: an empty connect-src is a broken build (no
+    // chains configured), not a stricter policy, and must fail loudly rather than silently
+    // degrading every request to "unsimulated".
+    throw new Error(
+      "buildCsp: refusing to emit a policy with no connect-src origins. Configure at least one chain " +
+        "in avok-origin.config.json's `chains`.",
+    );
+  }
   const pinned = hashes.map((h) => `'sha256-${h}'`).join(" ");
+  const connectSrc = [...new Set(connectSrcUrls.map((u) => new URL(u).origin))].join(" ");
   return [
     "default-src 'none'",
     `script-src ${pinned}`,
     `style-src ${pinned}`,
-    "connect-src 'none'",
+    `connect-src ${connectSrc}`,
     "img-src 'none'",
     "frame-ancestors 'none'",
     "base-uri 'none'",

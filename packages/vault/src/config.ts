@@ -1,19 +1,51 @@
+import { resolveChainByName, getChainProfileById } from "@avokjs/contracts";
+
 /**
  * The operator's Vault configuration, validated at BUILD time.
  *
- * There is no server to validate at request time, and the two values that matter cannot fail safely
- * at runtime. An unset or wrong `rpId` does not error: it derives a DIFFERENT wallet, and the user
- * sees an empty account where their funds were. A Vault served over plaintext is not a Vault. Both
- * are caught here, before anything is deployed.
+ * There is no server to validate at request time, and the values that matter cannot fail safely at
+ * runtime. An unset or wrong `rpId` does not error: it derives a DIFFERENT wallet, and the user sees
+ * an empty account where their funds were. A Vault served over plaintext is not a Vault. An unknown
+ * chain name means a pinned CSP that admits an RPC nobody validated. All three are caught here,
+ * before anything is deployed.
  */
 export interface VaultConfig {
   /** The pinned WebAuthn RP-ID. `K = HKDF(PRF(credential, rpId))`, so this value IS the wallet. */
   rpId: string;
   /** The origin the Vault is deployed at, e.g. `https://vault.example1.com`. */
   vaultOrigin: string;
+  /** Registry chain names (e.g. "base", "ethereum") this Vault serves — TDD §8. Determines which RPC
+   *  endpoints `connect-src` is pinned to; the Vault can reach exactly these and nothing else. */
+  chains: string[];
+  /** Per-chain RPC override, keyed by the same names as `chains`. Unset chains fall back to the
+   *  registry's default (`EvmChainProfile.rpcDefault`) — see TDD §8 for what those currently are. */
+  rpcOverrides?: Record<string, string>;
   branding?: { operatorName?: string };
   /** Optional first-party management app URL, surfaced to apps that borrow the wallet. */
   managementUrl?: string;
+}
+
+/** Chain name -> the RPC URL actually pinned into `connect-src` (override, or the registry default). */
+export type ResolvedVaultRpcs = Record<string, string>;
+
+export function resolveVaultRpcs(config: VaultConfig): ResolvedVaultRpcs {
+  const out: ResolvedVaultRpcs = {};
+  for (const name of config.chains) {
+    const override = config.rpcOverrides?.[name];
+    if (override) {
+      out[name] = override;
+      continue;
+    }
+    const id = resolveChainByName(name); // throws with the valid-names list on a typo
+    const profile = getChainProfileById(id);
+    // Cannot happen if resolveChainByName succeeded (every name it accepts is a registry key), but
+    // narrows the type without an assertion.
+    if (!profile || profile.kind !== "evm") {
+      throw new VaultConfigError(`avok-origin.config.json: chain "${name}" has no RPC default in the registry`);
+    }
+    out[name] = profile.rpcDefault;
+  }
+  return out;
 }
 
 export class VaultConfigError extends Error {
@@ -103,7 +135,34 @@ export function parseVaultConfig(raw: unknown): VaultConfig {
     );
   }
 
-  const config: VaultConfig = { rpId, vaultOrigin };
+  const chainsRaw = o.chains;
+  if (!Array.isArray(chainsRaw) || chainsRaw.length === 0 || !chainsRaw.every((c) => typeof c === "string")) {
+    throw new VaultConfigError(
+      "avok-origin.config.json: chains is required and must be a non-empty array of registry chain " +
+        'names (e.g. ["base", "ethereum"]). These become the CSP connect-src the Vault is allowed ' +
+        "to reach — an empty list would leave simulation and recovery unable to read any chain.",
+    );
+  }
+  const chains = chainsRaw as string[];
+  // Fail loud on a typo NOW — resolveVaultRpcs is also called at build time, but the operator should
+  // not have to run the bundler to discover a bad chain name.
+  for (const name of chains) {
+    try {
+      resolveChainByName(name);
+    } catch (e) {
+      throw new VaultConfigError(`avok-origin.config.json: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  const config: VaultConfig = { rpId, vaultOrigin, chains };
+  const rpcOverridesRaw = o.rpcOverrides;
+  if (typeof rpcOverridesRaw === "object" && rpcOverridesRaw !== null) {
+    const overrides: Record<string, string> = {};
+    for (const [k, v] of Object.entries(rpcOverridesRaw as Record<string, unknown>)) {
+      if (typeof v === "string") overrides[k] = v;
+    }
+    if (Object.keys(overrides).length > 0) config.rpcOverrides = overrides;
+  }
   const branding = o.branding;
   if (typeof branding === "object" && branding !== null) {
     const operatorName = (branding as Record<string, unknown>).operatorName;
@@ -114,12 +173,23 @@ export function parseVaultConfig(raw: unknown): VaultConfig {
 }
 
 /** The object baked into the page as `window.__AVOK_CONFIG__`. White-label: the default operator
- *  name is the operator's own rpId, never a hardcoded "Avok". */
-export function bakedAppConfig(config: VaultConfig): Record<string, string> {
-  const out: Record<string, string> = {
+ *  name is the operator's own rpId, never a hardcoded "Avok". `rpcUrls` is what lets the page's own
+ *  runtime (vault/simulate, vault/recover) construct an RpcClient — the exact same URLs `connect-src`
+ *  pins, so the page can never reach anywhere its own CSP would not already admit. */
+export interface BakedAppConfig {
+  operatorName: string;
+  vaultOrigin: string;
+  rpId: string;
+  managementUrl?: string;
+  rpcUrls: ResolvedVaultRpcs;
+}
+
+export function bakedAppConfig(config: VaultConfig): BakedAppConfig {
+  const out: BakedAppConfig = {
     operatorName: config.branding?.operatorName ?? config.rpId,
     vaultOrigin: config.vaultOrigin,
     rpId: config.rpId,
+    rpcUrls: resolveVaultRpcs(config),
   };
   if (config.managementUrl) out.managementUrl = config.managementUrl;
   return out;

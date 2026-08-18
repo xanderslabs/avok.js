@@ -48,6 +48,7 @@
     "node": ">=22.5.0"
   },
   "dependencies": {
+    "@avokjs/contracts": "workspace:*",
     "@avokjs/core": "workspace:*",
     "vite": "^8.1.5"
   },
