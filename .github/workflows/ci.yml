@@ -61,6 +61,12 @@ jobs:
         with:
           version: stable
 
+      # The real UltraHonk verifier lives in a nested Foundry project (it will not compile
+      # under this repo's via_ir settings) and RealVerifierIntegration loads its bytecode with
+      # vm.getCode, so those artifacts have to exist before the suite runs.
+      - run: forge build --root circuits/jwt-recovery/verifier
+        working-directory: contracts
+
       # No --offline here: a fresh runner has no solc cached, and --offline would block
       # the download ("can't install missing solc 0.8.29 in offline mode"). CI has network.
       - run: forge test --disable-labels

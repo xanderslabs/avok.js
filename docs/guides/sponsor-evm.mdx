@@ -47,7 +47,7 @@ that names a balance rather than your missing endpoint.
 
 There is no degrade and no flag that enables one. A request is served or it errors.
 
-A misconfigured or unreachable rail surfaces the same way — `SponsorshipUnavailableError`, before
+A misconfigured or unreachable rail surfaces the same way: `SponsorshipUnavailableError`, before
 signing. There is no ahead-of-time "which tokens does this paymaster take" list to check first:
 ERC-7677 makes that answer transaction-scoped and provider-specific, so the paymaster accepts or
 rejects the actual send at `pm_getPaymasterStubData`. For gas-free sponsorship there is no token to
