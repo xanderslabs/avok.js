@@ -1,0 +1,65 @@
+---
+title: "Sponsorship"
+description: "How Avok's sponsored rail works, and why you bring your own infrastructure."
+---
+
+Avok can send transactions whose fee the user does not pay in the chain's native gas asset. Be
+precise about what "sponsored" means here, because the word is overloaded across the ecosystem.
+
+## Two ways to sponsor
+
+Avok reaches the sponsored rail through either kind of ERC-7677 paymaster, and the difference is who
+ends up paying:
+
+- **Token paymaster.** Pass `feeToken`. The user holds a paymaster-supported ERC-20, the fee is
+  charged in that token, and the paymaster and bundler pay the chain in native gas on the user's
+  behalf. The user still pays, just not in a currency they may not hold.
+- **Verifying paymaster.** Pass `sponsored: true` with no fee token. The paymaster absorbs the fee
+  and the user is charged nothing. This is the onboarding case: a brand-new user holds neither gas
+  nor a fee token, so a design reachable only through a fee token cannot serve them.
+
+Either way the SDK call is the same shape, and either way it is your paymaster deciding the policy.
+
+## Bring your own infrastructure
+
+There is no default bundler and no default paymaster, and there never
+will be. A sponsored send is reachable only through a URL or a client you pass in. Supply nothing,
+and every send is native-gas. That is the default posture, not a failure mode.
+
+The reason is trust. Whoever runs the paymaster sees every sponsored transaction before it lands
+and decides whether to relay it. A default endpoint would silently make that party a dependency of
+every app that never configured one, and a counterparty the user never agreed to.
+
+Sponsorship needs an ERC-4337 `bundlerUrl` (EntryPoint v0.9) **and** an ERC-7677 `paymasterUrl`,
+together. A send that asks for sponsorship with either one missing throws, naming which side it is.
+
+See [Sponsor EVM sends](/guides/sponsor-evm).
+
+## The fee token is per-send
+
+A fee token is a payment the user makes, so a wallet must not choose one on their behalf. There is
+no client-level default fee token; you pass it per send. Omit it, and the send is native-gas.
+
+Asking for sponsorship on a chain with no bundler and paymaster **throws**
+`SponsorshipUnavailableError` before anything is signed, naming which side is missing. It does not
+degrade to native-gas. A degrade would spend the user's own gas on a transaction you meant to sponsor,
+and for a user holding only the fee token it fails anyway, reporting a native balance instead of the
+endpoint you forgot to configure.
+
+There is no degrade and no flag that enables one: a sponsorship request is served or it errors.
+
+Building a fee-token picker takes care, because ERC-7677 defines no method that answers "which
+tokens do you take?". That answer is transaction-scoped and provider-specific, decided when the
+paymaster accepts or rejects the actual `pm_getPaymasterStubData` call. `feeTokens(chainId)` is only
+the static registry catalogue, not a promise the paymaster accepts them. For gas-free sponsorship
+there is no token to pick, and any misconfiguration still surfaces as the error above, before
+signing.
+
+## Check which rail ran
+
+Every receipt carries `rail`, either `"sponsored"` or `"native-gas"`. It is the only thing that
+tells you which path actually ran. If your app promises gasless transactions, check it rather than
+assuming your configuration took effect. See [Receipts](/reference/receipts).
+
+For the complete contract, including the custom `Bundler` and `Paymaster7677` interfaces, read
+`SPONSORED.md` in `@avokjs/core`.

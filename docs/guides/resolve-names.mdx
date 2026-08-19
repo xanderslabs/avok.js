@@ -1,0 +1,37 @@
+---
+title: "Resolve names"
+description: "Resolve ENS names to addresses when sending, using @avokjs/core/helpers."
+---
+
+Avok resolves `alice.eth` to an address so a user can send to a name. Resolution is **read-only**: it needs no contract and no backend, and it lives in `@avokjs/core/helpers`.
+
+## Build a resolver
+
+Wrap an ENS resolver, which takes the client you use to read mainnet:
+
+```ts
+import { createEnsResolver, createNameResolver } from "@avokjs/core/helpers";
+
+const resolver = createNameResolver({
+  ens: createEnsResolver({ chainId: 1, client: ensClient }),
+});
+```
+
+`createNameResolver` takes an object rather than the service directly, because `NameResolverService` owns a suffix: an operator resolving names under its own ENS parent plugs in the same way. It verifies reverse lookups against a forward resolution, so a reverse hit is returned only if it maps back to the queried address.
+
+## Resolve a recipient
+
+`resolveRecipient` accepts either a raw address or a name, and returns the resolved address:
+
+```ts
+import { resolveRecipient } from "@avokjs/core/helpers";
+
+const result = await resolveRecipient(resolver, "alice.eth");
+if ("error" in result) {
+  // Show result.error to the user.
+} else {
+  // result.address is the recipient; result.resolvedFrom is the name it came from, if any.
+}
+```
+
+A raw `0x` address passes through unchanged; a name is resolved through the resolver. For exact signatures, see the [core subpaths reference](/reference/core-subpaths).

@@ -1,0 +1,49 @@
+---
+title: "Install"
+description: "Install the Avok package for your platform and its peer dependencies."
+---
+
+Avok ships three packages. Install the one that matches your platform.
+
+## Plain JavaScript or TypeScript
+
+Use the framework-agnostic core directly:
+
+```bash
+npm i @avokjs/core
+```
+
+`@avokjs/core` is the browser and plain-JS SDK. It has no framework dependency.
+
+## React (web)
+
+```bash
+npm i @avokjs/react react
+```
+
+**Peer dependency:** `react >=19.2.7`.
+
+## React Native or Expo
+
+```bash
+npm i @avokjs/react-native react react-native react-native-passkey expo-secure-store
+```
+
+**Peer dependencies:** `react >=19.2.7`, `react-native >=0.86.0`, and `expo-secure-store
+>=57.0.0`. The passkey module is injected rather than bundled. Pass `react-native-passkey`, or
+any object that matches `ReactNativePasskeyLike`. Passkeys require a PRF-capable provider, such
+as iCloud Keychain or Google Password Manager.
+
+React Native also needs native platform configuration before any passkey call works. See
+[React Native setup](/guides/react-native-setup).
+
+## Which package do I install?
+
+| You are building | Install |
+| --- | --- |
+| A plain-JS or browser app | `@avokjs/core` |
+| A React web app | `@avokjs/react` |
+| A React Native or Expo app | `@avokjs/react-native` |
+
+The facades are thin layers over `@avokjs/core`. Next, [create your first
+wallet](/get-started/first-wallet).

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "Avok",
+  "description": "Client-side SDK for passkey-authenticated, self-custodial smart wallets. No seed phrase, no extension.",
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#2563EB",
+    "light": "#7AA2FF",
+    "dark": "#2563EB"
+  },
+  "fonts": {
+    "family": "Geist"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/xanderslabs/avok.js"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "avok.xyz",
+      "href": "https://avok.xyz"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/xanderslabs/avok.js"
+    }
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get started",
+        "pages": [
+          "get-started/what-is-avok",
+          "get-started/install",
+          "get-started/first-wallet",
+          "get-started/send"
+        ]
+      },
+      {
+        "group": "Concepts",
+        "pages": [
+          "concepts/passkey-is-the-wallet",
+          "concepts/signing-paths",
+          "concepts/access-keys-and-the-vault",
+          "concepts/chains-and-rpc",
+          "concepts/sponsorship",
+          "concepts/provider-not-hooks",
+          "concepts/trust-and-defaults"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/choose-signing-path",
+          "guides/host-auth-popup",
+          "guides/sponsor-evm",
+          "guides/enroll-a-device",
+          "guides/remove-access",
+          "guides/export-keys",
+          "guides/resolve-names",
+          "guides/react-native-setup"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "reference/packages",
+          "reference/core-client",
+          "reference/core-subpaths",
+          "reference/react",
+          "reference/react-native",
+          "reference/errors",
+          "reference/receipts"
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/docs/images/favicon.svg",
+    "dark": "/docs/images/favicon.svg",
+    "href": "https://avok.xyz"
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "icons": {
+    "library": "lucide"
+  }
+}

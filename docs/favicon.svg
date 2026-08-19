@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>.tile{fill:#18181B}.glyph{fill:#FAFAFA}
+    @media (prefers-color-scheme: dark){.tile{fill:#FAFAFA}.glyph{fill:#18181B}}</style>
+  <rect class="tile" width="24" height="24" rx="5.5"/>
+  <rect class="glyph" x="7" y="7" width="10" height="10" rx="2.6" transform="rotate(45 12 12)"/>
+</svg>
