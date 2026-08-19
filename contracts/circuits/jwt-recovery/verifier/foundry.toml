@@ -1,0 +1,21 @@
+[profile.default]
+src = "src"
+out = "out"
+cache_path = "cache"
+solc_version = "0.8.30"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 1
+via_ir = false
+bytecode_hash = "none"
+
+# This verifier is bb.js-generated output (see src/JwtRecoveryVerifier.sol's header) and is built
+# as its own tiny Foundry project deliberately separate from ../../../foundry.toml. It does NOT
+# compile under the main contracts profile (evm_version=prague, via_ir=true, optimizer_runs=200):
+# solc's Yul optimizer hits a "too deep in the stack" error in the generated verifySumcheck/
+# transcript code under via-ir regardless of optimizer_runs. Matches the settings
+# AztecProtocol/aztec-packages itself uses to compile the same bb output
+# (barretenberg/sol/foundry.toml on their main branch): optimizer_runs=1, no via_ir, cancun.
+# The rest of the guardian/registry stack only ever needs this contract's deployed ADDRESS
+# (called through IUltraHonkVerifier, ABI-compatible with HonkVerifier's verify(bytes,bytes32[])),
+# not its source, so building it out-of-tree costs nothing at integration time.

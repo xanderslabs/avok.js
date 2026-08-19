@@ -34,3 +34,11 @@ ffi = true
 # needs an exact compiler-settings match rather than the hash doing it for you. Standard practice for
 # deterministic/CREATE2 deployments for exactly this reason.
 bytecode_hash = "none"
+
+# Read-only, scoped to what RealVerifierIntegration.t.sol needs: the real bb-generated verifier's
+# out-of-project artifact (circuits/jwt-recovery/verifier is its own Foundry project — see that
+# project's foundry.toml for why) and the real bb-generated proof/public-inputs bytes it verifies.
+fs_permissions = [
+  { access = "read", path = "circuits/jwt-recovery/verifier/out" },
+  { access = "read", path = "circuits/jwt-recovery/target" },
+]

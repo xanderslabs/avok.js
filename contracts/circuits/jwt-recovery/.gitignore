@@ -1,0 +1,14 @@
+# The circuit's own build output (target/) is committed on purpose: target/proof and
+# target/public_inputs are the fixed test vector RealVerifierIntegration.t.sol reads, and
+# target/jwt_recovery.json / target/vk are what `bb write_solidity_verifier` and `bb verify` were
+# actually run against for this sprint's proof-of-life. target/live/{proof,public_inputs} are the
+# exact bytes submitted in the real Base Sepolia recovery-loop run (see the sprint writeup for the
+# addresses/tx hashes). Regenerate any of it per JwtRecoveryVerifier.sol's header comment;
+# *witness.gz are the large, trivially regenerable intermediates not worth keeping.
+target/witness.gz
+target/live-witness.gz
+
+verifier/out/
+verifier/cache/
+
+js/node_modules/
