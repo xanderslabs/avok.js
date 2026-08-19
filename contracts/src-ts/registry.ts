@@ -234,9 +234,14 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:84532",
     chainId: 84532,
     name: "Base Sepolia",
-    // The e2e-base-sepolia suite (contract-architecture §5, TDD §8) is what flips this to
-    // "supported" — stays "unverified" until that run is actually green.
-    tier: "unverified",
+    // FLIPPED 2026-08-19: the e2e-base-sepolia suite ran green — (a) first-tx batch and (c) full
+    // guardian recovery both live-confirmed on this chain (tx hashes in packages/core/e2e/live/,
+    // commit a056c65), (b) batched-send simulation deltas fork-confirmed. (d) sponsored send has no
+    // freely-usable public bundler for either EntryPoint version as of this date (Coinbase/Pimlico/
+    // Alchemy all require a key nobody here has) — reported fork-only, never faked, and founder-
+    // accepted as sufficient for this tier per the 2026-08-19 amendment (contract-architecture §5,
+    // TDD §8). Re-run (d) and reconsider if a free bundler rail ever appears.
+    tier: "supported (E2E)",
     isTestnet: true,
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://sepolia.basescan.org",
