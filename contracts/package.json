@@ -47,9 +47,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck-tests.json",
-    "test": "forge test --offline --disable-labels && vitest run",
+    "test": "pnpm build:verifier && forge test --offline --disable-labels && vitest run",
     "test:ts": "vitest run",
-    "slither": "slither . --config-file slither.config.json"
+    "slither": "slither . --config-file slither.config.json",
+    "build:verifier": "forge build --root circuits/jwt-recovery/verifier"
   },
   "devDependencies": {
     "@openzeppelin/contracts-upgradeable": "5.6.0",
