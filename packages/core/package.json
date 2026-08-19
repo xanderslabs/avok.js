@@ -1,6 +1,6 @@
 {
   "name": "@avokjs/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Avok core: passkey/access-vault smart-EOA wallet engine. Wallet primitives, EVM (7702) tx, client, provider, shared-origin channel. Framework-agnostic.",
   "keywords": [
     "passkey",
