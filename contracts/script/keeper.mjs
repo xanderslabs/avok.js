@@ -169,21 +169,31 @@ async function main() {
       });
       console.log(`  ✓ ${p.action}(${p.issuer}, ${p.kid}) -> ${hash}`);
       await publicClient.waitForTransactionReceipt({ hash });
+      p.ok = true;
     } catch (err) {
       // AlreadyAttested (we've already voted, someone else's keeper run raced ours) is
-      // expected and not an error worth stopping the batch over. Anything else is real.
+      // expected and not an error worth stopping the batch over. Anything else is real --
+      // and, critically, NOT ok: an item we never actually got on-chain must stay out of
+      // `state` below, or it silently vanishes from every future run's diff (this is exactly
+      // what happened live: a transient nonce error dropped one attestation, and the
+      // unconditional state update that used to follow this loop marked it "seen" anyway).
       const msg = String(err?.shortMessage ?? err?.message ?? err);
       if (msg.includes("AlreadyAttested")) {
         console.log(`  = ${p.action}(${p.issuer}, ${p.kid}) already attested by this account, skipping`);
+        p.ok = true;
       } else {
         console.error(`  ✗ ${p.action}(${p.issuer}, ${p.kid}) failed: ${msg}`);
+        p.ok = false;
       }
     }
   }
 
-  // Update state only for successful `attest` (a fresh baseline of what's live); rotations
-  // just remove the stale kid from what we track as "currently attested by us".
+  // Update state only for plan items that actually landed (a fresh baseline of what's live);
+  // rotations just remove the stale kid from what we track as "currently attested by us".
+  // Anything that failed keeps its PREVIOUS state entry untouched, so it's still in next run's
+  // diff instead of being mistaken for "already handled".
   for (const p of plan) {
+    if (!p.ok) continue;
     state[p.issuer] ??= {};
     if (p.action === "attest") state[p.issuer][p.kid] = p.keyHash;
     else delete state[p.issuer][p.kid];
