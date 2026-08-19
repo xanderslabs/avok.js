@@ -16,3 +16,4 @@ artifacts
 *.tsbuildinfo
 .DS_Store
 .superpowers/
+packages/core/e2e/.state/
