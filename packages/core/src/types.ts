@@ -13,7 +13,16 @@ import type { NonceAllocator } from "./nonce.js";
  * resolves it via @avokjs/core/helpers `createNameResolver` and holds it in its own state.
  */
 export type Account = {
-  evm: { address: Address };
+  evm: {
+    address: Address;
+    /** The address of the key that will actually sign the NEXT transaction — differs from `address`
+     *  only for a roster (non-founding) device signer (D8: `evmAddress !== walletAddress` in
+     *  `wallet/sandbox.ts`'s `WalletState`). A native-gas send's tx nonce must be sourced from THIS
+     *  address, not `address`: the raw transaction's sender is whoever's key signs it, while `address`
+     *  names the smart-wallet call target. Optional; absent means it coincides with `address` (every
+     *  founding-device session, and every session predating this field). */
+    signerAddress?: Address;
+  };
 };
 
 /**
@@ -71,6 +80,9 @@ export interface Connection extends Signer {
   signUserOp(args: {
     userOp: AvokUserOperation;
     chainId: number;
+    /** Which EntryPoint version to recompute + check the userOpHash against — see `evm/entrypoint.ts`.
+     *  Never trust a caller-supplied hash; the signer recomputes it from `userOp` + this. */
+    entryPointVersion: import("./evm/index.js").AvokEntryPointVersion;
     authorization?: AuthorizationTriple;
   }): Promise<{ signature: Hex; authorization?: SignedAuthorizationLike }>;
 
@@ -121,6 +133,16 @@ export interface ClientConfig<C extends Connection = Connection> {
    * `paymasterUrl`.
    */
   bundlerUrl?: string;
+
+  /**
+   * Which ERC-4337 EntryPoint version the sponsored (4337) rail targets — see `evm/entrypoint.ts`.
+   * Defaults to `DEFAULT_ENTRY_POINT_VERSION` ("0.8"): the version every AvokCalibur wallet trusts
+   * out of the box (Calibur's `ERC4337Account.sol` default, unless a wallet's admin key has called
+   * `updateEntryPoint()`) and the version with real public bundler support today. Set to `"0.9"` only
+   * once the target wallet(s) have actually been upgraded on-chain — a mismatch here signs a UserOp
+   * hash the wallet's `validateUserOp` will never recognize, not one it rejects loudly.
+   */
+  entryPointVersion?: import("./evm/index.js").AvokEntryPointVersion;
 
   /**
    * RPC endpoints, per chain. Avok ships NO third-party provider as a default: an RPC is a trust

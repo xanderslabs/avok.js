@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { decodeFunctionData, type Address, type Hex } from "viem";
-import { getUserOperationHash, entryPoint09Address } from "viem/account-abstraction";
+import { getUserOperationHash, entryPoint08Address, entryPoint09Address } from "viem/account-abstraction";
 import { executeAbi, MODE_BATCH } from "@avokjs/contracts";
 import type { Call } from "../../src/evm/types.js";
 import { buildUserOp, getAvokUserOpHash } from "../../src/evm/userop.js";
@@ -61,16 +61,28 @@ describe("buildUserOp", () => {
 });
 
 describe("getAvokUserOpHash", () => {
-  it("matches viem getUserOperationHash for EntryPoint v0.9", () => {
-    const op = buildUserOp({
-      sender: SENDER,
-      calls,
+  const op = buildUserOp({
+    sender: SENDER,
+    calls,
+    chainId: CHAIN_ID,
+    nonce: 1n,
+    fees,
+    gas: { callGasLimit: 80_000n, verificationGasLimit: 100_000n, preVerificationGas: 50_000n },
+  });
+
+  it("matches viem getUserOperationHash for EntryPoint v0.8 (the default every AvokCalibur wallet trusts)", () => {
+    const ours = getAvokUserOpHash(op, CHAIN_ID, "0.8");
+    const viem = getUserOperationHash({
       chainId: CHAIN_ID,
-      nonce: 1n,
-      fees,
-      gas: { callGasLimit: 80_000n, verificationGasLimit: 100_000n, preVerificationGas: 50_000n },
+      entryPointAddress: entryPoint08Address,
+      entryPointVersion: "0.8",
+      userOperation: op,
     });
-    const ours = getAvokUserOpHash(op, CHAIN_ID);
+    expect(ours).toBe(viem);
+  });
+
+  it("matches viem getUserOperationHash for EntryPoint v0.9 (opt-in, post updateEntryPoint)", () => {
+    const ours = getAvokUserOpHash(op, CHAIN_ID, "0.9");
     const viem = getUserOperationHash({
       chainId: CHAIN_ID,
       entryPointAddress: entryPoint09Address,
@@ -78,5 +90,9 @@ describe("getAvokUserOpHash", () => {
       userOperation: op,
     });
     expect(ours).toBe(viem);
+  });
+
+  it("v0.8 and v0.9 hashes differ for the identical op (the EntryPoint address is part of the EIP-712 domain)", () => {
+    expect(getAvokUserOpHash(op, CHAIN_ID, "0.8")).not.toBe(getAvokUserOpHash(op, CHAIN_ID, "0.9"));
   });
 });

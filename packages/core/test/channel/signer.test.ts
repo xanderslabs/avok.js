@@ -156,7 +156,12 @@ describe("composite ops — one round-trip, one popup", () => {
     const open = vi.fn().mockResolvedValue({ kind: "sign", result: { signature: "0xsig", authorization: signedAuth } });
     const signer = createRemoteSigner({ channel: { open } as SigningChannel, credentialId: "s" });
 
-    const out = await signer.signUserOp({ userOp: USEROP as never, chainId: 10, authorization: AUTH });
+    const out = await signer.signUserOp({
+      userOp: USEROP as never,
+      chainId: 10,
+      entryPointVersion: "0.9",
+      authorization: AUTH,
+    });
 
     expect(out.signature).toBe("0xsig");
     expect(out.authorization).toEqual(signedAuth);
@@ -164,7 +169,7 @@ describe("composite ops — one round-trip, one popup", () => {
     expect(open).toHaveBeenCalledWith({
       kind: "sign",
       credentialId: "s",
-      request: { op: "signUserOp", userOp: USEROP, chainId: 10, authorization: AUTH },
+      request: { op: "signUserOp", userOp: USEROP, chainId: 10, entryPointVersion: "0.9", authorization: AUTH },
     });
   });
 
@@ -172,7 +177,7 @@ describe("composite ops — one round-trip, one popup", () => {
     const open = vi.fn().mockResolvedValue({ kind: "sign", result: { signature: "0xsig" } });
     const signer = createRemoteSigner({ channel: { open } as SigningChannel, credentialId: "s" });
 
-    const out = await signer.signUserOp({ userOp: USEROP as never, chainId: 10 });
+    const out = await signer.signUserOp({ userOp: USEROP as never, chainId: 10, entryPointVersion: "0.9" });
 
     expect(out.signature).toBe("0xsig");
     expect(out.authorization).toBeUndefined();
@@ -181,6 +186,7 @@ describe("composite ops — one round-trip, one popup", () => {
       op: "signUserOp",
       userOp: USEROP,
       chainId: 10,
+      entryPointVersion: "0.9",
       authorization: undefined,
     });
   });

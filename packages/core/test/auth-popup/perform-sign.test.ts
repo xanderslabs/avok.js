@@ -151,7 +151,7 @@ describe("composite ops — two signatures, one gesture", () => {
 
   it("signUserOp signs the RECOMPUTED userOpHash (recoverable to the wallet key) + returns the authorization", async () => {
     const out = (await performSign(
-      { op: "signUserOp", userOp: USEROP as never, chainId: 10, authorization: AUTH },
+      { op: "signUserOp", userOp: USEROP as never, chainId: 10, entryPointVersion: "0.9", authorization: AUTH },
       keys,
       state,
     )) as {
@@ -173,7 +173,11 @@ describe("composite ops — two signatures, one gesture", () => {
   });
 
   it("signUserOp for a delegated wallet omits the authorization", async () => {
-    const out = (await performSign({ op: "signUserOp", userOp: USEROP as never, chainId: 10 }, keys, state)) as {
+    const out = (await performSign(
+      { op: "signUserOp", userOp: USEROP as never, chainId: 10, entryPointVersion: "0.9" },
+      keys,
+      state,
+    )) as {
       signature: `0x${string}`;
       authorization?: unknown;
     };
@@ -188,7 +192,11 @@ describe("composite ops — two signatures, one gesture", () => {
       walletAddress: "0x2222222222222222222222222222222222222222",
     } as unknown as WalletState;
 
-    const out = (await performSign({ op: "signUserOp", userOp: USEROP as never, chainId: 10 }, keys, rosterState)) as {
+    const out = (await performSign(
+      { op: "signUserOp", userOp: USEROP as never, chainId: 10, entryPointVersion: "0.9" },
+      keys,
+      rosterState,
+    )) as {
       signature: `0x${string}`;
     };
 

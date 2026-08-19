@@ -67,6 +67,8 @@ export interface AuthPopupConfig {
  *  constrain the assertion to the right passkey (straight to biometrics, no picker). */
 export interface AuthPopupAccount {
   evmAddress: string;
+  /** The smart wallet this device's key signs FOR — see `SharedAccount.walletAddress`. */
+  walletAddress: string;
   credentialId?: string;
 }
 

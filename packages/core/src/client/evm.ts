@@ -12,6 +12,8 @@ import {
   listFeeTokens,
   simulateResolved,
   getReceiptStatus,
+  DEFAULT_ENTRY_POINT_VERSION,
+  type AvokEntryPointVersion,
   type Bundler,
   type Call,
   type EvmChainProfile,
@@ -109,11 +111,23 @@ export function requireChain(config: ClientConfig, chainId: number): EvmChainPro
 export function createEvmNamespace(config: ClientConfig): EvmNamespace {
   const { connection, paymasterUrl, bundlerUrl, deps } = config;
   const deadlineWindowSeconds = BigInt(config.defaultDeadlineSeconds ?? 3600);
+  const entryPointVersion: AvokEntryPointVersion = config.entryPointVersion ?? DEFAULT_ENTRY_POINT_VERSION;
 
   function requireAddress(): Address {
     const address = connection.account()?.evm.address;
     if (!address) throw new Error("no active account");
     return address;
+  }
+
+  /** The address whose key will actually sign the next transaction (`Account.evm.signerAddress`,
+   *  falling back to the wallet address for the founding device / a pre-this-field session, where
+   *  they coincide). A native-gas send's tx nonce must come from THIS address, never `requireAddress()`
+   *  — see `types.ts`'s `Account` doc. */
+  function requireSignerAddress(): Address {
+    const account = connection.account();
+    const signer = account?.evm.signerAddress ?? account?.evm.address;
+    if (!signer) throw new Error("no active account");
+    return signer;
   }
 
   /** Sponsored (4337) needs BOTH a 7677 paymaster and a bundler. Without both, there is no rail. */
@@ -131,7 +145,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace {
 
   /** The bring-your-own 4337 infra for a sponsored send on `rpc`. Only called when `canSponsor()`. */
   function sponsoredInfra(rpc: RpcClient): SponsoredInfra {
-    const bundler: Bundler = deps?.bundler ?? createBundler({ url: bundlerUrl! });
+    const bundler: Bundler = deps?.bundler ?? createBundler({ url: bundlerUrl!, entryPointVersion });
     const paymaster: Paymaster7677 = deps?.paymaster ?? createPaymaster7677({ url: paymasterUrl! });
     return { rpc, bundler, paymaster };
   }
@@ -148,6 +162,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace {
       ...(batch.authorization ? { authorization: batch.authorization } : {}),
       suggestedTip,
       baseFee,
+      entryPointVersion,
     });
   }
 
@@ -317,6 +332,7 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace {
         const { signature, authorization } = await connection.signUserOp({
           userOp: prepared.op,
           chainId: prepared.chainId,
+          entryPointVersion: prepared.entryPointVersion,
           ...(prepared.authorization ? { authorization: prepared.authorization } : {}),
         });
         prepared.op.signature = signature;
@@ -327,8 +343,11 @@ export function createEvmNamespace(config: ClientConfig): EvmNamespace {
       // A sponsorship request can never reach here: `resolveSponsorship` throws when no rail exists, and
       // sets rail "sponsored" when one does. So this is a native-gas send by intent, every time.
 
-      // native-gas: the wallet EOA is both authority AND tx sender.
-      const txNonce = await rpc.getTransactionCount(batch.walletAddress);
+      // native-gas: the OUTER transaction's sender is whoever's key actually signs it — the wallet's
+      // own EOA for the founding device (where signer === wallet, the self-sponsoring case the comment
+      // below describes), but a roster/promoted device's own distinct address otherwise. The nonce
+      // must always come from the actual signer, never assumed to be the wallet.
+      const txNonce = await rpc.getTransactionCount(requireSignerAddress());
       const [suggestedTip, baseFee] = await Promise.all([rpc.getMaxPriorityFeePerGas(), rpc.getBaseFeePerGas()]);
 
       // Gas limit from the estimate the batch was resolved with, doubled for headroom.

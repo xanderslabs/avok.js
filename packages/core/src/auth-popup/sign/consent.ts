@@ -303,7 +303,16 @@ export type SignConsentRequest =
   // signature ALSO installs the 7702 delegation. The consent screen must disclose that; see below.
   | { op: "signSend"; tx: TransactionSerializable; authorization?: AuthorizationRequest }
   | { op: "signSponsored"; typedData: TypedDataDefinition; authorization?: AuthorizationRequest }
-  | { op: "signUserOp"; userOp: UserOpRequest; chainId: number; authorization?: AuthorizationRequest };
+  | {
+      op: "signUserOp";
+      userOp: UserOpRequest;
+      chainId: number;
+      /** Which EntryPoint version to recompute the userOpHash against — see `evm/entrypoint.ts`
+       *  (duplicated here, not imported: this file mirrors the client's `SignRequest` to avoid a
+       *  circular dep, same as everything else in this union). */
+      entryPointVersion: "0.8" | "0.9";
+      authorization?: AuthorizationRequest;
+    };
 
 /** The v0.8 UserOperation fields the origin needs to recompute the userOpHash and decode the batch.
  *  Only `callData` (the ERC-7821 execute batch) is inspected for consent; the rest feed the hash. */

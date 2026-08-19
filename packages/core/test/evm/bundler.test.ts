@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { custom, numberToHex, type Address, type Hash, type Hex } from "viem";
-import { entryPoint09Address } from "viem/account-abstraction";
+import { entryPoint08Address, entryPoint09Address } from "viem/account-abstraction";
 import { createBundler } from "../../src/evm/bundler.js";
 
 interface RpcCall {
@@ -50,7 +50,7 @@ function fakeBundlerTransport(calls: RpcCall[], opts: { receipt?: unknown } = {}
 }
 
 describe("createBundler", () => {
-  it("estimateUserOperationGas returns the three gas limits as bigint and passes the v0.9 EntryPoint", async () => {
+  it("estimateUserOperationGas returns the three gas limits as bigint and passes the default (v0.8) EntryPoint", async () => {
     const calls: RpcCall[] = [];
     const bundler = createBundler({ transport: fakeBundlerTransport(calls) });
 
@@ -60,7 +60,7 @@ describe("createBundler", () => {
     expect(gas.verificationGasLimit).toBe(100_000n);
     expect(gas.callGasLimit).toBe(80_000n);
     const call = calls.find((c) => c.method === "eth_estimateUserOperationGas")!;
-    expect(call.params[1]).toBe(entryPoint09Address);
+    expect(call.params[1]).toBe(entryPoint08Address);
   });
 
   it("sendUserOperation returns the userOpHash", async () => {
@@ -70,6 +70,16 @@ describe("createBundler", () => {
     const hash = await bundler.sendUserOperation(fullUserOp);
 
     expect(hash).toBe(USEROP_HASH);
+    const call = calls.find((c) => c.method === "eth_sendUserOperation")!;
+    expect(call.params[1]).toBe(entryPoint08Address);
+  });
+
+  it("entryPointVersion: '0.9' passes the v0.9 EntryPoint instead", async () => {
+    const calls: RpcCall[] = [];
+    const bundler = createBundler({ transport: fakeBundlerTransport(calls), entryPointVersion: "0.9" });
+
+    await bundler.sendUserOperation(fullUserOp);
+
     const call = calls.find((c) => c.method === "eth_sendUserOperation")!;
     expect(call.params[1]).toBe(entryPoint09Address);
   });

@@ -8,6 +8,11 @@ import type { SiweMessage } from "viem/siwe";
 // ---------------------------------------------------------------------------
 export type SiweParams = Omit<SiweMessage, "address">;
 
+/** The ERC-4337 EntryPoint versions Avok's sponsored rail can target — mirrors
+ *  `evm/entrypoint.ts`'s `AvokEntryPointVersion` (duplicated, not imported: `channel/` has no
+ *  dependency on `evm/`, and this union is a stable wire-protocol primitive, not internal plumbing). */
+export type EntryPointVersion = "0.8" | "0.9";
+
 // ---------------------------------------------------------------------------
 // SignedAuthorizationLike — matches viem's SignedAuthorization shape.
 // Defined locally so the client package does not re-export viem's internal
@@ -57,14 +62,18 @@ export interface Signer {
   }): Promise<{ signature: Hex; authorization?: SignedAuthorizationLike }>;
 
   /**
-   * ONE GESTURE — the 4337 sponsored analogue of `signSponsored`. Sign a v0.8 UserOperation (the origin
+   * ONE GESTURE — the 4337 sponsored analogue of `signSponsored`. Sign a UserOperation (the origin
    * recomputes its EIP-712 `userOpHash` from these same fields, so what the user is shown and what is
    * signed cannot drift) and, if the wallet is still undelegated, its EIP-7702 authorization. The
    * `userOp` is UNSIGNED here; the returned `signature` goes into `userOp.signature`.
    */
   signUserOp(args: {
-    userOp: UserOperation<"0.8">;
+    userOp: UserOperation<EntryPointVersion>;
     chainId: number;
+    /** Which EntryPoint version to recompute the userOpHash against — must match what the target
+     *  wallet's `ENTRY_POINT()` actually trusts, or the recomputed hash (and the resulting signature)
+     *  is for the wrong EntryPoint. */
+    entryPointVersion: EntryPointVersion;
     authorization?: AuthorizationTriple;
   }): Promise<{ signature: Hex; authorization?: SignedAuthorizationLike }>;
 
@@ -103,7 +112,13 @@ export type SignRequest =
   // all under the single gesture it already performs.
   | { op: "signSend"; tx: TransactionSerializable; authorization?: AuthorizationTriple }
   | { op: "signSponsored"; typedData: TypedDataDefinition; authorization?: AuthorizationTriple }
-  | { op: "signUserOp"; userOp: UserOperation<"0.8">; chainId: number; authorization?: AuthorizationTriple };
+  | {
+      op: "signUserOp";
+      userOp: UserOperation<EntryPointVersion>;
+      chainId: number;
+      entryPointVersion: EntryPointVersion;
+      authorization?: AuthorizationTriple;
+    };
 
 // ---------------------------------------------------------------------------
 // SignResult — union of all possible sign responses.
@@ -139,6 +154,11 @@ export type SignResult =
  */
 export type SharedAccount = {
   evmAddress: Address;
+  /** The smart wallet this device's key signs FOR — coincides with `evmAddress` for the founding
+   *  device and differs for every device enrolled later (WalletState's doc, `wallet/sandbox.ts`).
+   *  Optional so a session persisted before this field existed still restores (falls back to
+   *  `evmAddress`, the founding-device behavior every such session actually has). */
+  walletAddress?: Address;
   /** The passkey this account was established with — lets the sign popup skip the account picker
    *  and go straight to biometrics. Dropping it re-prompts on every signature; see ChannelRequest. */
   credentialId?: string;

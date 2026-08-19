@@ -1,9 +1,10 @@
 import type { Address, Hex, SignedAuthorization } from "viem";
-import { entryPoint09Abi, entryPoint09Address } from "viem/account-abstraction";
 import {
   buildUserOp,
   getAvokUserOpHash,
   nativeGasFees,
+  resolveEntryPoint,
+  type AvokEntryPointVersion,
   type AvokUserOperation,
   type Bundler,
   type Call,
@@ -23,7 +24,7 @@ export interface SponsoredInfra {
 // A structurally-valid dummy 7702 authorization for GAS ESTIMATION of an undelegated account: the
 // bundler needs the delegation designator (the `address`) so it simulates against the delegated
 // account, but the single `signUserOp` gesture that produces the REAL signed tuple happens AFTER all
-// IO (the key must never be live across a network round-trip). The v0.9 userOpHash is independent of
+// IO (the key must never be live across a network round-trip). The userOpHash is independent of
 // the authorization signature (verified), so this stub never changes the hash the wallet signs.
 const STUB_R = ("0x" + "11".repeat(32)) as Hex;
 const STUB_S = ("0x" + "22".repeat(32)) as Hex;
@@ -34,9 +35,13 @@ function stubAuthorization(a: PendingAuthorization): SignedAuthorization {
 export interface PreparedSponsoredUserOp {
   /** The final UserOp: gas + paymaster sponsorship filled; `signature`/`authorization` still stubs. */
   op: AvokUserOperation;
-  /** The v0.9 hash the connection signs (already the EIP-712 digest `validateUserOp` checks). */
+  /** The hash the connection signs (already the EIP-712 digest `validateUserOp` checks), for whichever
+   *  EntryPoint version this send targets. */
   userOpHash: Hex;
   chainId: number;
+  /** The EntryPoint version `userOpHash` was computed against — the popup recomputes it from this,
+   *  never trusting a caller-supplied hash, so it must know which singleton to check against. */
+  entryPointVersion: AvokEntryPointVersion;
   /** The delegation to sign (undelegated account only) — passed to `connection.signUserOp`. */
   authorization?: PendingAuthorization;
 }
@@ -58,17 +63,21 @@ export async function prepareSponsoredUserOp(
     feeToken: Address | null;
     suggestedTip: bigint;
     baseFee: bigint;
+    /** Which EntryPoint singleton to read the 2D nonce from and hash the UserOp against — MUST match
+     *  what the target wallet's `ENTRY_POINT()` actually trusts (see `evm/entrypoint.ts`). */
+    entryPointVersion: AvokEntryPointVersion;
   },
 ): Promise<PreparedSponsoredUserOp> {
   const { rpc, bundler, paymaster } = infra;
-  const { sender, calls, chainId, authorization, feeToken } = args;
+  const { sender, calls, chainId, authorization, feeToken, entryPointVersion } = args;
   const fees = nativeGasFees(args.suggestedTip, args.baseFee);
   const auth = authorization ? stubAuthorization(authorization) : undefined;
   const context = feeToken ? { token: feeToken } : undefined;
+  const entryPoint = resolveEntryPoint(entryPointVersion);
 
   const nonce = await rpc.readContract<bigint>({
-    address: entryPoint09Address,
-    abi: entryPoint09Abi,
+    address: entryPoint.address,
+    abi: entryPoint.abi,
     functionName: "getNonce",
     args: [sender, 0n],
   });
@@ -121,7 +130,13 @@ export async function prepareSponsoredUserOp(
       paymasterPostOpGasLimit: gas.paymasterPostOpGasLimit ?? stubPaymaster.paymasterPostOpGasLimit,
     },
   });
-  return { op, userOpHash: getAvokUserOpHash(op, chainId), chainId, authorization };
+  return {
+    op,
+    userOpHash: getAvokUserOpHash(op, chainId, entryPointVersion),
+    chainId,
+    entryPointVersion,
+    authorization,
+  };
 }
 
 /** Every gas limit the UserOp commits — the ceiling `maxFeePerGas` is charged against. */

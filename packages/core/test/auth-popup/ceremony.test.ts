@@ -54,7 +54,7 @@ function fakeView(overrides: Partial<AuthPopupView> = {}): AuthPopupView {
   };
 }
 
-const account: AuthPopupAccount = { evmAddress: "0xevm", credentialId: "cred-1" };
+const account: AuthPopupAccount = { evmAddress: "0xevm", walletAddress: "0xevm", credentialId: "cred-1" };
 
 // A real, decodable request: decodeSignConsent → formatConsentDisplay yields ["Sign message:", "hi"].
 const request: SignConsentRequest = { op: "signMessage", message: "hi" };

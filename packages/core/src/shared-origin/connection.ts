@@ -23,18 +23,23 @@ export function createSharedOriginConnection(opts: {
   const net = createChannelSharedOrigin(opts);
 
   /**
-   * Shapes the flat shared-origin session `{ evmAddress }` into core's `Account = { evm }`. Shared by
-   * the restore and authorize paths.
+   * Shapes the flat shared-origin session `{ evmAddress, walletAddress? }` into core's
+   * `Account = { evm }`. Shared by the restore and authorize paths.
+   *
+   * `evm.address` is the WALLET address (`walletAddress`, falling back to `evmAddress` when absent —
+   * the founding-device case, where they coincide, and every session persisted before `walletAddress`
+   * existed). `evm.signerAddress` is always the device's own key (`evmAddress`) — see `Account`'s doc
+   * in `types.ts` for why `client/evm.ts` needs both.
    *
    * No name is carried: the session has none. A name is resolved data, not wallet state, so it is
    * resolved at the point of use, exactly as own-origin does.
    */
-  function shapeAccount(a: { evmAddress: Address }): Account {
-    return { evm: { address: a.evmAddress } };
+  function shapeAccount(a: { evmAddress: Address; walletAddress?: Address }): Account {
+    return { evm: { address: a.walletAddress ?? a.evmAddress, signerAddress: a.evmAddress } };
   }
 
   /** Storage holds whatever a previous version wrote, so a restored session is UNTRUSTED input. */
-  function hasAddress(a: unknown): a is { evmAddress: Address } {
+  function hasAddress(a: unknown): a is { evmAddress: Address; walletAddress?: Address } {
     return typeof (a as { evmAddress?: unknown } | null)?.evmAddress === "string";
   }
 
@@ -60,7 +65,7 @@ export function createSharedOriginConnection(opts: {
       net.logout();
       return null;
     }
-    return shapeAccount({ evmAddress: a.evmAddress });
+    return shapeAccount(a);
   }
 
   /**
@@ -73,7 +78,7 @@ export function createSharedOriginConnection(opts: {
     const a = net.account();
     if (!a) throw new Error("authorize() succeeded but account() returned null");
     if (!hasAddress(a)) throw new Error("authorize() returned an account with no evmAddress");
-    return shapeAccount({ evmAddress: a.evmAddress });
+    return shapeAccount(a);
   }
 
   return {

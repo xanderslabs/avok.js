@@ -1,7 +1,7 @@
 import { createSiweMessage } from "viem/siwe";
 import type { Hex, PrivateKeyAccount } from "viem";
-import { getUserOperationHash, entryPoint09Address, type UserOperation } from "viem/account-abstraction";
-import { wrapRosterSignature } from "../../evm/index.js";
+import { getUserOperationHash, type UserOperation } from "viem/account-abstraction";
+import { wrapRosterSignature, resolveEntryPoint, type AvokEntryPointVersion } from "../../evm/index.js";
 import type { WalletState } from "../../wallet/index.js";
 import type { SignConsentRequest } from "./consent.js";
 
@@ -118,18 +118,21 @@ export async function performSign(request: SignConsentRequest, keys: SignKeys, s
     }
 
     case "signUserOp": {
-      // Recompute the v0.9 userOpHash from the SUPPLIED fields — never trust a caller-supplied hash, so
+      // Recompute the userOpHash from the SUPPLIED fields — never trust a caller-supplied hash, so
       // the signed digest is provably the one derived from the batch the consent screen decoded. The
       // hash is already the EIP-712 digest the contract's validateUserOp checks, so sign it RAW.
+      // `entryPointVersion` MUST match what the target wallet's `ENTRY_POINT()` actually trusts — see
+      // `evm/entrypoint.ts` — or this hash is for the wrong EntryPoint and validateUserOp rejects it.
       if (isRosterSigner && request.authorization) {
         throw new Error("A roster signer cannot authorize an EIP-7702 delegation");
       }
       const authorization = request.authorization ? await keys.evm.signAuthorization(request.authorization) : undefined;
+      const entryPointVersion = request.entryPointVersion as AvokEntryPointVersion;
       const userOpHash = getUserOperationHash({
         chainId: request.chainId,
-        entryPointAddress: entryPoint09Address,
-        entryPointVersion: "0.9",
-        userOperation: request.userOp as unknown as UserOperation<"0.9">,
+        entryPointAddress: resolveEntryPoint(entryPointVersion).address,
+        entryPointVersion,
+        userOperation: request.userOp as unknown as UserOperation<AvokEntryPointVersion>,
       });
       const rawSignature = await keys.evm.sign({ hash: userOpHash });
       // `validateUserOp` accepts a raw signature only for the root (founding-device) key; any other

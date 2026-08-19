@@ -62,6 +62,7 @@ export function createRemoteSigner({
         op: "signUserOp",
         userOp: args.userOp,
         chainId: args.chainId,
+        entryPointVersion: args.entryPointVersion,
         authorization: args.authorization,
       });
     },

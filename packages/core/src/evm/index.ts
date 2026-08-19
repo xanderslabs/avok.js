@@ -47,11 +47,15 @@ export type {
 } from "./paymaster-7677.js";
 export { createPaymaster7677 } from "./paymaster-7677.js";
 
+// EntryPoint version resolution (v0.8 default / v0.9 opt-in) — see entrypoint.ts's module header.
+export type { AvokEntryPointVersion, EntryPointInfo } from "./entrypoint.js";
+export { resolveEntryPoint, DEFAULT_ENTRY_POINT_VERSION } from "./entrypoint.js";
+
 // ERC-4337 bundler client
 export type { Bundler, BundlerOptions, AvokUserOperation } from "./bundler.js";
 export { createBundler } from "./bundler.js";
 
-// v0.8 UserOp builder (the Avok Connection signs the hash directly; bundler.ts submits the raw UserOp).
+// UserOp builder (the Avok Connection signs the hash directly; bundler.ts submits the raw UserOp).
 export type { BuildUserOpArgs } from "./userop.js";
 export { buildUserOp, getAvokUserOpHash } from "./userop.js";
 

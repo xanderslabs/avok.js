@@ -44,6 +44,7 @@ export function authPopupDeps(config: AuthPopupConfig): Omit<AuthPopupCeremonyDe
         // and lets later sign popups skip the account picker.
         const account: AuthPopupAccount = {
           evmAddress: walletState.evmAddress,
+          walletAddress: walletState.walletAddress,
           credentialId: walletState.credentialId,
         };
         // The proof is signed INSIDE this gesture, so it costs the user nothing extra — the key is
