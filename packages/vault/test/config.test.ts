@@ -115,7 +115,9 @@ describe("bakedAppConfig", () => {
       ...valid,
       rpcOverrides: { base: ["https://custom.example.com", "https://custom2.example.com"] },
     });
-    expect(bakedAppConfig(cfg).rpcUrls).toEqual({ base: ["https://custom.example.com", "https://custom2.example.com"] });
+    expect(bakedAppConfig(cfg).rpcUrls).toEqual({
+      base: ["https://custom.example.com", "https://custom2.example.com"],
+    });
   });
 
   it("a single-string rpcOverride is only 1 endpoint, and fails the redundancy requirement (TDD §8)", () => {

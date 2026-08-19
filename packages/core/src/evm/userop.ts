@@ -65,7 +65,11 @@ export function buildUserOp(args: BuildUserOpArgs): AvokUserOperation {
  *  hash binds the EntryPoint address through the EIP-712 domain, so `version` MUST be the same
  *  singleton the target wallet's `ENTRY_POINT()` actually points at, or `validateUserOp` recovers a
  *  different signer and rejects it. */
-export function getAvokUserOpHash(userOperation: AvokUserOperation, chainId: number, version: AvokEntryPointVersion): Hex {
+export function getAvokUserOpHash(
+  userOperation: AvokUserOperation,
+  chainId: number,
+  version: AvokEntryPointVersion,
+): Hex {
   return getUserOperationHash({
     chainId,
     entryPointAddress: resolveEntryPoint(version).address,

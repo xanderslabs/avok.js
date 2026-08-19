@@ -43,7 +43,8 @@ export interface Bundler {
 export function createBundler(opts: BundlerOptions): Bundler {
   const transport = opts.transport ?? http(requireUrl(opts.url));
   const client = createBundlerClient({ transport });
-  const entryPointAddress = opts.entryPointAddress ?? resolveEntryPoint(opts.entryPointVersion ?? DEFAULT_ENTRY_POINT_VERSION).address;
+  const entryPointAddress =
+    opts.entryPointAddress ?? resolveEntryPoint(opts.entryPointVersion ?? DEFAULT_ENTRY_POINT_VERSION).address;
 
   return {
     estimateUserOperationGas: (userOp) =>
