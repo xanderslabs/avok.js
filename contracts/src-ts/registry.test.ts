@@ -186,7 +186,10 @@ describe("Robinhood Chain (chainId 4663): USDG-only; USDC/USDT tokens do not exi
     // encodes it. Deploy before using any chain other than Arc.
     expect(rhc!.canonicalImplementation).toBe("0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e");
     expect(rhc!.explorer).toBe("https://robinhoodchain.blockscout.com");
-    expect(rhc!.defaultRpc).toEqual(["https://rpc.mainnet.chain.robinhood.com"]);
+    expect(rhc!.defaultRpc).toEqual([
+      "https://rpc.mainnet.chain.robinhood.com",
+      "https://gateway.tenderly.co/public/robinhood-chain",
+    ]);
     expect(rhc!.capabilities).toEqual({ simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true });
   });
 

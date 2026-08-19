@@ -181,17 +181,28 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     id: "eip155:4663",
     chainId: 4663,
     name: "Robinhood",
+    // Deployment target (2026-08-19 amendment): a mainnet smoke run (CREATE2 deploy + one real 7702
+    // auth + one batched send + one guardian setup) is what flips this to "live (smoke-verified)" —
+    // stays "unverified" until that run is actually green, needs a funded key.
     tier: "unverified",
+    // COMPLIANCE NOTE (2026-08-19, re-probed): Robinhood operates the sequencer for this chain WITH
+    // compliance screening and a permissioned validator set — document this wherever Robinhood support
+    // is claimed. Building on it is permissionless; the sequencer/validator layer is not.
+    //
     // AvokCalibur is not deployed on Robinhood Chain — PENDING fails loud
     // (txengine resolve throws on the zero delegate) until a real `forge script Deploy` here.
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://robinhoodchain.blockscout.com",
-    // ONE provider only — the RPC-redundancy requirement (defaultRpc.ts doc) is not yet met here. A
-    // second independent provider is pending Robinhood's own dedicated probe (7702/simulateV1/state
-    // override + RPC options), tracked separately; do not add one without verifying it live first.
-    defaultRpc: ["https://rpc.mainnet.chain.robinhood.com"],
-    // All four verified via read-only RPC: eth_simulateV1 OK, Multicall3 code present at 0xcA11…CA11,
-    // eth_call state override honored; native gas is ETH (no protocol-level non-native gas → sameAssetGas false).
+    // Re-probed live 2026-08-19 (cast chain-id): the pinned default, plus Tenderly's public gateway —
+    // Tenderly is one of Robinhood's own documented third-party RPC providers alongside Alchemy/
+    // Quicknode/Blockdaemon/dRPC (per Robinhood's public RPC-provider docs).
+    defaultRpc: ["https://rpc.mainnet.chain.robinhood.com", "https://gateway.tenderly.co/public/robinhood-chain"],
+    // Re-verified 2026-08-19: eth_simulateV1 OK, Multicall3 code present at 0xcA11…CA11 (both RPCs),
+    // eth_call state override honored (syntactically accepted, no rejection), ArbSys.arbOSVersion()
+    // reads 116 (Nitro build v3.11.3-rc.9, an Arbitrum Orbit chain) confirming the ArbOS generation
+    // that carries 7702; independently corroborated by Arbitrum Foundation's own post ("ERC-4337 and
+    // EIP-7702 account abstraction are live at canonical addresses on Robinhood Chain"). Native gas is
+    // ETH (no protocol-level non-native gas → sameAssetGas false).
     capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
     // USDG ("Global Dollar", 6-dec) is the only bridged stablecoin here. Canonical USDC/USDT TOKENS
     // do not exist on this chain, so they are deliberately absent. Do not add them.

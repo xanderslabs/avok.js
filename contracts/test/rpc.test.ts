@@ -50,10 +50,9 @@ describe("evmRpcUrls: the full failover list (TDD §8, amended 2026-08-19)", () 
     expect(evmRpcUrls(8453, { evm: { 8453: [OWN_NODE, SECOND_NODE] } })).toEqual([OWN_NODE, SECOND_NODE]);
   });
 
-  it("every registry chain's defaultRpc carries at least 2 independent providers, except the one documented as pending a second (Robinhood Chain, chainId 4663)", () => {
+  it("every registry chain's defaultRpc carries at least 2 independent providers", () => {
     for (const chain of listChains()) {
       if (chain.kind !== "evm") continue;
-      if (chain.chainId === 4663) continue; // Robinhood: pending its own dedicated probe — see registry.ts
       expect(chain.defaultRpc.length, `chainId ${chain.chainId} (${chain.name})`).toBeGreaterThanOrEqual(2);
     }
   });
