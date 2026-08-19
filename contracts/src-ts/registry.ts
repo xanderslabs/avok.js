@@ -63,6 +63,9 @@ const ARB_USDT: Address = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9";
 const BSC_USDC: Address = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
 const BSC_USDT: Address = "0x55d398326f99059fF775485246999027B3197955";
 const ARC_USDC: Address = "0x3600000000000000000000000000000000000000";
+// Circle-native testnet USDC on Base Sepolia (developers.circle.com/stablecoins/usdc-contract-addresses,
+// fetched 2026-08-19), 6 decimals per Circle's standard USDC convention.
+const BASE_SEPOLIA_USDC: Address = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 // Robinhood Chain (4663): bridged stablecoin liquidity is USDG ("Global Dollar"), NOT USDC/USDT.
 // Canonical USDC/USDT tokens do not exist on this chain (Blockscout returns only impostor contracts).
 const RHC_USDG: Address = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
@@ -186,6 +189,26 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
       [ARC_USDC]: { address: ARC_USDC, symbol: "USDC", decimals: 6 },
     },
   },
+  "eip155:84532": {
+    kind: "evm",
+    id: "eip155:84532",
+    chainId: 84532,
+    name: "Base Sepolia",
+    // The e2e-base-sepolia suite (contract-architecture §5, TDD §8) is what flips this to
+    // "supported" — stays "unverified" until that run is actually green.
+    tier: "unverified",
+    isTestnet: true,
+    canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
+    explorer: "https://sepolia.basescan.org",
+    rpcDefault: "https://sepolia.base.org",
+    // Verified live 2026-08-19: chainId 84532 (cast chain-id), Multicall3 code present at
+    // 0xcA11...CA11, eth_simulateV1 responds correctly. stateOverride/sameAssetGas follow the
+    // OP Stack profile shared with Base mainnet (same client stack, not independently re-probed).
+    capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
+    tokens: {
+      [BASE_SEPOLIA_USDC]: { address: BASE_SEPOLIA_USDC, symbol: "USDC", decimals: 6 },
+    },
+  },
   "eip155:11155111": {
     kind: "evm",
     id: "eip155:11155111",
@@ -265,6 +288,7 @@ export const CHAIN_NAME_TO_ID: Record<string, ChainId> = {
   robinhood: "eip155:4663",
   "arc-testnet": "eip155:5042002",
   sepolia: "eip155:11155111",
+  "base-sepolia": "eip155:84532",
 };
 
 /**

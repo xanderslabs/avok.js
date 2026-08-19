@@ -57,6 +57,9 @@ export const CHAIN_IDS = {
   // without spending real money. Deploying the delegate here is the prerequisite for
   // scripts/prove-sponsored-evm.mjs; without this entry the CLI could not target it at all.
   sepolia: 11155111,
+  // TESTNET. The e2e-base-sepolia suite's target chain (contract-architecture §5, TDD §8) — the
+  // receipts-gate run that flips Base Sepolia's registry tier to "supported".
+  "base-sepolia": 84532,
 };
 
 /** Resolve a --chain name to its chainId. Throws with the valid name list on a miss. */
