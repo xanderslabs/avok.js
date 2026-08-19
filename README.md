@@ -24,7 +24,7 @@ wallet's on-chain key roster.
 Every app configures a single `originPoint`: the URL of a static Vault page an operator
 hosts (built with `avok-vault`). All key operations happen inside that page, in a popup
 the SDK opens: derivation, consent, signing. Consent decodes what it signs from the
-bytes themselves — an unrecognized call is shown as raw calldata, never hidden. The Vault
+bytes themselves, and an unrecognized call is shown as raw calldata, never hidden. The Vault
 also carries transaction simulation and asset-delta preview as a module
 (`eth_simulateV1` against the operator's own pinned RPC), tested standalone; wiring it
 into the consent screen itself is in progress. An app can run its own origin-point or,

@@ -17,7 +17,7 @@ it.
 import { createAvok } from "@avokjs/core";
 
 const client = await createAvok({
-  originPoint: "https://vault.example.com", // yours, or someone else's — permissionless
+  originPoint: "https://vault.example.com", // yours, or someone else's (permissionless)
   chains: ["base"],
   wallet: { name: "Example Wallet", rdns: "com.example.wallet" }, // shown in wallet pickers
 });
@@ -27,7 +27,7 @@ const provider = client.getEip1193Provider();
 ```
 
 There is no passkey domain or auth-server URL to set on the SDK side. Those are the origin-point's
-own build-time configuration (`avok-vault init`), never this SDK's — whether the current app IS the
+own build-time configuration (`avok-vault init`), never this SDK's, whether the current app IS the
 origin-point's first party or a guest changes nothing here.
 
 ## Sending and signing are not on the client
@@ -57,13 +57,13 @@ EIP-1193 provider, driven by stock wagmi, viem, ethers, or RainbowKit.
 `buildRevokeDeviceCall`/`readDeviceRoster` for who can sign, and `buildSetupGuardiansCall`/
 `buildProposeGuardianOpCall`/`buildExecuteGuardianOpCall`/`buildVetoGuardianOpCall`/
 `readGuardianState` for who can recover the wallet. Both device registration and guardian-set changes
-are ordinary wallet self-calls (`onlyThis` on the wallet contract) — build the `Call`, then send it
+are ordinary wallet self-calls (`onlyThis` on the wallet contract): build the `Call`, then send it
 through the EIP-1193 provider like any other transaction. There is no bespoke signing primitive for
 either, and the React/React Native `useDevices`/`useGuardians` hooks are thin wrappers over exactly
 these functions.
 
 A guardian's own *approval* of a recovery is a different action (their key, not the wallet's), and it
-runs on the origin-point's own recovery screen, not through this SDK — see the
+runs on the origin-point's own recovery screen, not through this SDK. See the
 [`@avokjs/vault`](../vault) README.
 
 ## Configuration
@@ -72,5 +72,5 @@ runs on the origin-point's own recovery screen, not through this SDK — see the
 custom `ClientConfig` (a custom channel transport, for example), `createAvokClient({ connection, ...
 })` takes `rpcUrls` and `paymasterUrl`/`bundlerUrl` (required together) directly. Sponsorship is asked
 for per send, never configured as a client-wide default. Avok ships **no default** RPC, bundler, or
-paymaster — each is a trust boundary you supply. See [`SPONSORED.md`](./SPONSORED.md) for the full
+paymaster. Each is a trust boundary you supply. See [`SPONSORED.md`](./SPONSORED.md) for the full
 sponsorship contract, including custom `Bundler`/`Paymaster7677` injection.

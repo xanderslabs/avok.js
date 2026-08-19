@@ -8,12 +8,12 @@ npm i @avokjs/react-native react react-native
 ```
 
 Peer dependencies: `react >=19.2.7`, `react-native >=0.86.0`, and `expo-secure-store >=57.0.0`
-(optional — used by `secureStoreStorage()`).
+(optional, used by `secureStoreStorage()`).
 
 ## Quickstart
 
 The signing ceremony always runs at the operator's `originPoint`, in an in-app browser tab
-(`ASWebAuthenticationSession` on iOS, Chrome Custom Tabs on Android) — never in your own app's
+(`ASWebAuthenticationSession` on iOS, Chrome Custom Tabs on Android), never in your own app's
 process, so there is no passkey domain claim to own or platform association files to serve for it.
 
 ```tsx
@@ -23,7 +23,7 @@ import {
 } from "@avokjs/react-native";
 
 const connection = createNativeSharedOrigin({
-  originPoint: "https://vault.example.com", // yours, or someone else's — permissionless
+  originPoint: "https://vault.example.com", // yours, or someone else's (permissionless)
   redirectUri: "exampleapp://auth",
   openAuthSession: (url, redirectUri) => WebBrowser.openAuthSessionAsync(url, redirectUri),
 });
@@ -71,13 +71,13 @@ They go through the EIP-1193 provider (`client.getEip1193Provider()`), driven by
 viem. On pure native there is no page to announce into, so the EIP-6963 announce is a no-op. Reach
 for the provider directly.
 
-`useDevices`/`useGuardians` follow the same rule: they build a `{ to, value, data }` self-call — device
-registration and guardian-set changes are ordinary wallet transactions — and you send it through the
+`useDevices`/`useGuardians` follow the same rule: they build a `{ to, value, data }` self-call. Device
+registration and guardian-set changes are ordinary wallet transactions, and you send it through the
 provider. Neither hook signs or submits anything itself. A guardian's own *approval* of a recovery
 runs on the origin-point's own recovery screen, not through this SDK.
 
 ## Documentation
 
 This package is a thin React Native layer over [`@avokjs/core`](../core), built on
-`@avokjs/core/engine` — see that package's README for the underlying config, subpaths, and the
+`@avokjs/core/engine`. See that package's README for the underlying config, subpaths, and the
 sponsorship contract.
