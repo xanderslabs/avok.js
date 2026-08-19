@@ -31,6 +31,21 @@ contract GuardianHost {
     }
     function registeredCount() external view returns (uint256) { return registered.length; }
 
+    // The one thing this stand-in was missing for a live D7 recovery-loop run: a real wallet
+    // (AvokCalibur) can originate an outbound call as itself -- e.g. to call
+    // OidcRecoveryGuardian.setRecoveryIdentity, which is msg.sender-scoped to the wallet and has
+    // no other legitimate caller. GuardianLogic's delegatecall surface has no such primitive (it
+    // only manages guardian state, never calls out), so this had no test-only equivalent to lean
+    // on the way approveRecovery does (that path is OidcRecoveryGuardian calling INTO the wallet,
+    // which the fallback already handles). onlyThis, reached via selfCall, same guard shape as
+    // register/update/registerRecoveredKey above.
+    function executeCall(address target, bytes calldata data) external returns (bytes memory ret) {
+        require(msg.sender == address(this), "onlyThis");
+        bool ok;
+        (ok, ret) = target.call(data);
+        if (!ok) assembly { revert(add(ret, 32), mload(ret)) }
+    }
+
     // The shim pattern under test
     fallback() external payable {
         (bool ok, bytes memory ret) = LOGIC.delegatecall(msg.data);
