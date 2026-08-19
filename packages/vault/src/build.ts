@@ -69,7 +69,7 @@ export function inlinePage({ html, assets, config }: InlineArgs): BuiltVault {
   ];
   const hashes = [...new Set(inline.map(sha256))];
 
-  const csp = buildCsp(hashes, Object.values(resolveVaultRpcs(config)));
+  const csp = buildCsp(hashes, Object.values(resolveVaultRpcs(config)).flat());
   return { html: out, csp, headers: headersFileContent(csp) };
 }
 

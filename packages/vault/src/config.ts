@@ -17,23 +17,27 @@ export interface VaultConfig {
   /** Registry chain names (e.g. "base", "ethereum") this Vault serves — TDD §8. Determines which RPC
    *  endpoints `connect-src` is pinned to; the Vault can reach exactly these and nothing else. */
   chains: string[];
-  /** Per-chain RPC override, keyed by the same names as `chains`. Unset chains fall back to the
-   *  registry's default (`EvmChainProfile.rpcDefault`) — see TDD §8 for what those currently are. */
-  rpcOverrides?: Record<string, string>;
+  /** Per-chain RPC override, keyed by the same names as `chains`. A single string is one endpoint, no
+   *  failover; pass an array for redundancy across your own providers. Unset chains fall back to the
+   *  registry's default (`EvmChainProfile.defaultRpc`) — see TDD §8, amended 2026-08-19: at least two
+   *  independent providers are required, and the Vault fails over across them on a transport error. */
+  rpcOverrides?: Record<string, string | string[]>;
   branding?: { operatorName?: string };
   /** Optional first-party management app URL, surfaced to apps that borrow the wallet. */
   managementUrl?: string;
 }
 
-/** Chain name -> the RPC URL actually pinned into `connect-src` (override, or the registry default). */
-export type ResolvedVaultRpcs = Record<string, string>;
+/** Chain name -> the RPC URL FAILOVER LIST actually pinned into `connect-src` (override, or the
+ *  registry default) — at least two entries for every registry-default chain (TDD §8, amended
+ *  2026-08-19); see `assertRpcRedundancy`. */
+export type ResolvedVaultRpcs = Record<string, string[]>;
 
 export function resolveVaultRpcs(config: VaultConfig): ResolvedVaultRpcs {
   const out: ResolvedVaultRpcs = {};
   for (const name of config.chains) {
     const override = config.rpcOverrides?.[name];
     if (override) {
-      out[name] = override;
+      out[name] = Array.isArray(override) ? override : [override];
       continue;
     }
     const id = resolveChainByName(name); // throws with the valid-names list on a typo
@@ -43,19 +47,41 @@ export function resolveVaultRpcs(config: VaultConfig): ResolvedVaultRpcs {
     if (!profile || profile.kind !== "evm") {
       throw new VaultConfigError(`avok-origin.config.json: chain "${name}" has no RPC default in the registry`);
     }
-    out[name] = profile.rpcDefault;
+    out[name] = profile.defaultRpc;
   }
   return out;
 }
 
-/** Chain id -> the RPC URL pinned into `connect-src`. Same resolution as `resolveVaultRpcs`, keyed by
- *  numeric chainId instead of the registry name — what the page's own runtime (`vault/simulate`) needs,
- *  since a sign-tx request carries a numeric `chainId`, never the friendly name. */
-export function resolveVaultRpcsByChainId(config: VaultConfig): Record<number, string> {
+/** Chain id -> the RPC URL failover list pinned into `connect-src`. Same resolution as
+ *  `resolveVaultRpcs`, keyed by numeric chainId instead of the registry name — what the page's own
+ *  runtime (`vault/simulate`) needs, since a sign-tx request carries a numeric `chainId`, never the
+ *  friendly name. */
+export function resolveVaultRpcsByChainId(config: VaultConfig): Record<number, string[]> {
   const byName = resolveVaultRpcs(config);
-  const out: Record<number, string> = {};
+  const out: Record<number, string[]> = {};
   for (const name of config.chains) out[chainIdNumberByName(name)] = byName[name]!;
   return out;
+}
+
+/**
+ * RPC redundancy is mandatory (TDD §8, amended 2026-08-19): `sepolia.base.org`, a single pinned
+ * default, answered "no backend is currently healthy" for every call during verification while three
+ * other providers served the same queries fine — one pinned endpoint is one point of failure for
+ * consent simulation and guardian reads, inside a CSP that forbids reaching anywhere else. Called at
+ * build time, same discipline as every other `VaultConfig` check in this file: caught here, before
+ * anything is deployed, not discovered live during an outage.
+ */
+export function assertRpcRedundancy(resolved: ResolvedVaultRpcs): void {
+  for (const [name, urls] of Object.entries(resolved)) {
+    if (urls.length < 2) {
+      throw new VaultConfigError(
+        `avok-origin.config.json: chain "${name}" has only ${urls.length} RPC endpoint(s) configured; ` +
+          "at least 2 independent providers are required (TDD §8) so the Vault can fail over on a " +
+          "transport error instead of going dark. Add an rpcOverrides entry with 2+ URLs for this " +
+          "chain, or use a registry chain whose defaultRpc already carries 2+.",
+      );
+    }
+  }
 }
 
 export class VaultConfigError extends Error {
@@ -166,10 +192,13 @@ export function parseVaultConfig(raw: unknown): VaultConfig {
 
   const config: VaultConfig = { rpId, vaultOrigin, chains };
   const rpcOverridesRaw = o.rpcOverrides;
-  if (typeof rpcOverridesRaw === "object" && rpcOverridesRaw !== null) {
-    const overrides: Record<string, string> = {};
+  if (typeof rpcOverridesRaw === "object" && rpcOverridesRaw !== null && !Array.isArray(rpcOverridesRaw)) {
+    const overrides: Record<string, string | string[]> = {};
     for (const [k, v] of Object.entries(rpcOverridesRaw as Record<string, unknown>)) {
       if (typeof v === "string") overrides[k] = v;
+      else if (Array.isArray(v) && v.every((u) => typeof u === "string") && v.length > 0) {
+        overrides[k] = v as string[];
+      }
     }
     if (Object.keys(overrides).length > 0) config.rpcOverrides = overrides;
   }
@@ -193,7 +222,7 @@ export interface BakedAppConfig {
   managementUrl?: string;
   rpcUrls: ResolvedVaultRpcs;
   /** Same RPC set as `rpcUrls`, keyed by numeric chainId — see `resolveVaultRpcsByChainId`. */
-  rpcUrlsByChainId: Record<number, string>;
+  rpcUrlsByChainId: Record<number, string[]>;
   /** The anchor chain the "Recover a wallet" screen reads guardian state from and targets its
    *  approvals at (TDD §7: "V1 is anchor-chain-only"). The FIRST entry of `VaultConfig.chains` — there
    *  is no separate `anchorChainId` config key (see the deliberate rejection of that key above, for a
@@ -204,11 +233,13 @@ export interface BakedAppConfig {
 }
 
 export function bakedAppConfig(config: VaultConfig): BakedAppConfig {
+  const rpcUrls = resolveVaultRpcs(config);
+  assertRpcRedundancy(rpcUrls);
   const out: BakedAppConfig = {
     operatorName: config.branding?.operatorName ?? config.rpId,
     vaultOrigin: config.vaultOrigin,
     rpId: config.rpId,
-    rpcUrls: resolveVaultRpcs(config),
+    rpcUrls,
     rpcUrlsByChainId: resolveVaultRpcsByChainId(config),
     recoveryChainId: chainIdNumberByName(config.chains[0]!),
   };

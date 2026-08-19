@@ -1,13 +1,14 @@
 import type { Address, Hex, TransactionSerializable, TypedDataDefinition } from "viem";
-import { createPublicClient, http } from "viem";
+import { createPublicClient } from "viem";
 import type { SiweParams, SignedAuthorizationLike } from "../channel/index.js";
-import { evmRpcUrl } from "@avokjs/contracts";
+import { evmRpcUrls } from "@avokjs/contracts";
 import {
   buildNativeGasCalldata,
   nativeGasFees,
   createBundler,
   createPaymaster7677,
   createViemRpcClient,
+  createFailoverTransport,
   getChainProfile,
   listFeeTokens,
   simulateResolved,
@@ -79,8 +80,10 @@ export interface EvmNamespace {
   signTransaction(tx: TransactionSerializable): Promise<Hex>;
 }
 
-export function makeViemRpc(rpcUrl: string): RpcClient {
-  const client = createPublicClient({ transport: http(rpcUrl) });
+/** `urls` is a failover list, in try-order (TDD §8) — a single-element array works too, with no
+ *  redundancy. See `createFailoverTransport` for exactly what triggers a fail-over. */
+export function makeViemRpc(urls: readonly string[]): RpcClient {
+  const client = createPublicClient({ transport: createFailoverTransport(urls) });
   return createViemRpcClient(client as unknown as ViemLike);
 }
 
@@ -97,7 +100,7 @@ export function resolveChainId(chainId: number | undefined): number {
 export function resolveRpc(config: ClientConfig, chainId: number): RpcClient {
   if (config.deps?.rpc) return config.deps.rpc;
   // config.rpcUrls first, registry public default second (dev-only — see rpc.ts).
-  return makeViemRpc(evmRpcUrl(chainId, config.rpcUrls));
+  return makeViemRpc(evmRpcUrls(chainId, config.rpcUrls));
 }
 
 export function requireChain(config: ClientConfig, chainId: number): EvmChainProfile {

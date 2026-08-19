@@ -44,6 +44,18 @@ export function evaluateDeployedHeaders(
       } else if (sources.some((s) => s === "*" || s === "'unsafe-inline'")) {
         problems.push("Content-Security-Policy's connect-src is wider than a pinned RPC set");
       }
+      // RPC redundancy floor (TDD §8, amended 2026-08-19): the AUTHORITATIVE per-chain check is
+      // `assertRpcRedundancy` at build time (config.ts) — headers carry no chain boundaries, so this
+      // can only see the flat total. A single origin here means every configured chain (there is at
+      // least one) has exactly one RPC, which is definitely wrong; more than one origin does not
+      // prove every chain individually has 2+, only that the build-time check would have.
+      else if (sources.length === 1) {
+        problems.push(
+          "Content-Security-Policy's connect-src names only 1 origin; RPC redundancy (TDD §8) requires " +
+            "at least 2 independent providers per configured chain. Either the build is stale (predates " +
+            "the redundancy requirement) or something bypassed avok-vault build's assertRpcRedundancy check.",
+        );
+      }
     }
     if (!csp.includes("require-trusted-types-for")) {
       problems.push("Content-Security-Policy does not enforce trusted-types; the deployed policy may be stale");

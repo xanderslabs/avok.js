@@ -10,7 +10,7 @@
  * with its own renderer — the money path has one implementation, not two.
  */
 import type { Hex } from "viem";
-import { createPublicClient, http } from "viem";
+import { createPublicClient } from "viem";
 import { WebAuthnPasskeyAdapter, withDiscoveredKeys } from "../wallet/index.js";
 import { performSign } from "./sign/perform-sign.js";
 import type { SignConsentRequest } from "./sign/consent.js";
@@ -23,7 +23,7 @@ import {
 } from "./ceremony.js";
 import { decodeRequestUrl } from "../channel/redirect-protocol.js";
 import { createDomView } from "./view-dom.js";
-import { createViemRpcClient, type ViemLike } from "../evm/rpc.js";
+import { createViemRpcClient, createFailoverTransport, type ViemLike } from "../evm/rpc.js";
 import { simulateRequest, type SignTxPayload, type SimulationResult } from "../vault/simulate/index.js";
 import { mountRecoverPage } from "./recover/mount.js";
 
@@ -77,11 +77,11 @@ export function authPopupDeps(config: AuthPopupConfig): Omit<AuthPopupCeremonyDe
     // URL rejects rather than guessing at a public default the operator never opted into and the CSP
     // would block anyway.
     async simulate(payload: SignTxPayload): Promise<SimulationResult> {
-      const url = config.rpcUrlsByChainId?.[payload.chainId];
-      if (!url) {
+      const urls = config.rpcUrlsByChainId?.[payload.chainId];
+      if (!urls || urls.length === 0) {
         throw new Error(`No RPC configured for chain ${payload.chainId} — cannot simulate this request`);
       }
-      const client = createPublicClient({ transport: http(url) });
+      const client = createPublicClient({ transport: createFailoverTransport(urls) });
       const rpc = createViemRpcClient(client as unknown as ViemLike);
       return simulateRequest(rpc, payload);
     },

@@ -17,7 +17,7 @@ describe("recoverCeremonyDeps", () => {
       authOrigin: "https://dapp.example",
       rpId: "wallet.example",
       recoveryChainId: 8453,
-      rpcUrlsByChainId: { 10: "https://mainnet.optimism.io" }, // 8453 missing
+      rpcUrlsByChainId: { 10: ["https://mainnet.optimism.io"] }, // 8453 missing
     };
     expect(() => recoverCeremonyDeps(config)).toThrow(/no rpc configured/i);
   });
@@ -27,7 +27,7 @@ describe("recoverCeremonyDeps", () => {
       operatorName: "Test Vault",
       authOrigin: "https://dapp.example",
       rpId: "wallet.example",
-      rpcUrlsByChainId: { 8453: "https://mainnet.base.org" },
+      rpcUrlsByChainId: { 8453: ["https://mainnet.base.org"] },
     };
     expect(() => recoverCeremonyDeps(config)).toThrow(/recoveryChainId/);
   });

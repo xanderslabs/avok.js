@@ -1,5 +1,5 @@
 import { isDelegatedTo } from "../evm/index.js";
-import { evmRpcUrl } from "@avokjs/contracts";
+import { evmRpcUrls } from "@avokjs/contracts";
 import { resolveChainId, requireChain, makeViemRpc } from "./evm.js";
 import type { ClientConfig, Account, ContinueOpts, Connection } from "../types.js";
 
@@ -67,7 +67,7 @@ export function createAvokClient<C extends Connection>(config: ClientConfig<C>):
       const address = connection.account()?.evm.address;
       if (!address) return false;
       // Inline rpc resolution using the already-resolved chain profile (avoids a second getChainProfile).
-      const rpc = deps?.rpc ?? makeViemRpc(evmRpcUrl(id, config.rpcUrls));
+      const rpc = deps?.rpc ?? makeViemRpc(evmRpcUrls(id, config.rpcUrls));
       const code = await rpc.getCode(address);
       return isDelegatedTo(code, chain.canonicalImplementation);
     },

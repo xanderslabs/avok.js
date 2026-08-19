@@ -2000,4 +2000,4 @@ export {
   resolveAnchorChain,
 } from "./registry.js";
 export type { RpcOverrides } from "./rpc.js";
-export { evmRpcUrl, isPublicDefaultRpc } from "./rpc.js";
+export { evmRpcUrl, evmRpcUrls, isPublicDefaultRpc } from "./rpc.js";

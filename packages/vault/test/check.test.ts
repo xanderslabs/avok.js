@@ -4,8 +4,8 @@ import { recoverySecurityHeaders } from "../src/headers.js";
 
 const good = new Headers({
   "content-security-policy":
-    "default-src 'none'; script-src 'sha256-x'; connect-src https://mainnet.base.org; frame-ancestors 'none'; " +
-    "require-trusted-types-for 'script'",
+    "default-src 'none'; script-src 'sha256-x'; connect-src https://mainnet.base.org https://base-rpc.publicnode.com; " +
+    "frame-ancestors 'none'; require-trusted-types-for 'script'",
   "origin-agent-cluster": "?1",
   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
   "x-frame-options": "DENY",
@@ -38,6 +38,24 @@ describe("evaluateDeployedHeaders", () => {
     const h = new Headers(good);
     h.set("content-security-policy", "default-src 'none'; script-src 'sha256-x'");
     expect(evaluateDeployedHeaders(h).problems.join(" ")).toContain("frame-ancestors");
+  });
+
+  // RPC redundancy floor (TDD §8, amended 2026-08-19): the authoritative per-chain check runs at
+  // build time (assertRpcRedundancy); this is a coarse deploy-time sanity signal only.
+  it("fails when connect-src names only 1 origin — a build predating the redundancy requirement", () => {
+    const h = new Headers(good);
+    h.set(
+      "content-security-policy",
+      "default-src 'none'; script-src 'sha256-x'; connect-src https://mainnet.base.org; frame-ancestors 'none'; " +
+        "require-trusted-types-for 'script'",
+    );
+    const result = evaluateDeployedHeaders(h);
+    expect(result.ok).toBe(false);
+    expect(result.problems.join(" ")).toContain("RPC redundancy");
+  });
+
+  it("passes with 2+ connect-src origins, the redundancy floor", () => {
+    expect(evaluateDeployedHeaders(good).ok).toBe(true);
   });
 
   it("flags a Cross-Origin-Opener-Policy that would sever the opener", () => {
@@ -154,8 +172,8 @@ describe("deriveRecoveryUrl", () => {
 describe("runCheck", () => {
   const good = new Headers({
     "content-security-policy":
-      "default-src 'none'; script-src 'sha256-x'; connect-src https://mainnet.base.org; frame-ancestors 'none'; " +
-      "require-trusted-types-for 'script'",
+      "default-src 'none'; script-src 'sha256-x'; connect-src https://mainnet.base.org https://base-rpc.publicnode.com; " +
+      "frame-ancestors 'none'; require-trusted-types-for 'script'",
     "origin-agent-cluster": "?1",
     "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
     "x-frame-options": "DENY",

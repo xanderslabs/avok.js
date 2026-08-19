@@ -5,8 +5,8 @@
  * driver without a browser; exercise the gestures by hand, same as every other WebAuthn/EIP-6963 path
  * in this codebase).
  */
-import { createPublicClient, http, type Address } from "viem";
-import { createViemRpcClient, type ViemLike } from "../../evm/rpc.js";
+import { createPublicClient, type Address } from "viem";
+import { createViemRpcClient, createFailoverTransport, type ViemLike } from "../../evm/rpc.js";
 import { createEnsResolver } from "../../helpers/ens-resolver.js";
 import type { EnsClient } from "../../helpers/ens-reader.js";
 import { createNameResolver } from "../../helpers/resolver.js";
@@ -28,11 +28,11 @@ export function recoverCeremonyDeps(config: AuthPopupConfig): RecoverCeremonyDep
       "recoverCeremonyDeps: config carries no recoveryChainId — the recovery screen has no anchor chain to read guardian state from",
     );
   }
-  const url = config.rpcUrlsByChainId?.[chainId];
-  if (!url) {
+  const urls = config.rpcUrlsByChainId?.[chainId];
+  if (!urls || urls.length === 0) {
     throw new Error(`No RPC configured for chain ${chainId} — cannot read guardian state for recovery`);
   }
-  const client = createPublicClient({ transport: http(url) });
+  const client = createPublicClient({ transport: createFailoverTransport(urls) });
   const rpc = createViemRpcClient(client as unknown as ViemLike);
 
   // ENS resolution against the SAME anchor-chain client. ENS itself lives on Ethereum mainnet; on any

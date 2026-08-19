@@ -99,7 +99,7 @@ describe("bakedAppConfig", () => {
 
   it("carries the resolved RPC map — what the page's own runtime needs to build an RpcClient", () => {
     const baked = bakedAppConfig(parseVaultConfig(valid));
-    expect(baked.rpcUrls).toEqual({ base: "https://mainnet.base.org" });
+    expect(baked.rpcUrls).toEqual({ base: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"] });
   });
 
   // TDD §7: "V1 is anchor-chain-only." There is no separate `anchorChainId` config key (that name is
@@ -111,8 +111,16 @@ describe("bakedAppConfig", () => {
   });
 
   it("an rpcOverride wins over the registry default", () => {
+    const cfg = parseVaultConfig({
+      ...valid,
+      rpcOverrides: { base: ["https://custom.example.com", "https://custom2.example.com"] },
+    });
+    expect(bakedAppConfig(cfg).rpcUrls).toEqual({ base: ["https://custom.example.com", "https://custom2.example.com"] });
+  });
+
+  it("a single-string rpcOverride is only 1 endpoint, and fails the redundancy requirement (TDD §8)", () => {
     const cfg = parseVaultConfig({ ...valid, rpcOverrides: { base: "https://custom.example.com" } });
-    expect(bakedAppConfig(cfg).rpcUrls).toEqual({ base: "https://custom.example.com" });
+    expect(() => bakedAppConfig(cfg)).toThrow(/at least 2 independent providers/);
   });
 
   // The Vault popup's own runtime (vault/simulate) sees a numeric `chainId` on every sign-tx request,
@@ -120,31 +128,36 @@ describe("bakedAppConfig", () => {
   // with, not the name-keyed one `connect-src` is pinned from.
   it("also carries the RPC map keyed by numeric chain id, for the runtime's simulate step", () => {
     const baked = bakedAppConfig(parseVaultConfig(valid));
-    expect(baked.rpcUrlsByChainId).toEqual({ 8453: "https://mainnet.base.org" });
+    expect(baked.rpcUrlsByChainId).toEqual({ 8453: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"] });
   });
 
   it("an rpcOverride is reflected in the chainId-keyed map too", () => {
-    const cfg = parseVaultConfig({ ...valid, rpcOverrides: { base: "https://custom.example.com" } });
-    expect(bakedAppConfig(cfg).rpcUrlsByChainId).toEqual({ 8453: "https://custom.example.com" });
+    const cfg = parseVaultConfig({
+      ...valid,
+      rpcOverrides: { base: ["https://custom.example.com", "https://custom2.example.com"] },
+    });
+    expect(bakedAppConfig(cfg).rpcUrlsByChainId).toEqual({
+      8453: ["https://custom.example.com", "https://custom2.example.com"],
+    });
   });
 });
 
 describe("resolveVaultRpcsByChainId", () => {
-  it("resolves every configured chain's numeric chainId to its RPC URL", () => {
+  it("resolves every configured chain's numeric chainId to its RPC URL failover list", () => {
     const cfg = parseVaultConfig({ ...valid, chains: ["base", "ethereum"] });
     expect(resolveVaultRpcsByChainId(cfg)).toEqual({
-      8453: "https://mainnet.base.org",
-      1: "https://ethereum-rpc.publicnode.com",
+      8453: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"],
+      1: ["https://ethereum-rpc.publicnode.com", "https://ethereum.drpc.org"],
     });
   });
 });
 
 describe("resolveVaultRpcs", () => {
-  it("resolves every configured chain to its registry default RPC", () => {
+  it("resolves every configured chain to its registry default RPC failover list", () => {
     const cfg = parseVaultConfig({ ...valid, chains: ["base", "ethereum"] });
     expect(resolveVaultRpcs(cfg)).toEqual({
-      base: "https://mainnet.base.org",
-      ethereum: "https://ethereum-rpc.publicnode.com",
+      base: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"],
+      ethereum: ["https://ethereum-rpc.publicnode.com", "https://ethereum.drpc.org"],
     });
   });
 });

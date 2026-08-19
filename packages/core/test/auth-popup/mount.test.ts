@@ -15,7 +15,7 @@ describe("authPopupDeps.simulate", () => {
     operatorName: "Test Vault",
     authOrigin: "https://dapp.example",
     rpId: "wallet.example",
-    rpcUrlsByChainId: { 8453: "https://mainnet.base.org" },
+    rpcUrlsByChainId: { 8453: ["https://mainnet.base.org"] },
   };
 
   it("rejects rather than silently guessing when no RPC is configured for the payload's chain", async () => {
@@ -43,7 +43,7 @@ describe("mountAuthPopup: direct navigation (no opener, no redirect request)", (
     authOrigin: "https://dapp.example",
     rpId: "wallet.example",
     recoveryChainId: 8453,
-    rpcUrlsByChainId: { 8453: "https://mainnet.base.org" },
+    rpcUrlsByChainId: { 8453: ["https://mainnet.base.org"] },
   };
 
   it("mounts the recover screen rather than waiting on a popup message that will never come", () => {

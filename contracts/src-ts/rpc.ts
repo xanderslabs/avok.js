@@ -8,27 +8,49 @@ import { getChainProfile } from "./registry.js";
  * funds to the liar. So Avok ships no third-party provider as a default and never will — the
  * integrator chooses who they trust, exactly as Jupiter/Phantom-class apps do.
  *
- * Resolution order (same shape the relayers already use: `o.rpcUrl ?? chain.rpcDefault`):
- *   1. An explicit override — the integrator's own provider URL, their own proxy, or an
- *      operator-hosted proxy that keeps the provider key server-side.
- *   2. The registry's `rpcDefault` — a PUBLIC endpoint, and therefore DEVELOPMENT-ONLY. Public
+ * Resolution order (same shape the relayers already use: `o.rpcUrl ?? chain.defaultRpc`):
+ *   1. An explicit override — the integrator's own provider URL(s), their own proxy, or an
+ *      operator-hosted proxy that keeps the provider key server-side. A single string is normalized
+ *      to a one-element list; the integrator opts into redundancy the same way the registry does, by
+ *      naming more than one.
+ *   2. The registry's `defaultRpc` list — PUBLIC endpoints, and therefore DEVELOPMENT-ONLY. Public
  *      endpoints are rate-limited, carry no SLA, and block the indexed reads a wallet needs. Treat
  *      them as a way to get started, never as something to ship.
  *
- * Overrides are per-chain, so an app can point one chain at its own node and leave the rest.
+ * Overrides are per-chain, so an app can point one chain at its own node(s) and leave the rest.
+ *
+ * REDUNDANCY (TDD §8, amended 2026-08-19): every registry `defaultRpc` carries at least two
+ * independent providers, in try-order. `evmRpcUrls` returns the WHOLE list — callers that read chain
+ * state (the SDK's RPC client, the Vault's simulate/recover, `avok-vault build`'s connect-src) must
+ * use it and fail over across it on a transport error, never on a valid JSON-RPC error. See
+ * `packages/core/src/evm/rpc.ts`'s `makeFailoverTransport` for the actual failover client.
  */
 export interface RpcOverrides {
-  /** EVM RPC URL by chain id. */
-  evm?: Record<number, string>;
+  /** EVM RPC URL(s) by chain id. A single string is one endpoint, no failover; pass an array for
+   *  redundancy across your own providers. */
+  evm?: Record<number, string | string[]>;
 }
 
-/** Resolve the EVM RPC URL for `chainId`: caller's override, else the registry's public default. */
-export function evmRpcUrl(chainId: number, overrides?: RpcOverrides): string {
+function normalizeOverride(override: string | string[]): string[] {
+  return Array.isArray(override) ? override : [override];
+}
+
+/** Resolve every EVM RPC URL for `chainId`, in try-order: the caller's override (if any), else the
+ *  registry's `defaultRpc` list. Never empty for a chain present in the registry — `defaultRpc` is
+ *  required to carry at least one entry, and every current entry carries at least two. */
+export function evmRpcUrls(chainId: number, overrides?: RpcOverrides): string[] {
   const override = overrides?.evm?.[chainId];
-  if (override) return override;
+  if (override) return normalizeOverride(override);
   const profile = getChainProfile(chainId);
   if (!profile) throw new Error(`No RPC for chain ${chainId}: not in the registry and no override given.`);
-  return profile.rpcDefault;
+  return profile.defaultRpc;
+}
+
+/** Resolve a SINGLE EVM RPC URL for `chainId` — the first of `evmRpcUrls`'s list. Prefer
+ *  `evmRpcUrls` wherever the caller can fail over; this exists for call sites that only ever want one
+ *  URL (e.g. a one-off diagnostic read). */
+export function evmRpcUrl(chainId: number, overrides?: RpcOverrides): string {
+  return evmRpcUrls(chainId, overrides)[0]!;
 }
 
 /**

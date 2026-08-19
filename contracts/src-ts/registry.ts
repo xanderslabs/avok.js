@@ -5,12 +5,21 @@ export type ChainKind = "evm";
 export type ChainId = string;
 
 /**
- * The receipts gate (PRD §2, §7): no chain is called "supported" in docs, the SDK, or the pitch
- * until the fork E2E suite (contract-architecture §5: first-transaction batch + a full recovery)
- * passes against it. "unverified" is the honest default for every chain until that run is green —
- * it is not a claim the chain doesn't work, only that nobody has proven it does yet.
+ * The receipts gate (PRD §2, §7), amended 2026-08-19: no chain is called "supported" or "live" in
+ * docs, the SDK, or the pitch on trust alone. Two ways to earn a non-"unverified" tier:
+ *
+ * - `"supported (E2E)"`: the full fork/live E2E suite (contract-architecture §5: first-transaction
+ *   batch, batched-send simulation, a full recovery, sponsored send where reachable) passed against
+ *   this chain. Base Sepolia only, in v1 — the one chain that gets the complete run.
+ * - `"live (smoke-verified)"`: a cheap smoke run passed — CREATE2 deploy, one real 7702 authorization,
+ *   one batched send, one guardian setup — for a mainnet the full suite does not re-run against
+ *   (deployment targets: Ethereum, Base, Arbitrum, Robinhood Chain mainnets).
+ *
+ * `"unverified"` is the honest default for every chain until one of those runs is green — it is not
+ * a claim the chain doesn't work, only that nobody has proven it does yet. Never flip a chain's tier
+ * for a run that did not actually happen against it.
  */
-export type ChainTier = "supported" | "unverified";
+export type ChainTier = "unverified" | "supported (E2E)" | "live (smoke-verified)";
 
 export interface ChainCapabilities {
   /** `eth_simulateV1` available (viem `simulateCalls`). */
@@ -44,7 +53,17 @@ export interface EvmChainProfile {
   /** Marks a non-production/testnet chain (e.g. Arc testnet). Omitted on mainnet chains. */
   isTestnet?: boolean;
   explorer: string;
-  rpcDefault: string;
+  /**
+   * Independent RPC providers, in try-order — at least 2 (TDD §8, amended 2026-08-19: RPC redundancy
+   * is mandatory). Finding that forced this: `sepolia.base.org`, a single pinned default, answered
+   * "no backend is currently healthy" for every call during verification while publicnode/drpc/tenderly
+   * served the same queries fine — one pinned endpoint is one point of failure for consent simulation
+   * and guardian reads, inside a CSP that forbids reaching anywhere else. The Vault/SDK client fails
+   * over across this list on a TRANSPORT error (network/HTTP/timeout), never on a valid JSON-RPC error
+   * (a revert, a bad-params response) — that answer is real and failing over to ask a different node
+   * would risk a second, possibly-stale opinion overriding a correct one. See `evm/rpc.ts`.
+   */
+  defaultRpc: string[];
   capabilities: ChainCapabilities;
   /** Supported fee tokens; lookup is by `address` value, case-insensitive. */
   tokens: Record<string, EvmTokenProfile>;
@@ -79,7 +98,8 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://optimistic.etherscan.io",
-    rpcDefault: "https://mainnet.optimism.io",
+    // Both verified live 2026-08-19 (cast chain-id).
+    defaultRpc: ["https://mainnet.optimism.io", "https://optimism-rpc.publicnode.com"],
     capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
     tokens: {
       [OP_USDC]: { address: OP_USDC, symbol: "USDC", decimals: 6 },
@@ -94,7 +114,8 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://etherscan.io",
-    rpcDefault: "https://ethereum-rpc.publicnode.com",
+    // Both verified live 2026-08-19 (cast chain-id).
+    defaultRpc: ["https://ethereum-rpc.publicnode.com", "https://ethereum.drpc.org"],
     capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
     tokens: {
       [ETH_USDC]: { address: ETH_USDC, symbol: "USDC", decimals: 6 },
@@ -109,7 +130,8 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://arbiscan.io",
-    rpcDefault: "https://arb1.arbitrum.io/rpc",
+    // Both verified live 2026-08-19 (cast chain-id).
+    defaultRpc: ["https://arb1.arbitrum.io/rpc", "https://arbitrum-one-rpc.publicnode.com"],
     capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
     tokens: {
       [ARB_USDC]: { address: ARB_USDC, symbol: "USDC", decimals: 6 },
@@ -126,7 +148,8 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://bscscan.com",
-    rpcDefault: "https://bsc-dataseed.bnbchain.org",
+    // Both verified live 2026-08-19 (cast chain-id).
+    defaultRpc: ["https://bsc-dataseed.bnbchain.org", "https://bsc-rpc.publicnode.com"],
     capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
     tokens: {
       [BSC_USDC]: { address: BSC_USDC, symbol: "USDC", decimals: 18 },
@@ -145,7 +168,8 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     tier: "unverified",
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://basescan.org",
-    rpcDefault: "https://mainnet.base.org",
+    // Both verified live 2026-08-19 (cast chain-id).
+    defaultRpc: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"],
     capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
     tokens: {
       [BASE_USDC]: { address: BASE_USDC, symbol: "USDC", decimals: 6 },
@@ -162,7 +186,10 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     // (txengine resolve throws on the zero delegate) until a real `forge script Deploy` here.
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://robinhoodchain.blockscout.com",
-    rpcDefault: "https://rpc.mainnet.chain.robinhood.com",
+    // ONE provider only — the RPC-redundancy requirement (defaultRpc.ts doc) is not yet met here. A
+    // second independent provider is pending Robinhood's own dedicated probe (7702/simulateV1/state
+    // override + RPC options), tracked separately; do not add one without verifying it live first.
+    defaultRpc: ["https://rpc.mainnet.chain.robinhood.com"],
     // All four verified via read-only RPC: eth_simulateV1 OK, Multicall3 code present at 0xcA11…CA11,
     // eth_call state override honored; native gas is ETH (no protocol-level non-native gas → sameAssetGas false).
     capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
@@ -183,7 +210,9 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     // Arc's native gas token IS USDC (Circle's stablechain; verified docs.arc.io), so native/USD == USDC/USD.
     // Arc gas accounting is standard 18-decimal wei (docs.arc.io evm-differences); only the ERC-20 view is 6-dec.
     explorer: "https://testnet.arcscan.app",
-    rpcDefault: "https://rpc.testnet.arc.network",
+    // Both verified live 2026-08-19 (cast chain-id): the pinned default, plus dRPC's Arc testnet node
+    // (docs.arc.io/arc/references/rpc-endpoints lists it as a third-party provider).
+    defaultRpc: ["https://rpc.testnet.arc.network", "https://rpc.drpc.testnet.arc.io"],
     capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
     tokens: {
       [ARC_USDC]: { address: ARC_USDC, symbol: "USDC", decimals: 6 },
@@ -200,7 +229,11 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     isTestnet: true,
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://sepolia.basescan.org",
-    rpcDefault: "https://sepolia.base.org",
+    // sepolia.base.org (the prior single default) is DELIBERATELY excluded: it returned "no backend is
+    // currently healthy to serve traffic" for every call during 2026-08-19 verification while these two
+    // served the same queries fine (both re-verified live 2026-08-19, cast chain-id). Operators may still
+    // add it back via rpcOverrides, but it is not trustworthy enough to ship as a pinned default.
+    defaultRpc: ["https://base-sepolia-rpc.publicnode.com", "https://gateway.tenderly.co/public/base-sepolia"],
     // Verified live 2026-08-19: chainId 84532 (cast chain-id), Multicall3 code present at
     // 0xcA11...CA11, eth_simulateV1 responds correctly. stateOverride/sameAssetGas follow the
     // OP Stack profile shared with Base mainnet (same client stack, not independently re-probed).
@@ -221,7 +254,8 @@ export const CHAIN_PROFILES: Record<ChainId, ChainProfile> = {
     // until then.
     canonicalImplementation: "0x1a29eF50E033371d9686F027BD7d0743B1A0Cc3e",
     explorer: "https://sepolia.etherscan.io",
-    rpcDefault: "https://ethereum-sepolia-rpc.publicnode.com",
+    // Both verified live 2026-08-19 (cast chain-id).
+    defaultRpc: ["https://ethereum-sepolia-rpc.publicnode.com", "https://gateway.tenderly.co/public/sepolia"],
     capabilities: { simulateV1: true, multicall: true, sameAssetGas: false, stateOverride: true },
     tokens: {},
   },

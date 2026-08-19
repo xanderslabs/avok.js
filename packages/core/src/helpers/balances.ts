@@ -1,5 +1,5 @@
-import { createPublicClient, http, erc20Abi, type Address } from "viem";
-import { evmRpcUrl, type RpcOverrides } from "@avokjs/contracts";
+import { createPublicClient, http, fallback, RpcRequestError, erc20Abi, type Address } from "viem";
+import { evmRpcUrls, type RpcOverrides } from "@avokjs/contracts";
 import { getChain } from "./chains.js";
 import { formatAmount } from "./amount.js";
 
@@ -14,8 +14,18 @@ export type TokenBalance = {
   formatted: string;
 };
 
+/** Fails over across every configured RPC for `chainId` on a transport error (TDD §8) — never on a
+ *  valid JSON-RPC error, which is the chain's real answer, not a reason to ask a different node. */
 function publicClientFor(chainId: number, rpcUrls?: RpcOverrides) {
-  return createPublicClient({ transport: http(evmRpcUrl(chainId, rpcUrls)) });
+  const urls: string[] = evmRpcUrls(chainId, rpcUrls);
+  const transport =
+    urls.length === 1
+      ? http(urls[0])
+      : fallback(
+          urls.map((u: string) => http(u)),
+          { shouldThrow: (error) => error instanceof RpcRequestError },
+        );
+  return createPublicClient({ transport });
 }
 
 /**

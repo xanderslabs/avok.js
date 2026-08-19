@@ -1,4 +1,5 @@
-import type { Address, Hex } from "viem";
+import type { Address, Hex, Transport } from "viem";
+import { http, fallback, RpcRequestError } from "viem";
 
 export interface SimCall {
   from?: Address;
@@ -132,6 +133,24 @@ export interface ViemLike {
     hash: Hex;
   }): Promise<{ status: "success" | "reverted"; transactionHash: Hex; blockNumber?: bigint }>;
   getBlockNumber(): Promise<bigint>;
+}
+
+/**
+ * A viem transport that fails over across `urls`, in order — TDD §8 (RPC redundancy, amended
+ * 2026-08-19). Fails over on a TRANSPORT error (network failure, non-2xx, timeout — none of these
+ * mean the chain answered, only that this endpoint didn't). Never fails over on a valid JSON-RPC
+ * error response (`RpcRequestError` — a revert, bad params, "method not found"): that IS the chain's
+ * answer, and asking a different node risks a second, possibly-stale opinion silently overriding a
+ * correct one. `urls.length < 2` still works (no redundancy, just the one endpoint) — callers that
+ * skip the "at least two" requirement get a plain single transport, not a crash.
+ */
+export function createFailoverTransport(urls: readonly string[]): Transport {
+  if (urls.length === 0) throw new Error("createFailoverTransport: at least one RPC URL is required");
+  if (urls.length === 1) return http(urls[0]);
+  return fallback(
+    urls.map((u) => http(u)),
+    { shouldThrow: (error) => error instanceof RpcRequestError },
+  );
 }
 
 /** Wrap a viem public/wallet client as an RpcClient. */

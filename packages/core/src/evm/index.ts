@@ -29,7 +29,7 @@ export type {
   AccessListEntry,
   ReadArgs,
 } from "./rpc.js";
-export { createViemRpcClient } from "./rpc.js";
+export { createViemRpcClient, createFailoverTransport } from "./rpc.js";
 
 // Pricing (native-gas native-cost estimate)
 export { estimateNativeFee } from "./pricing.js";

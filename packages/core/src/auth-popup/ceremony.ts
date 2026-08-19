@@ -50,7 +50,8 @@ export interface AuthPopupConfig {
    *  Optional: the own-origin popup config (`app/branding.ts`'s `OriginConfig`) carries no RPC info at
    *  all, and that is a valid config, not an error — it simply means every request there degrades to
    *  decode-only, the same as an RPC that lacks `eth_simulateV1`. */
-  rpcUrlsByChainId?: Record<number, string>;
+  /** Failover list, in try-order (TDD §8, amended 2026-08-19). */
+  rpcUrlsByChainId?: Record<number, string[]>;
   /** The single anchor chain (TDD §7: "V1 is anchor-chain-only") guardian/recovery state is read from
    *  — the "Recover a wallet" screen's `readGuardianState`/`approve*` calls all target this chain. Its
    *  RPC URL is looked up in `rpcUrlsByChainId`, same as simulation. Optional: a Vault config with no
