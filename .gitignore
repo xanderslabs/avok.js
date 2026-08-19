@@ -9,6 +9,7 @@ harness/*.pem
 contracts/out
 contracts/cache
 contracts/broadcast
+contracts/script/keeper-state.json
 .env
 .env.local
 *.env.local.bak

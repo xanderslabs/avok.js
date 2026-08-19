@@ -1,0 +1,11 @@
+{
+  "name": "jwt-recovery-circuit-dev-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Dev-only test-vector generator for circuits/jwt-recovery (not part of any deploy path)",
+  "type": "commonjs",
+  "dependencies": {
+    "noir-jwt": "^0.4.5",
+    "viem": "^2.55.19"
+  }
+}
