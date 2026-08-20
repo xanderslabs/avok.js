@@ -36,7 +36,7 @@ export async function runCli(argv: string[], io: CliIo = { log: console.log }): 
       const { buildVault, DEFAULT_OUT_DIR } = await import("./build.js");
       const out = `${process.cwd()}/${DEFAULT_OUT_DIR}`;
       await buildVault({ root: process.cwd(), out });
-      io.log(`avok-vault: wrote ${DEFAULT_OUT_DIR}/index.html, _headers and csp-headers.txt`);
+      io.log(`avok-vault: wrote ${DEFAULT_OUT_DIR}/index.html, _headers, .htaccess and csp-headers.txt`);
       return 0;
     }
     case "dev": {

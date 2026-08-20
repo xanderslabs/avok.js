@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { build as viteBuild } from "vite";
 import { bakedAppConfig, parseVaultConfig, resolveVaultRpcs, type VaultConfig } from "./config.js";
-import { buildCsp, headersFileContent, RECOVERY_PATH_GLOB } from "./headers.js";
+import { buildCsp, headersFileContent, htaccessContent, RECOVERY_PATH_GLOB } from "./headers.js";
 
 /** What a Vault build produces: the page, the policy that describes it, and the file a host reads. */
 export interface BuiltVault {
@@ -181,6 +182,25 @@ async function collect(dir: string, base = dir): Promise<Map<string, string>> {
 export const DEFAULT_OUT_DIR = "vault-dist";
 
 /**
+ * The page template to bundle.
+ *
+ * The operator's own `page/` wins if they have one, so a customised page keeps working. Otherwise
+ * it comes from THIS package, which is the case that matters: an operator who installs
+ * `@avokjs/vault` and runs `avok-vault build` in their project has no `page/` directory, and
+ * resolving only against their root made the CLI fail with "Cannot resolve entry module
+ * page/index.html". The template ships in the package's `files`, so it is always there.
+ */
+export async function resolvePageDir(root: string): Promise<string> {
+  const operatorPage = join(root, "page");
+  try {
+    await access(join(operatorPage, "index.html"));
+    return operatorPage;
+  } catch {
+    return fileURLToPath(new URL("../page", import.meta.url));
+  }
+}
+
+/**
  * The IO around `inlinePage`: read the operator's config, bundle the page, inline it, assert the
  * invariants, and write the three files a static host needs.
  *
@@ -194,7 +214,7 @@ export async function buildVault(opts: { root: string; out: string }): Promise<B
   const staging = join(opts.root, ".vault-staging");
   await rm(staging, { recursive: true, force: true });
   await viteBuild({
-    root: join(opts.root, "page"),
+    root: await resolvePageDir(opts.root),
     logLevel: "warn",
     build: {
       outDir: staging,
@@ -220,6 +240,7 @@ export async function buildVault(opts: { root: string; out: string }): Promise<B
   await writeFile(join(opts.out, "index.html"), result.html);
   await writeFile(join(opts.out, "_headers"), result.headers);
   await writeFile(join(opts.out, "csp-headers.txt"), `${result.csp}\n`);
+  await writeFile(join(opts.out, ".htaccess"), htaccessContent(result.csp));
   await rm(staging, { recursive: true, force: true });
   return result;
 }

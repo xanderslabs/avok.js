@@ -5,6 +5,7 @@ import {
   recoverySecurityHeaders,
   headersFileContent,
   RECOVERY_PATH_GLOB,
+  htaccessContent,
 } from "../src/headers.js";
 
 const RPC_URLS = ["https://mainnet.base.org", "https://ethereum-rpc.publicnode.com"];
@@ -159,5 +160,35 @@ describe("headersFileContent", () => {
     const baseBlock = out.slice(0, out.indexOf(RECOVERY_PATH_GLOB));
     expect(baseBlock).not.toContain("Cross-Origin-Opener-Policy");
     expect(baseBlock).not.toContain("Cross-Origin-Embedder-Policy");
+  });
+});
+
+describe("htaccessContent", () => {
+  const csp = buildCsp(["sha256-abc"], ["https://rpc.example.com"]);
+
+  it("sets the base policy and keeps COOP off the signing route", () => {
+    const out = htaccessContent(csp);
+    expect(out).toContain('Header always set Content-Security-Policy "default-src');
+    const beforeIf = out.slice(0, out.indexOf("<If "));
+    expect(beforeIf).not.toContain("Cross-Origin-Opener-Policy");
+  });
+
+  it("applies COOP and COEP only under the recovery path", () => {
+    const out = htaccessContent(csp);
+    const ifBlock = out.slice(out.indexOf("<If "), out.indexOf("</If>"));
+    expect(ifBlock).toContain('Cross-Origin-Opener-Policy "same-origin"');
+    expect(ifBlock).toContain('Cross-Origin-Embedder-Policy "require-corp"');
+    expect(ifBlock).toMatch(/REQUEST_URI.*recover/);
+  });
+
+  it("rewrites the client-side recovery route to the single page", () => {
+    // Without this an Apache host answers 404 for /recover, which is the one moment a user
+    // cannot afford one.
+    expect(htaccessContent(csp)).toContain("RewriteRule ^recover(/.*)?$ /index.html [L]");
+  });
+
+  it("escapes quotes so a directive cannot be broken out of", () => {
+    const nasty = buildCsp(['sha256-a"b'], ["https://rpc.example.com"]);
+    expect(htaccessContent(nasty)).toContain('sha256-a\\"b');
   });
 });
